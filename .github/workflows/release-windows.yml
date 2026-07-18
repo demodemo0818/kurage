@@ -40,9 +40,15 @@ jobs:
         run: flutter pub get
 
       # build → VC++ ランタイム同梱 → dist/kurage-vX.Y.Z[-pre]-windows.zip 生成。
-      # windows ランナーは VS2022 (C++ / ATL) + vswhere + NuGet 設定済みなので
+      # windows ランナーは VS (C++ / ATL) + vswhere + NuGet 設定済みなので
       # ローカルと同じスクリプトがそのまま動く。
+      # CL: ランナーの VS2026 (MSVC 14.51) は <experimental/coroutine> 使用を
+      # エラーにするため、一部プラグイン (audioplayers_windows / local_auth_windows /
+      # permission_handler_windows) がビルド不能。STL 公式の抑制マクロを全コンパイルに
+      # 適用して回避する (プラグイン側が C++20 <coroutine> に移行したら外せる)。
       - name: Build & package zip
+        env:
+          CL: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
         run: pwsh tool/package_windows.ps1
 
       - name: Create GitHub Release & upload zip
