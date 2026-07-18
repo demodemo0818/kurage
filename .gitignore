@@ -59,3 +59,7 @@ app.*.map.json
 
 # Claude Code のマシンローカル設定 (.claude/settings.json は共有、.local.json はマシン固有)
 .claude/settings.local.json
+
+# 紹介ページ (https://demo2.jp/kurage/) のローカル管理ディレクトリ。
+# 公開リポジトリには含めない (site/ 内に独立したローカル git リポジトリを持つ)
+/site/
