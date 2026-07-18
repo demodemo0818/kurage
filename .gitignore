@@ -63,3 +63,6 @@ app.*.map.json
 # 紹介ページ (https://demo2.jp/kurage/) のローカル管理ディレクトリ。
 # 公開リポジトリには含めない (site/ 内に独立したローカル git リポジトリを持つ)
 /site/
+
+# gen_l10n の生成物 (flutter pub get / flutter gen-l10n で再生成される)
+lib/l10n/gen/

@@ -8,7 +8,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -47,6 +46,7 @@ import 'services/mastodon_api.dart' show migrateCacheKeysIfNeeded;
 import 'services/wake_lock_service.dart';
 import 'services/app_lock_service.dart';
 import 'services/share_intake_service.dart';
+import 'l10n/l10n.dart';
 import 'utils/app_fonts.dart';
 import 'utils/breakpoints.dart';
 import 'utils/platform.dart';
@@ -126,12 +126,11 @@ Future<void> main() async {
   // クレジット表記が必須なため。コールバックは遅延評価 (ライセンス画面を
   // 開いた時だけ走る) なので起動コストには影響しない。
   LicenseRegistry.addLicense(() async* {
-    yield const LicenseEntryWithLineBreaks(
-      <String>['OtoLogic (効果音 / sound effects)'],
-      '効果音素材: OtoLogic\n'
-      'https://otologic.jp\n\n'
-      'ライセンス: Creative Commons Attribution 4.0 International (CC BY 4.0)\n'
-      'https://creativecommons.org/licenses/by/4.0/',
+    // 遅延評価 (ライセンス画面を開いた時に走る) なので、グローバル l10n は
+    // その時点の表示言語を指している。
+    yield LicenseEntryWithLineBreaks(
+      const <String>['OtoLogic (効果音 / sound effects)'],
+      l10n.otoLogicLicenseBody,
     );
   });
 
@@ -375,23 +374,24 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
-    
+
+    // 表示言語の決定。BuildContext の無い層 (services / 例外メッセージ) が
+    // 参照するグローバル l10n も、ここで必ず同じ locale に同期させる。
+    const appLocale = Locale('ja');
+    updateGlobalL10n(appLocale);
+
     return MaterialApp(
       title: 'Kurage',
       navigatorKey: appNavigatorKey,
       theme: _buildTheme(settings, Brightness.light),
       darkTheme: _buildTheme(settings, Brightness.dark),
       themeMode: settings.themeMode,
-      locale: const Locale('ja', 'JP'),
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('ja', 'JP'),
-        Locale('en', 'US'),
-      ],
+      // TODO(v1.1.0): 全文言の英訳が完了したら resolveAppLocale(settings.appLocale)
+      // ベースの解決に切り替え、設定画面に言語ピッカーを追加して解放する
+      // (docs/i18n.md 参照)。それまでは従来どおり日本語固定。
+      locale: appLocale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       // ボスキー (偽装モード) のゲートを Navigator より上に被せる。これにより
       // 偽装シェルがダイアログ/ポップアップ/SnackBar も含めて全面を覆い、裏の
       // 本体は Offstage で生存する。Web/デスクトップ以外では素通し。
@@ -658,10 +658,7 @@ class _RootPageState extends ConsumerState<RootPage> with WidgetsBindingObserver
       // アカウント未登録の場合は投稿できない旨を案内して終了
       final accounts = ref.read(authProvider).accounts;
       if (accounts.isEmpty) {
-        showErrorSnackBar(
-          context,
-          'アカウントが登録されていないため共有内容を投稿できません',
-        );
+        showErrorSnackBar(context, context.l10n.shareNoAccountError);
         return;
       }
 
@@ -724,12 +721,12 @@ class _RootPageState extends ConsumerState<RootPage> with WidgetsBindingObserver
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('アプリを終了しますか？'),
+          title: Text(context.l10n.exitConfirmTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('本当にアプリを終了してもよろしいですか？'),
+              Text(context.l10n.exitConfirmMessage),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -741,8 +738,8 @@ class _RootPageState extends ConsumerState<RootPage> with WidgetsBindingObserver
                       });
                     },
                   ),
-                  const Expanded(
-                    child: Text('今後この確認を表示しない'),
+                  Expanded(
+                    child: Text(context.l10n.dontShowThisConfirmationAgain),
                   ),
                 ],
               ),
@@ -751,7 +748,7 @@ class _RootPageState extends ConsumerState<RootPage> with WidgetsBindingObserver
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('キャンセル'),
+              child: Text(context.l10n.cancel),
             ),
             TextButton(
               onPressed: () async {
@@ -763,7 +760,7 @@ class _RootPageState extends ConsumerState<RootPage> with WidgetsBindingObserver
                   Navigator.of(context).pop(true);
                 }
               },
-              child: const Text('終了'),
+              child: Text(context.l10n.exit),
             ),
           ],
         ),
@@ -1186,24 +1183,25 @@ class _RootPageState extends ConsumerState<RootPage> with WidgetsBindingObserver
     final paneVisible = paneState.open || pinned;
 
     if (paneVisible && req.isReplyOrQuoteOrEdit) {
+      // .arb 側の ICU select ('edit' / 'reply' / 'quote') に渡すモードコード
       final mode = req.editStatusId != null
-          ? '編集'
+          ? 'edit'
           : req.replyToStatusId != null
-              ? '返信'
-              : '引用';
+              ? 'reply'
+              : 'quote';
       final discard = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: Text('$modeの作成中です'),
-          content: const Text('破棄して新規投稿を開きますか？'),
+          title: Text(ctx.l10n.composeInProgressTitle(mode)),
+          content: Text(ctx.l10n.composeDiscardAndStartNewMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: Text('$modeを続ける'),
+              child: Text(ctx.l10n.composeContinue(mode)),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('破棄して新規投稿'),
+              child: Text(ctx.l10n.composeDiscardAndStartNew),
             ),
           ],
         ),
@@ -1289,7 +1287,7 @@ class _RootPageState extends ConsumerState<RootPage> with WidgetsBindingObserver
       leading: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: FloatingActionButton.small(
-          tooltip: '新規投稿',
+          tooltip: context.l10n.newPost,
           heroTag: 'rail_compose_fab',
           onPressed: _onComposeButtonPressed,
           child: const Icon(Icons.edit),
@@ -1305,7 +1303,7 @@ class _RootPageState extends ConsumerState<RootPage> with WidgetsBindingObserver
             final unread = ref.watch(unreadAnnouncementCountProvider);
             return _buildNavIcon(Icons.home, unread);
           }),
-          label: const Text('ホーム'),
+          label: Text(context.l10n.navHome),
         ),
         NavigationRailDestination(
           icon: Consumer(builder: (context, ref, _) {
@@ -1316,27 +1314,27 @@ class _RootPageState extends ConsumerState<RootPage> with WidgetsBindingObserver
             final n = ref.watch(unreadNotificationCountProvider);
             return _buildNavIcon(Icons.notifications, n);
           }),
-          label: const Text('通知'),
+          label: Text(context.l10n.navNotifications),
         ),
-        const NavigationRailDestination(
-          icon: Icon(Icons.search_outlined),
-          selectedIcon: Icon(Icons.search),
-          label: Text('検索'),
+        NavigationRailDestination(
+          icon: const Icon(Icons.search_outlined),
+          selectedIcon: const Icon(Icons.search),
+          label: Text(context.l10n.navSearch),
         ),
-        const NavigationRailDestination(
-          icon: Icon(Icons.mail_outline),
-          selectedIcon: Icon(Icons.mail),
-          label: Text('DM'),
+        NavigationRailDestination(
+          icon: const Icon(Icons.mail_outline),
+          selectedIcon: const Icon(Icons.mail),
+          label: Text(context.l10n.navDm),
         ),
-        const NavigationRailDestination(
-          icon: Icon(Icons.person_outline),
-          selectedIcon: Icon(Icons.person),
-          label: Text('プロフィール'),
+        NavigationRailDestination(
+          icon: const Icon(Icons.person_outline),
+          selectedIcon: const Icon(Icons.person),
+          label: Text(context.l10n.navProfile),
         ),
-        const NavigationRailDestination(
-          icon: Icon(Icons.settings_outlined),
-          selectedIcon: Icon(Icons.settings),
-          label: Text('設定'),
+        NavigationRailDestination(
+          icon: const Icon(Icons.settings_outlined),
+          selectedIcon: const Icon(Icons.settings),
+          label: Text(context.l10n.navSettings),
         ),
       ],
       trailing: Expanded(
@@ -1347,7 +1345,7 @@ class _RootPageState extends ConsumerState<RootPage> with WidgetsBindingObserver
             Consumer(builder: (context, ref, _) {
               final unread = ref.watch(unreadAnnouncementCountProvider);
               return IconButton(
-                tooltip: 'サーバーからのお知らせ',
+                tooltip: context.l10n.announcementsTooltip,
                 icon: Stack(
                   clipBehavior: Clip.none,
                   children: [
@@ -1397,7 +1395,8 @@ class _RootPageState extends ConsumerState<RootPage> with WidgetsBindingObserver
               final enabled = ref.watch(
                   settingsProvider.select((s) => s.streamingEnabled));
               return IconButton(
-                tooltip: 'ストリーミング: ${enabled ? "ON" : "OFF"}',
+                tooltip:
+                    context.l10n.streamingTooltip(enabled ? 'ON' : 'OFF'),
                 icon: Icon(
                   enabled ? Icons.podcasts : Icons.podcasts_outlined,
                   color: enabled ? primary : null,

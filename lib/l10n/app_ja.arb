@@ -1,0 +1,102 @@
+{
+  "@@locale": "ja",
+
+  "close": "閉じる",
+  "@close": {
+    "description": "汎用: ダイアログや SnackBar を閉じるボタン"
+  },
+  "cancel": "キャンセル",
+  "@cancel": {
+    "description": "汎用: 操作を取り消すボタン"
+  },
+
+  "relativeSecondsAgo": "{count}秒前",
+  "@relativeSecondsAgo": {
+    "description": "相対時間: N 秒前",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "relativeMinutesAgo": "{count}分前",
+  "@relativeMinutesAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "relativeHoursAgo": "{count}時間前",
+  "@relativeHoursAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "relativeDaysAgo": "{count}日前",
+  "@relativeDaysAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "relativeMonthsAgo": "{count}か月前",
+  "@relativeMonthsAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "relativeYearsAgo": "{count}年前",
+  "@relativeYearsAgo": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "absoluteDateTimePattern": "yyyy/MM/dd HH:mm",
+  "@absoluteDateTimePattern": {
+    "description": "絶対時刻表示の DateFormat パターン。文言ではなく intl のフォーマット文字列。ロケール記号データ不要の数値フィールドのみで構成すること"
+  },
+
+  "navHome": "ホーム",
+  "navNotifications": "通知",
+  "navSearch": "検索",
+  "navDm": "DM",
+  "navProfile": "プロフィール",
+  "navSettings": "設定",
+
+  "newPost": "新規投稿",
+  "@newPost": {
+    "description": "投稿コンポーズを開くボタン / tooltip"
+  },
+  "announcementsTooltip": "サーバーからのお知らせ",
+  "streamingTooltip": "ストリーミング: {state}",
+  "@streamingTooltip": {
+    "description": "SSE ストリーミングのトグル tooltip。state は ON / OFF の文字列",
+    "placeholders": {
+      "state": {"type": "String"}
+    }
+  },
+
+  "exitConfirmTitle": "アプリを終了しますか？",
+  "exitConfirmMessage": "本当にアプリを終了してもよろしいですか？",
+  "dontShowThisConfirmationAgain": "今後この確認を表示しない",
+  "exit": "終了",
+
+  "shareNoAccountError": "アカウントが登録されていないため共有内容を投稿できません",
+
+  "composeInProgressTitle": "{mode, select, edit{編集の作成中です} reply{返信の作成中です} quote{引用の作成中です} other{投稿の作成中です}}",
+  "@composeInProgressTitle": {
+    "description": "コンポーズペインに作成途中の編集/返信/引用がある状態で新規投稿を開こうとした時の確認ダイアログ題名",
+    "placeholders": {
+      "mode": {"type": "String"}
+    }
+  },
+  "composeDiscardAndStartNewMessage": "破棄して新規投稿を開きますか？",
+  "composeContinue": "{mode, select, edit{編集を続ける} reply{返信を続ける} quote{引用を続ける} other{作成を続ける}}",
+  "@composeContinue": {
+    "placeholders": {
+      "mode": {"type": "String"}
+    }
+  },
+  "composeDiscardAndStartNew": "破棄して新規投稿",
+
+  "otoLogicLicenseBody": "効果音素材: OtoLogic\nhttps://otologic.jp\n\nライセンス: Creative Commons Attribution 4.0 International (CC BY 4.0)\nhttps://creativecommons.org/licenses/by/4.0/",
+  "@otoLogicLicenseBody": {
+    "description": "ライセンス一覧に載せる効果音素材 (OtoLogic, CC BY 4.0) のクレジット本文"
+  }
+}

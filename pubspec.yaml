@@ -135,6 +135,10 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
 
+  # gen_l10n によるローカライズコード生成 (設定は l10n.yaml)。
+  # 生成物 lib/l10n/gen/ は git 管理外で、pub get / build 時に自動再生成。
+  generate: true
+
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

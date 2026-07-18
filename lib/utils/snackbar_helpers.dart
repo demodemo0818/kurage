@@ -3,6 +3,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n.dart';
+
 /// 現在表示中のトースト。連続表示時に前のものを置き換えるための参照。
 OverlayEntry? _activeToast;
 
@@ -187,7 +189,7 @@ void showErrorSnackBar(
         ],
       ),
       action: SnackBarAction(
-        label: '閉じる',
+        label: l10n.close,
         textColor: Colors.white,
         onPressed: () => messenger.hideCurrentSnackBar(),
       ),

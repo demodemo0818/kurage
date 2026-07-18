@@ -169,6 +169,12 @@ class Settings {
   /// (デスクトップのみ)。ON のとき [imageSaveDirectory] は無視される。既定 OFF。
   final bool confirmImageSaveLocation;
 
+  /// 追加: UI 表示言語 ('system' / 'ja' / 'en')。'system' は端末ロケール追従。
+  /// Locale への解決は lib/l10n/l10n.dart の resolveAppLocale。
+  /// 注: 全文言の英訳が完了するまで設定 UI は未公開で、main.dart も
+  /// この値をまだ参照しない (locale は ja 固定)。v1.1.0 で解放予定。
+  final String appLocale;
+
   Settings({
     required this.useRelativeTime,
     required this.showUserId,
@@ -220,6 +226,7 @@ class Settings {
     required this.soundOnRefresh,
     this.imageSaveDirectory,
     required this.confirmImageSaveLocation,
+    required this.appLocale,
   });
 
   Settings copyWith({
@@ -277,6 +284,7 @@ class Settings {
     // imageSaveDirectory も null (既定に戻す) を明示できるよう sentinel 方式。
     Object? imageSaveDirectory = _unset,
     bool? confirmImageSaveLocation,
+    String? appLocale,
   }) {
     return Settings(
       useRelativeTime: useRelativeTime ?? this.useRelativeTime,
@@ -337,6 +345,7 @@ class Settings {
           : imageSaveDirectory as String?,
       confirmImageSaveLocation:
           confirmImageSaveLocation ?? this.confirmImageSaveLocation,
+      appLocale: appLocale ?? this.appLocale,
     );
   }
 
@@ -391,6 +400,7 @@ class Settings {
         'soundOnRefresh': soundOnRefresh,
         'imageSaveDirectory': imageSaveDirectory,
         'confirmImageSaveLocation': confirmImageSaveLocation,
+        'appLocale': appLocale,
       };
 
   factory Settings.fromJson(Map<String, dynamic> m) => Settings(
@@ -456,6 +466,7 @@ class Settings {
         imageSaveDirectory: m['imageSaveDirectory'] as String?,
         confirmImageSaveLocation:
             m['confirmImageSaveLocation'] as bool? ?? false,
+        appLocale: m['appLocale'] as String? ?? 'system',
       );
 }
 
@@ -516,6 +527,7 @@ class SettingsNotifier extends StateNotifier<Settings> {
           soundOnRefresh: false,
           imageSaveDirectory: null, // 既定はダウンロードフォルダ
           confirmImageSaveLocation: false, // 既定は尋ねない (黙って保存)
+          appLocale: 'system', // 既定は端末ロケール追従 (解放は v1.1.0)
         )) {
     _load();
   }
@@ -831,6 +843,12 @@ class SettingsNotifier extends StateNotifier<Settings> {
   /// 追加: 画像保存時に毎回保存先を尋ねるか (デスクトップのみ)。
   Future<void> setConfirmImageSaveLocation(bool v) async {
     state = state.copyWith(confirmImageSaveLocation: v);
+    await _save();
+  }
+
+  /// 追加: UI 表示言語 ('system' / 'ja' / 'en')。
+  Future<void> setAppLocale(String v) async {
+    state = state.copyWith(appLocale: v);
     await _save();
   }
 }

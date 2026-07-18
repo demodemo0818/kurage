@@ -1,0 +1,13 @@
+# gen_l10n (flutter_localizations) の設定。
+# テンプレートは日本語 (app_ja.arb)。新規文言は ja/en 両方の .arb に
+# 同時追加すること (CI が未翻訳キーを検出して fail する)。
+arb-dir: lib/l10n
+template-arb-file: app_ja.arb
+output-localization-file: app_localizations.dart
+# 生成物は git 管理外 (lib/l10n/gen/ を .gitignore 済み)。
+# `flutter pub get` / `flutter gen-l10n` で再生成される。
+output-dir: lib/l10n/gen
+# AppLocalizations.of(context) を非 nullable にする (呼び出し側の ! を不要に)
+nullable-getter: false
+# en 側に無いキーの一覧を書き出す。CI がこのファイルを見て fail させる。
+untranslated-messages-file: build/untranslated_messages.json

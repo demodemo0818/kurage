@@ -2,26 +2,29 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 
+import '../l10n/l10n.dart';
+
 /// 時刻フォーマッタユーティリティ
 /// 相対時間表示と絶対時間表示の関数を提供します。
 
-/// 相対時間 (例: 5分前, 2時間前) を日本語で返します。
+/// 相対時間 (例: 5分前, 2時間前) を現在の表示言語で返します。
 String formatRelative(DateTime dt) {
   final now = DateTime.now();
   final diff = now.difference(dt);
-  if (diff.inSeconds < 60) return '${diff.inSeconds}秒前';
-  if (diff.inMinutes < 60) return '${diff.inMinutes}分前';
-  if (diff.inHours < 24) return '${diff.inHours}時間前';
-  if (diff.inDays < 30) return '${diff.inDays}日前';
+  if (diff.inSeconds < 60) return l10n.relativeSecondsAgo(diff.inSeconds);
+  if (diff.inMinutes < 60) return l10n.relativeMinutesAgo(diff.inMinutes);
+  if (diff.inHours < 24) return l10n.relativeHoursAgo(diff.inHours);
+  if (diff.inDays < 30) return l10n.relativeDaysAgo(diff.inDays);
   final months = diff.inDays ~/ 30;
-  if (months < 12) return '$monthsか月前';
+  if (months < 12) return l10n.relativeMonthsAgo(months);
   final years = diff.inDays ~/ 365;
-  return '$years年前';
+  return l10n.relativeYearsAgo(years);
 }
 
-/// 絶対時間 (例: 2025/05/10 14:23) を返します。
+/// 絶対時間 (例: 2025/05/10 14:23) を返します。パターンは locale ごとに
+/// .arb (absoluteDateTimePattern) で定義する。
 String formatAbsolute(DateTime dt) {
-  return DateFormat('yyyy/MM/dd HH:mm').format(dt.toLocal());
+  return DateFormat(l10n.absoluteDateTimePattern).format(dt.toLocal());
 }
 
 /// 時間フォーマット（相対時間を基本にし、古い場合は絶対時間）

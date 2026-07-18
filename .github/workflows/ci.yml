@@ -75,6 +75,19 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # l10n コード生成 + 未翻訳キー検出。app_ja.arb にあって app_en.arb に
+      # 無いキーがあると build/untranslated_messages.json に列挙されるので、
+      # 空 ({}) でなければ fail させる (日英 .arb の乖離防止)。
+      - name: Check untranslated l10n keys
+        run: |
+          flutter gen-l10n
+          if [ -f build/untranslated_messages.json ] && \
+             [ "$(tr -d '[:space:]' < build/untranslated_messages.json)" != "{}" ]; then
+            echo "::error::未翻訳の l10n キーがあります。app_ja.arb と app_en.arb の両方にキーを追加してください:"
+            cat build/untranslated_messages.json
+            exit 1
+          fi
+
       # info レベル (deprecated_member_use 等、Flutter SDK 由来の警告) は CI 失敗
       # 扱いにしない。error / warning は引き続き失敗扱い。
       - name: Analyze

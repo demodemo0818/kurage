@@ -1,0 +1,39 @@
+{
+  "@@locale": "en",
+
+  "close": "Close",
+  "cancel": "Cancel",
+
+  "relativeSecondsAgo": "{count, plural, =1{1 second ago} other{{count} seconds ago}}",
+  "relativeMinutesAgo": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
+  "relativeHoursAgo": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
+  "relativeDaysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}",
+  "relativeMonthsAgo": "{count, plural, =1{1 month ago} other{{count} months ago}}",
+  "relativeYearsAgo": "{count, plural, =1{1 year ago} other{{count} years ago}}",
+  "absoluteDateTimePattern": "MM/dd/yyyy HH:mm",
+
+  "navHome": "Home",
+  "navNotifications": "Notifications",
+  "navSearch": "Search",
+  "navDm": "DM",
+  "navProfile": "Profile",
+  "navSettings": "Settings",
+
+  "newPost": "New post",
+  "announcementsTooltip": "Server announcements",
+  "streamingTooltip": "Streaming: {state}",
+
+  "exitConfirmTitle": "Quit Kurage?",
+  "exitConfirmMessage": "Are you sure you want to quit the app?",
+  "dontShowThisConfirmationAgain": "Don't show this confirmation again",
+  "exit": "Quit",
+
+  "shareNoAccountError": "Can't post shared content because no account is signed in",
+
+  "composeInProgressTitle": "{mode, select, edit{You're editing a post} reply{You're writing a reply} quote{You're writing a quote} other{You're writing a post}}",
+  "composeDiscardAndStartNewMessage": "Discard it and start a new post?",
+  "composeContinue": "{mode, select, edit{Keep editing} reply{Keep writing the reply} quote{Keep writing the quote} other{Keep writing}}",
+  "composeDiscardAndStartNew": "Discard and start new",
+
+  "otoLogicLicenseBody": "Sound effects: OtoLogic\nhttps://otologic.jp\n\nLicense: Creative Commons Attribution 4.0 International (CC BY 4.0)\nhttps://creativecommons.org/licenses/by/4.0/"
+}
