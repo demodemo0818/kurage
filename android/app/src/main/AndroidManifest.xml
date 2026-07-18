@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="jp.demo2.kurage">
+
+    <!--
+        ストレージ権限は宣言しない。画像/動画の選択は image_picker (OS 標準
+        フォトピッカー ACTION_PICK_IMAGES) と file_selector (SAF) 経由で行うため、
+        READ_MEDIA_IMAGES / READ_EXTERNAL_STORAGE / WRITE_EXTERNAL_STORAGE は
+        いずれも不要。Play の「写真と動画の権限」申告も回避できる。直接 MediaStore を
+        触る機能 (ギャラリー保存等) を足す場合のみ最小限の権限を追加すること。
+    -->
+
+    <!-- 通知権限 (Android 13+ ランタイム要求が必要) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <!-- 生体認証 (アプリロック機能用) -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+
+    <!--
+        広告 ID (AAID) を使わない。Firebase Analytics SDK が自動マージする
+        AD_ID 権限を除去し、広告 ID 収集も無効化する。広告は出さず、解析方針も
+        「追跡可能情報を載せない」ため。Play データセーフティでは「広告 ID を
+        使用しない」と申告する。Android で広告を導入する場合はこの 2 点を戻す。
+    -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"
+                     tools:node="remove"/>
+
+    <!-- 外部ブラウザ起動のインテント問い合わせ -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="http"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+    </queries>
+
+    <!--
+        allowBackup="false": アクセストークンを SharedPreferences (平文) に
+        保存しているため、Google Drive の Auto Backup / 端末間転送に
+        トークンが含まれないよう OS バックアップを無効化する。
+        アプリ内のバックアップ/復元機能で代替できる。
+    -->
+    <application
+        android:name="${applicationName}"
+        android:label="${appLabel}"
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false">
+
+        <!-- 1) Flutter アプリのエントリポイント -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+
+            <!-- Flutter アプリ起動 -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+
+            <!--
+                NOTE: OAuth リダイレクト (jp.demo2.kurage://callback) の受け取り
+                intent-filter はここに置かない。flutter_appauth プラグインが
+                net.openid.appauth.RedirectUriReceiverActivity を自動マージ
+                してくれる (build.gradle.kts の manifestPlaceholders
+                ["appAuthRedirectScheme"] = "jp.demo2.kurage" 経由)。
+                MainActivity にも同 scheme の intent-filter を書くと、
+                ブラウザからの redirect 時に Android が「アプリで開く」
+                ダイアログで Kurage を 2 つ表示し、MainActivity 側を選ぶと
+                AppAuth が code を受け取れず認証失敗する。
+            -->
+
+            <!-- 他アプリの「共有」メニューから text/plain (本文・URL) を受け取る -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="text/plain"/>
+            </intent-filter>
+        </activity>
+
+        <!--
+            NOTE: AppAuth 用 RedirectUriReceiverActivity をここで手書き宣言
+            しない。flutter_appauth プラグインが自動マージしてくれる。手書き
+            すると同名 Activity の intent-filter がプラグイン側と統合され、
+            scheme だけマッチの filter と scheme+host マッチの filter が
+            両方ある状態になって挙動が予期しなくなる。
+        -->
+
+
+        <!-- Flutter プラグインの登録用メタデータ -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2"/>
+
+        <!-- 広告 ID (AAID) の収集を無効化 (上の AD_ID 権限除去とセット) -->
+        <meta-data
+            android:name="google_analytics_adid_collection_enabled"
+            android:value="false"/>
+
+        <!-- FCM がバックグラウンド受信時に使うデフォルト通知チャンネル ID
+             (Dart 側で作る AndroidNotificationChannel と一致させる) -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="mastodon_notifications"/>
+
+        <!-- FCM 経路のデフォルト通知アイコン。res/raw/keep.xml と併せて、
+             ic_stat_kurage への静的参照として resource shrinker の
+             削除対象から外す保険も兼ねる -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_kurage"/>
+    </application>
+
+    <!-- PROCESS_TEXT インテント問い合わせ (フローティング翻訳呼び出しに使う) -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- setPackage で Google翻訳に直接送る用に visibility を明示 -->
+        <package android:name="com.google.android.apps.translate"/>
+    </queries>
+</manifest>

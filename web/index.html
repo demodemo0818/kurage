@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Kurage - Multi-account Mastodon client for Flutter.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Kurage">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <!-- PWA テーマカラー (Android Chrome のタブバー色)。
+       Android アダプティブアイコン背景と揃えてブランド統一。 -->
+  <meta name="theme-color" content="#0A0620">
+
+  <title>Kurage</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Cloudflare Web Analytics (来訪トラフィックの基準値。Cookie 無し・同意不要)。
+       Cookie やフィンガープリントを使わず、Fediverse 層に多いトラッカー
+       ブロックでも弾かれにくい first-party 的ビーコン。GA4 と相補的に使う。
+       token は Cloudflare → Analytics & Logs → Web Analytics の手動セットアップで
+       取得 (Pages カスタムドメインは自動注入の対象外のため手動方式)。 -->
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+          data-cf-beacon='{"token": "13fb2265b6da4bb08b4ef9fc011a80a4"}'></script>
+
+
+  <!-- ローディング背景。Flutter エンジンが起動する前の数百 ms 〜 数秒の
+       「白フラッシュ」を抑えるため、デフォルトは Kurage のブランドカラー
+       (#0A0620) に塗っておく。ユーザ OS がライトテーマでも、起動後すぐ
+       Flutter 側で MaterialApp の theme が適用されて自然に切り替わる。 -->
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: #0A0620;
+    }
+    @media (prefers-color-scheme: light) {
+      html, body {
+        background-color: #ffffff;
+      }
+    }
+  </style>
+</head>
+<body>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# 配布用 APK 置き場 (リリース手順は RELEASING.md 参照)
+/dist/
+
+# Firebase 実設定 (OSS 公開のため example 化。セットアップは各 .example ファイル参照)
+/android/app/google-services.json
+/lib/firebase_options.dart
+
+# Sentry native シンボルキャッシュ
+/.sentry-native/
+
+# VS Code ワークスペースファイル (個人設定)
+*.code-workspace
+
+# Claude Code のマシンローカル設定 (.claude/settings.json は共有、.local.json はマシン固有)
+.claude/settings.local.json

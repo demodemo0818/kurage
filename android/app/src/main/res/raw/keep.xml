@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- release ビルドの resource shrinker 対策。
+     ic_stat_kurage は Dart (flutter_local_notifications) から
+     getIdentifier で実行時に名前解決されるだけで静的参照が無いため、
+     tools:keep が無いと shrinker に削除され全端末で
+     invalid_icon (PlatformException) になる。 -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_kurage" />

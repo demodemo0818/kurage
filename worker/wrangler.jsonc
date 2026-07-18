@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kurage-push-relay",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-04-01",
+  "workers_dev": true,
+  // 環境変数（Secret は wrangler secret put で個別投入）:
+  //   FIREBASE_PROJECT_ID         例: kurage-for-mastodon
+  //   FIREBASE_CLIENT_EMAIL       Service Account の client_email
+  //   FIREBASE_PRIVATE_KEY        Service Account の private_key (改行は \n のまま)
+  //   ECDH_PRIVATE_KEY_PKCS8_B64  Worker 用 ECDH P-256 秘密鍵 (PKCS#8 DER, base64)
+  //   ECDH_PUBLIC_KEY_RAW_B64URL  対応する公開鍵 (raw 65byte, base64url)
+  //   AUTH_SECRET_B64URL          Web Push auth_secret (16byte, base64url)
+  "observability": {
+    "enabled": true
+  }
+}

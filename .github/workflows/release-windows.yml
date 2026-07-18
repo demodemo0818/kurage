@@ -1,0 +1,77 @@
+name: Release (Windows)
+
+# v* タグの push で Windows ポータブル zip をビルドし、GitHub Release に添付する。
+# Android (AAB) / Web のリリースはローカルで行う運用のまま (RELEASING.md 参照)。
+# workflow_dispatch は動作確認用 (Release は作らず artifact に保存するだけ)。
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows-zip:
+    name: Build Windows zip
+    runs-on: windows-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 実 Firebase 設定は git 管理外 (ci.yml と同じ方式)。Windows は実行時に
+      # Firebase 初期化を skip するので、ダミーの example で機能的にも問題ない。
+      - name: Provide dummy Firebase config
+        run: |
+          Copy-Item lib/firebase_options.dart.example lib/firebase_options.dart
+          Copy-Item android/app/google-services.json.example android/app/google-services.json
+
+      # ローカルと合わせて pin (ci.yml と同時に更新すること)。
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.9"
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # build → VC++ ランタイム同梱 → dist/kurage-vX.Y.Z[-pre]-windows.zip 生成。
+      # windows ランナーは VS2022 (C++ / ATL) + vswhere + NuGet 設定済みなので
+      # ローカルと同じスクリプトがそのまま動く。
+      - name: Build & package zip
+        run: pwsh tool/package_windows.ps1
+
+      - name: Create GitHub Release & upload zip
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          # zip + インストーラー (setup.exe)。万一 setup が無くても zip だけで続行
+          $assets = @(Get-ChildItem dist/kurage-*-windows.zip, dist/kurage-*-setup.exe |
+            ForEach-Object FullName)
+          if (-not $assets) { throw 'dist に成果物がありません' }
+          $pre = if ($tag -match '-') { @('--prerelease') } else { @() }
+          $notes = "release_notes/$tag.md"
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            # 再実行などで Release が既にある場合は成果物の差し替えのみ
+            gh release upload $tag @assets --clobber
+          } elseif (Test-Path $notes) {
+            gh release create $tag @assets --title $tag --notes-file $notes @pre
+          } else {
+            gh release create $tag @assets --title $tag --generate-notes @pre
+          }
+
+      - name: Upload artifact (manual run)
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-zip
+          path: |
+            dist/*-windows.zip
+            dist/*-setup.exe

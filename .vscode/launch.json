@@ -1,0 +1,29 @@
+{
+    // IntelliSense を使用して利用可能な属性を学べます。
+    // 既存の属性の説明をホバーして表示します。
+    // 詳細情報は次を確認してください: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // F5 でこれを実行 → ターミナルに http://localhost:8080 が出る。
+            // それを「普段使いの Edge」のタブで開く（自動では開かない）。
+            // 自前ブラウザの実プロファイル + 固定ポートなので、
+            // ログイン / カラム / 設定 (localStorage=SharedPreferences, IndexedDB=Hive) が毎回残る。
+            "name": "Kurage (Web / 自前ブラウザで開く)",
+            "type": "dart",
+            "request": "launch",
+            "program": "lib/main.dart",
+            "deviceId": "web-server",
+            "args": [
+                "--web-port=8080"
+            ]
+        },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "localhost に対して Chrome を起動する",
+            "url": "http://localhost:8080",
+            "webRoot": "${workspaceFolder}"
+        }
+    ]
+}

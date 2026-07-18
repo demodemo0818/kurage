@@ -1,0 +1,50 @@
+{
+  "_comment_": "google-services.json のテンプレート。実ファイル (android/app/google-services.json) は git 管理外。ビルドするにはこのファイルを google-services.json にコピーする (ダミー値のままでもビルドは通る。FCM トークン取得は実行時に失敗するがアプリは動く)。プッシュ通知を動かすには Firebase Console で自分のプロジェクトを作り、applicationId jp.demo2.kurage (と debug 用に jp.demo2.kurage.debug) を登録して実物をダウンロードする。",
+  "project_info": {
+    "project_number": "000000000000",
+    "project_id": "your-firebase-project",
+    "storage_bucket": "your-firebase-project.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+        "android_client_info": {
+          "package_name": "jp.demo2.kurage"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUMMYDUMMYDUMMYDUMMYDUMMYDUMMYDUMM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "_comment_": "debug ビルド (applicationIdSuffix .debug) 用エントリ。Gradle の processDebugGoogleServices のパッケージ名チェックを通すために必要。",
+      "client_info": {
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+        "android_client_info": {
+          "package_name": "jp.demo2.kurage.debug"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUMMYDUMMYDUMMYDUMMYDUMMYDUMMYDUMM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

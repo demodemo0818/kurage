@@ -1,0 +1,19 @@
+# Kurage release signing config (template)
+#
+# このファイルを `key.properties` にコピーし、各値を埋めて使う。
+# `android/key.properties` は .gitignore 済み。絶対に commit しないこと。
+# 詳細は RELEASING.md の「Android 署名」セクション参照。
+
+# keystore 全体のパスワード (keytool -genkey 時に決めたもの)
+storePassword=CHANGE_ME
+
+# 鍵自身のパスワード (keytool -genkey で2つ目に聞かれたもの、storePassword と同じでも可)
+keyPassword=CHANGE_ME
+
+# 鍵の alias (keytool -genkey の -alias で指定した値、例: kurage)
+keyAlias=kurage
+
+# keystore (.jks) ファイルへの絶対パス。
+# Windows でも区切りは `/` を使うこと。`\` は Gradle のエスケープ解釈で壊れる。
+# 例: C:/Users/<ユーザー名>/.kurage/upload-keystore.jks
+storeFile=CHANGE_ME

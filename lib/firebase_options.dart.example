@@ -1,0 +1,65 @@
+// firebase_options.dart のテンプレート。
+//
+// 実ファイル (lib/firebase_options.dart) は各自の Firebase プロジェクトの値を
+// 含むため git 管理外 (.gitignore 済み)。ビルドするには:
+//
+//   1. このファイルを lib/firebase_options.dart にコピーする
+//      (ダミー値のままでも analyze / test / ビルドは通る。実行時は
+//      main.dart 側で初期化失敗が吸収され、FCM / Analytics が no-op に
+//      落ちるだけでアプリは起動する)
+//   2. プッシュ通知等を実際に動かす場合は、Firebase Console で自分の
+//      プロジェクトを作成し、下記の値を自分のものに差し替える
+//      (公式には FlutterFire CLI `flutterfire configure` での生成を推奨)。
+//      android/app/google-services.json も同様に自分のものを配置すること。
+//
+// iOS を追加する際は対応 platform を Firebase Console で登録した上で
+// 該当ブロックを追加すること。
+
+import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
+
+class DefaultFirebaseOptions {
+  static FirebaseOptions get currentPlatform {
+    if (kIsWeb) {
+      return web;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return android;
+      case TargetPlatform.iOS:
+        throw UnsupportedError(
+          'iOS 用の FirebaseOptions が未設定です。'
+          'Firebase Console で iOS アプリを追加して GoogleService-Info.plist を取得し、'
+          'firebase_options.dart に追記してください。',
+        );
+      case TargetPlatform.macOS:
+      case TargetPlatform.windows:
+      case TargetPlatform.linux:
+      case TargetPlatform.fuchsia:
+        throw UnsupportedError(
+          '${defaultTargetPlatform.name} は現在 Firebase 未対応です。',
+        );
+    }
+  }
+
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyDUMMYDUMMYDUMMYDUMMYDUMMYDUMMYDUMM',
+    appId: '1:000000000000:android:0000000000000000000000',
+    messagingSenderId: '000000000000',
+    projectId: 'your-firebase-project',
+    storageBucket: 'your-firebase-project.firebasestorage.app',
+  );
+
+  // Web アプリの設定値 (Firebase Analytics (GA4) 用)。Firebase Console で
+  // Web アプリを登録し、firebaseConfig の値に差し替える。
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyDUMMYDUMMYDUMMYDUMMYDUMMYDUMMYDUMM',
+    appId: '1:000000000000:web:0000000000000000000000',
+    messagingSenderId: '000000000000',
+    projectId: 'your-firebase-project',
+    authDomain: 'your-firebase-project.firebaseapp.com',
+    storageBucket: 'your-firebase-project.firebasestorage.app',
+    measurementId: 'G-XXXXXXXXXX',
+  );
+}

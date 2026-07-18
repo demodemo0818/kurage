@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# 同一ブランチへの連続 push があったら古い run をキャンセル (Actions 分節約)。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-and-build:
+    name: Analyze + Debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      # ubuntu-latest ランナーは空きが 20GB 程度しかなく、依存更新後の
+      # Android debug ビルド (NDK/CMake ネイティブビルド + 3GB 級 Gradle
+      # キャッシュ展開) で "No space left on device" に 2 連続で落ちた実績がある
+      # (2026-06-10)。使わないプリインストールを先に消して 20GB 以上確保する。
+      # 注意: /usr/local/lib/android は Android SDK 本体なので消さないこと。
+      - name: Free disk space
+        run: |
+          echo "Before:" && df -h /
+          sudo rm -rf /usr/share/dotnet /usr/share/swift /usr/local/.ghcup \
+            /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/powershell \
+            /usr/local/share/chromium /usr/local/lib/node_modules || true
+          sudo docker image prune --all --force > /dev/null 2>&1 || true
+          echo "After:" && df -h /
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 実 Firebase 設定は git 管理外 (OSS 公開のため example 化)。CI は
+      # analyze / test / debug ビルドが通ればよいのでダミーの example を
+      # 実パスへコピーして使う (firebase_options.dart は import されるソース、
+      # google-services.json は Gradle の processDebugGoogleServices が要求)。
+      - name: Provide dummy Firebase config
+        run: |
+          cp lib/firebase_options.dart.example lib/firebase_options.dart
+          cp android/app/google-services.json.example android/app/google-services.json
+
+      # Android ビルドに必要な JDK。build.gradle.kts は jvmTarget=11 だが
+      # Gradle 8 系は JDK 17 で動かすのが標準。
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # ローカルと完全一致させるため Flutter SDK バージョンを pin。
+      # 上げる時は CLAUDE.md の「ツールチェーン要件」と一緒に更新。
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.9"
+          channel: stable
+          cache: true
+
+      # Gradle キャッシュは初回 200MB 級。2 回目以降のビルドを大幅短縮。
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('android/**/*.gradle*', 'android/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # info レベル (deprecated_member_use 等、Flutter SDK 由来の警告) は CI 失敗
+      # 扱いにしない。error / warning は引き続き失敗扱い。
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+      # 純粋ロジック (utils / models) の unit test。widget tree や HTTP は触らない。
+      - name: Test
+        run: flutter test
+
+      # APK 自体は配布用ではないので debug ビルドで十分。
+      # 「別 PC で git add し忘れ」「Kotlin / Gradle 側の壊れ」などをここで検出する。
+      - name: Build debug APK
+        run: flutter build apk --debug

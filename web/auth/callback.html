@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>認証中...</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e0e0e0;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error {
+            color: #dc3545;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="spinner"></div>
+        <h2>認証中...</h2>
+        <p id="status">認証情報を処理しています...</p>
+        <div id="error" class="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        (function() {
+            try {
+                // URLパラメータを解析
+                const urlParams = new URLSearchParams(window.location.search);
+                const code = urlParams.get('code');
+                const state = urlParams.get('state');
+                const error = urlParams.get('error');
+                const errorDescription = urlParams.get('error_description');
+
+                if (error) {
+                    throw new Error(errorDescription || error);
+                }
+
+                if (!code || !state) {
+                    throw new Error('認証パラメータが不足しています');
+                }
+
+                // 親ウィンドウにメッセージを送信
+                if (window.opener) {
+                    window.opener.postMessage({
+                        type: 'oauth_callback',
+                        code: code,
+                        state: state
+                    }, window.location.origin);
+                    
+                    document.getElementById('status').textContent = '認証が完了しました。このウィンドウを閉じています...';
+                    
+                    // 少し待ってからウィンドウを閉じる
+                    setTimeout(() => {
+                        window.close();
+                    }, 1000);
+                } else {
+                    throw new Error('親ウィンドウが見つかりません');
+                }
+
+            } catch (err) {
+                console.error('OAuth callback error:', err);
+                
+                const errorDiv = document.getElementById('error');
+                const statusP = document.getElementById('status');
+                const spinner = document.querySelector('.spinner');
+                
+                spinner.style.display = 'none';
+                statusP.textContent = '認証中にエラーが発生しました';
+                errorDiv.textContent = err.message;
+                errorDiv.style.display = 'block';
+
+                // 親ウィンドウにエラーを送信
+                if (window.opener) {
+                    window.opener.postMessage({
+                        type: 'oauth_callback',
+                        error: err.message
+                    }, window.location.origin);
+                }
+
+                // 5秒後にウィンドウを閉じる
+                setTimeout(() => {
+                    window.close();
+                }, 5000);
+            }
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,179 @@
+name: kurage
+description: "Kurage - A Mastodon client for Flutter."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
+#
+# バージョニングルールは RELEASING.md を参照。
+# 形式: MAJOR.MINOR.PATCH[-PRERELEASE]+BUILD (SemVer 2.0.0 + Flutter +build)
+# +BUILD は通し番号でリリースごとに +1。alpha/beta/rc/安定版を跨いでも連続。
+version: 1.0.0+32
+
+environment:
+  sdk: ^3.7.2
+
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`. Alternatively,
+# dependencies can be manually updated by changing the version numbers below to
+# the latest version available on pub.dev. To see which dependencies have newer
+# versions available, run `flutter pub outdated`.
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  http: ^1.0.0
+  shared_preferences: ^2.0.15
+  intl: ^0.20.2
+  path_provider: ^2.0.15
+  mime: ^2.0.0
+  http_parser: ^4.0.0
+  file_selector: ^1.1.0
+  # XFile (cross-platform ファイル抽象) を mastodon_api.dart 等で直接参照。
+  # image_picker / file_selector 経由で transitive に入っているが、ライブラリ
+  # 層で型として持つので明示宣言する。
+  cross_file: ^0.3.4+1
+  # 設定バックアップのエクスポートで、モバイルは共有シート経由でファイルを
+  # 書き出す (file_selector の保存ダイアログがモバイル非対応のため)。
+  share_plus: ^13.1.0
+  # Web / デスクトップで投稿画面へ画像等をドラッグ&ドロップ添付するため。
+  desktop_drop: ^0.7.1
+  # デスクトップ (Windows/macOS/Linux) で投稿画面にクリップボードの画像を
+  # 貼り付け添付するため (`Pasteboard.image` を Ctrl/Cmd+V で pull)。Web は
+  # ブラウザの paste イベント (lib/services/clipboard_image_web.dart) で取得
+  # するので pasteboard は使わない (pasteboard の Web パスは async Clipboard
+  # API 依存で実質 Chrome 限定なため)。
+  pasteboard: ^0.5.0
+  url_launcher: ^6.1.7
+  flutter_html: ^3.0.0
+  # MFM 由来 HTML (blockquote 等) を構造解析するため。flutter_html 経由で
+  # transitive に来るが、直接使うので明示宣言。
+  html: ^0.15.4
+  # Web 実装 (auth_service_web / sse_client_web 等) の DOM / EventSource 操作。
+  # dart:html は deprecated のため package:web + dart:js_interop を使う。
+  web: ^1.1.1
+  flutter_riverpod: ^2.0.0
+  cached_network_image: ^3.2.3
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  # SSE (Server-Sent Events): 以前は `eventsource ^0.4.0` を使っていたが、
+  # これが `http ^0.13` を要求して http 1.x 化 (google_fonts ^6.x の前提) を
+  # ブロックしていたため撤去。Web はブラウザ native EventSource、Mobile/Desktop
+  # は dart:io HttpClient ベースの自前パーサ (lib/services/sse_client_io.dart)。
+  # 日本語フォント (Web/デスクトップで漢字が中国語字形になる Han 統合対策)。
+  # 実行時に Google CDN から取得しキャッシュ。fontFamilyFallback で CJK のみに
+  # 適用 (main.dart _buildTheme)。モバイルは端末フォントで正しく出るので未使用。
+  google_fonts: ^8.1.0
+  flutter_appauth:
+    git:
+      url: https://github.com/MaikuB/flutter_appauth.git
+      ref: master
+      path: flutter_appauth
+
+  scrollable_positioned_list: ^0.3.8
+  permission_handler: ^12.0.0+1
+  video_player: ^2.8.0
+  chewie: ^1.14.1
+  image_picker: ^1.0.4
+  firebase_core: ^4.9.0
+  firebase_messaging: ^16.2.2
+  firebase_crashlytics: ^5.2.2
+  # 利用状況解析 (GA4)。Web + Android で有効化 (desktop/iOS は Firebase 非対応)。
+  # 送信は集計用の真偽値/件数/enum のみ。instance URL / 投稿 ID 等の個人特定・
+  # 追跡可能情報は一切載せない (lib/services/analytics_service.dart)。
+  # オプトアウト可 (設定「利用状況の解析を送信」、既定 ON)。
+  firebase_analytics: ^12.0.0
+  # Web / デスクトップのエラー収集 (Crashlytics は Web/desktop 非対応のため)。
+  # モバイルは従来どおり Crashlytics。Sentry の init は main.dart で web/desktop
+  # 限定なので、モバイルの FlutterError.onError 所有とは排他になる。
+  sentry_flutter: ^9.21.0
+  package_info_plus: ^10.1.0
+  flutter_local_notifications: ^18.0.1
+  crypto: ^3.0.3
+  wakelock_plus: ^1.6.1
+  local_auth: ^3.0.1
+  flutter_secure_storage: ^10.3.1
+  emoji_picker_flutter: ^4.3.0
+  # アプリ表示中 (フォアグラウンド) の効果音再生。通知受信 / 投稿完了 /
+  # 引っ張って更新の 3 イベントで assets/sounds/ の短い音を鳴らす
+  # (lib/services/sound_service.dart)。全 6 プラットフォーム公式対応。
+  audioplayers: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+  # tool/gen_windows_icon.dart が Windows 用 .ico を生成するのに使う
+  # (flutter_launcher_icons は Windows 非対応のため)。
+  image: ^4.9.1
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+
+  # To add assets to your application, add an assets section, like this:
+  assets:
+    - web/auth/
+    - assets/icon/
+    # 効果音 (通知受信 / 投稿完了 / 引っ張って更新)。ユーザーが
+    # notification.mp3 / post.mp3 / refresh.mp3 を配置する。
+    # 宣言したディレクトリが存在しないとビルドが落ちるため、
+    # assets/sounds/README.md でディレクトリを実在させている。
+    - assets/sounds/
+
+# Flutter launcher icons configuration
+# (0.13+ で設定キーが `flutter_icons` から `flutter_launcher_icons` に改名された)
+flutter_launcher_icons:
+  android: true            # Android のアイコンを生成
+  ios: true                # iOS のアイコンを生成
+  # Web の favicon (192/512) + maskable + PWA 表示用カラー。
+  # background_color / theme_color は Android アダプティブアイコン背景と
+  # 揃えて (= #0A0620) ブランド統一感を出す。
+  web:
+    generate: true
+    image_path: "assets/icon/kurage_icon.png"
+    background_color: "#0A0620"
+    theme_color: "#0A0620"
+  image_path: "assets/icon/kurage_icon.png"
+
+  # Android 8+ のアダプティブアイコン (mipmap-anydpi-v26)。
+  # これを設定しないと、ラウンドマスクを使うランチャーが四角アイコンの周囲に
+  # 白い余白を入れて表示してしまう。背景色を元アイコンと同じ濃紺に揃えて
+  # マスクの外周まで途切れなく埋める。
+  #
+  # foreground は元アイコンの中身をセーフゾーン (内側 66%) に収まるよう
+  # 70% に縮小し、外周に同色 (#0A0620) の余白を入れて作った別画像。
+  # 元の kurage_icon.png をそのまま使うと、マスクでクラゲの端が
+  # 切り取られてしまうため。
+  adaptive_icon_background: "#0A0620"
+  adaptive_icon_foreground: "assets/icon/kurage_icon_foreground.png"
+  min_sdk_android: 21

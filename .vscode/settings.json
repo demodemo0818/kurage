@@ -1,0 +1,6 @@
+{
+    // web-server デバイスは常時使えるが拡張ではデフォルト非表示なので、常に表示する。
+    // これで launch.json の "deviceId": "web-server" 構成 (F5) が
+    // 「Device web-server was not found」にならない。
+    "dart.flutterShowWebServerDevice": "always"
+}
