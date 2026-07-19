@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/l10n.dart';
 import '../providers/auth_provider.dart';
 import 'user_avatar.dart';
 
@@ -46,21 +47,20 @@ class ColumnHeader extends ConsumerWidget {
     'notifications': Icons.notifications,
   };
 
-  static const _timelineTypeLabels = {
-    'home': 'ホーム',
-    'local': 'ローカル',
-    'federated': '連合',
-    'favourites': 'お気に入り',
-    'bookmarks': 'ブックマーク',
-    'notifications': '通知',
-  };
-
   String _getTimelineTypeLabel(String type) {
     if (type.startsWith('list_')) {
       final listId = type.substring(5);
-      return listNames[listId] ?? 'リスト';
+      return listNames[listId] ?? l10n.timelineList;
     }
-    return _timelineTypeLabels[type] ?? type;
+    return switch (type) {
+      'home' => l10n.timelineHome,
+      'local' => l10n.timelineLocal,
+      'federated' => l10n.timelineFederated,
+      'favourites' => l10n.timelineFavourites,
+      'bookmarks' => l10n.timelineBookmarks,
+      'notifications' => l10n.timelineNotifications,
+      _ => type,
+    };
   }
 
   IconData _getTimelineTypeIcon(String type) {
@@ -162,7 +162,7 @@ class ColumnHeader extends ConsumerWidget {
                 child: Row(children: children),
               ),
               IconButton(
-                tooltip: '更新',
+                tooltip: context.l10n.refresh,
                 icon: const Icon(Icons.refresh),
                 iconSize: 18,
                 visualDensity: VisualDensity.compact,
@@ -174,7 +174,7 @@ class ColumnHeader extends ConsumerWidget {
                 onPressed: onRefresh,
               ),
               PopupMenuButton<String>(
-                tooltip: 'カラム操作',
+                tooltip: context.l10n.columnActionsTooltip,
                 icon: const Icon(Icons.more_vert, size: 18),
                 padding: EdgeInsets.zero,
                 onSelected: (v) {
@@ -187,14 +187,14 @@ class ColumnHeader extends ConsumerWidget {
                       break;
                   }
                 },
-                itemBuilder: (_) => const [
+                itemBuilder: (_) => [
                   PopupMenuItem(
                     value: 'edit',
                     child: Row(
                       children: [
-                        Icon(Icons.tune, size: 18),
-                        SizedBox(width: 8),
-                        Text('カラムを編集'),
+                        const Icon(Icons.tune, size: 18),
+                        const SizedBox(width: 8),
+                        Text(context.l10n.columnEdit),
                       ],
                     ),
                   ),
@@ -202,9 +202,9 @@ class ColumnHeader extends ConsumerWidget {
                     value: 'delete',
                     child: Row(
                       children: [
-                        Icon(Icons.delete_outline, size: 18),
-                        SizedBox(width: 8),
-                        Text('このカラムを削除'),
+                        const Icon(Icons.delete_outline, size: 18),
+                        const SizedBox(width: 8),
+                        Text(context.l10n.columnDelete),
                       ],
                     ),
                   ),

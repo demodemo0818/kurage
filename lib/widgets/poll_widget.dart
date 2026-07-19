@@ -1,6 +1,7 @@
 // lib/widgets/poll_widget.dart
 
 import 'package:flutter/material.dart';
+import '../l10n/l10n.dart';
 import '../models/poll.dart';
 import '../services/mastodon_api.dart' as api;
 
@@ -73,7 +74,7 @@ class _PollWidgetState extends State<PollWidget> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('投票に失敗しました: $e')),
+          SnackBar(content: Text(context.l10n.pollVoteFailed('$e'))),
         );
       }
     } finally {
@@ -151,7 +152,7 @@ class _PollWidgetState extends State<PollWidget> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${option.votesCount ?? 0}票',
+                      context.l10n.pollVotesCount(option.votesCount ?? 0),
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -208,7 +209,7 @@ class _PollWidgetState extends State<PollWidget> {
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('投票'),
+                      : Text(context.l10n.pollVote),
                 ),
                 const SizedBox(width: 12),
               ],
@@ -218,14 +219,14 @@ class _PollWidgetState extends State<PollWidget> {
                   children: [
                     if (widget.readOnly && !showResults)
                       Text(
-                        '相手サーバー表示中は投票できません',
+                        context.l10n.pollCannotVoteRemote,
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade600,
                         ),
                       ),
                     Text(
-                      '$totalVotes人が投票',
+                      context.l10n.pollPeopleVoted(totalVotes),
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -235,7 +236,7 @@ class _PollWidgetState extends State<PollWidget> {
                     if (_poll.expiresAt case final expiresAt?)
                       if (expiresAt.isAfter(DateTime.now()))
                         Text(
-                          _formatTimeRemaining(expiresAt),
+                          _formatTimeRemaining(context, expiresAt),
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade600,
@@ -243,7 +244,7 @@ class _PollWidgetState extends State<PollWidget> {
                         )
                       else
                         Text(
-                          '投票終了',
+                          context.l10n.pollEnded,
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade600,
@@ -261,16 +262,16 @@ class _PollWidgetState extends State<PollWidget> {
     );
   }
 
-  String _formatTimeRemaining(DateTime expiresAt) {
+  String _formatTimeRemaining(BuildContext context, DateTime expiresAt) {
     final remaining = expiresAt.difference(DateTime.now());
     if (remaining.inDays > 0) {
-      return '残り${remaining.inDays}日';
+      return context.l10n.pollRemainingDays(remaining.inDays);
     } else if (remaining.inHours > 0) {
-      return '残り${remaining.inHours}時間';
+      return context.l10n.pollRemainingHours(remaining.inHours);
     } else if (remaining.inMinutes > 0) {
-      return '残り${remaining.inMinutes}分';
+      return context.l10n.pollRemainingMinutes(remaining.inMinutes);
     } else {
-      return '残り1分未満';
+      return context.l10n.pollRemainingLessThanMinute;
     }
   }
 }

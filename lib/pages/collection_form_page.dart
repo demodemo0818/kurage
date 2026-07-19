@@ -9,6 +9,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n.dart';
 import '../models/auth_account.dart';
 import '../models/collection.dart';
 import '../services/mastodon_api.dart';
@@ -82,7 +83,7 @@ class _CollectionFormPageState extends State<CollectionFormPage> {
   Future<void> _save() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      showErrorSnackBar(context, '名前を入力してください');
+      showErrorSnackBar(context, context.l10n.collectionNameRequired);
       return;
     }
     setState(() => _saving = true);
@@ -122,7 +123,7 @@ class _CollectionFormPageState extends State<CollectionFormPage> {
       Navigator.pop(context, result);
     } catch (e) {
       if (!mounted) return;
-      showErrorSnackBar(context, '保存できませんでした: $e');
+      showErrorSnackBar(context, context.l10n.collectionSaveFailed('$e'));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -132,7 +133,9 @@ class _CollectionFormPageState extends State<CollectionFormPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEdit ? 'コレクションを編集' : 'コレクションを作成'),
+        title: Text(_isEdit
+            ? context.l10n.collectionEditTitle
+            : context.l10n.collectionCreateTitle),
         actions: [
           TextButton(
             onPressed: _saving ? null : _save,
@@ -143,7 +146,7 @@ class _CollectionFormPageState extends State<CollectionFormPage> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : Text(
-                    '保存',
+                    context.l10n.save,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.bold,
@@ -158,18 +161,18 @@ class _CollectionFormPageState extends State<CollectionFormPage> {
           children: [
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: '名前',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.l10n.collectionNameLabel,
+                border: const OutlineInputBorder(),
               ),
               maxLength: _nameMax,
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: '説明 (任意)',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.l10n.collectionDescriptionLabel,
+                border: const OutlineInputBorder(),
                 alignLabelWithHint: true,
               ),
               maxLines: 3,
@@ -178,28 +181,28 @@ class _CollectionFormPageState extends State<CollectionFormPage> {
             const SizedBox(height: 8),
             TextField(
               controller: _tagController,
-              decoration: const InputDecoration(
-                labelText: '関連ハッシュタグ (任意、# は不要)',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.l10n.collectionHashtagLabel,
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _languageController,
-              decoration: const InputDecoration(
-                labelText: '言語コード (任意、例: ja)',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.l10n.collectionLanguageLabel,
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 8),
             SwitchListTile(
-              title: const Text('閲覧注意 (sensitive)'),
+              title: Text(context.l10n.collectionSensitiveLabel),
               value: _sensitive,
               onChanged: (v) => setState(() => _sensitive = v),
             ),
             SwitchListTile(
-              title: const Text('見つけやすくする (discoverable)'),
-              subtitle: const Text('ディレクトリや提案に表示されることを許可'),
+              title: Text(context.l10n.collectionDiscoverableLabel),
+              subtitle: Text(context.l10n.collectionDiscoverableSubtitle),
               value: _discoverable,
               onChanged: (v) => setState(() => _discoverable = v),
             ),

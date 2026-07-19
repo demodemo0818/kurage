@@ -209,5 +209,106 @@
   "reactorsTitle": "リアクションした人",
   "reactorsNoBoosts": "まだ誰もブーストしていません",
   "reactorsNoFavourites": "まだ誰もお気に入りに追加していません",
-  "reactorsFetchFailed": "一覧を取得できませんでした"
+  "reactorsFetchFailed": "一覧を取得できませんでした",
+
+  "refresh": "更新",
+  "read": "既読",
+  "unread": "未読",
+  "markAsRead": "既読にする",
+
+  "pollVoteFailed": "投票に失敗しました: {error}",
+  "@pollVoteFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "pollVotesCount": "{count}票",
+  "@pollVotesCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pollVote": "投票",
+  "pollCannotVoteRemote": "相手サーバー表示中は投票できません",
+  "pollPeopleVoted": "{count}人が投票",
+  "@pollPeopleVoted": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pollEnded": "投票終了",
+  "pollRemainingDays": "残り{count}日",
+  "@pollRemainingDays": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pollRemainingHours": "残り{count}時間",
+  "@pollRemainingHours": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pollRemainingMinutes": "残り{count}分",
+  "@pollRemainingMinutes": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "pollRemainingLessThanMinute": "残り1分未満",
+
+  "announcementsFetchFailed": "お知らせの取得に失敗しました\n{error}",
+  "@announcementsFetchFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "announcementsEmpty": "現在お知らせはありません",
+  "announcementsMarkReadFailed": "既読化に失敗しました",
+  "reactionFailed": "リアクション操作に失敗しました",
+  "reactionAddFailed": "リアクション追加に失敗しました",
+
+  "collectionNameRequired": "名前を入力してください",
+  "collectionSaveFailed": "保存できませんでした: {error}",
+  "@collectionSaveFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "collectionEditTitle": "コレクションを編集",
+  "collectionCreateTitle": "コレクションを作成",
+  "collectionNameLabel": "名前",
+  "collectionDescriptionLabel": "説明 (任意)",
+  "collectionHashtagLabel": "関連ハッシュタグ (任意、# は不要)",
+  "collectionLanguageLabel": "言語コード (任意、例: ja)",
+  "collectionSensitiveLabel": "閲覧注意 (sensitive)",
+  "collectionDiscoverableLabel": "見つけやすくする (discoverable)",
+  "collectionDiscoverableSubtitle": "ディレクトリや提案に表示されることを許可",
+
+  "linkOpenFailed": "リンクを開けませんでした",
+  "linkOpenFailedWithError": "リンクを開けませんでした: {error}",
+  "@linkOpenFailedWithError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "creditsTitle": "ライセンス・クレジット",
+  "creditsMaterialsSection": "素材クレジット",
+  "creditsSoundEffects": "効果音: OtoLogic",
+  "creditsSoundEffectsBody": "通知・投稿・引っ張って更新の効果音は OtoLogic の素材を使用しています。\nCC BY 4.0 / https://otologic.jp",
+  "creditsCcByFullText": "CC BY 4.0 ライセンス全文",
+  "creditsOpenSourceSection": "オープンソース",
+  "creditsOssLicenses": "オープンソースライセンス",
+  "creditsOssLicensesSubtitle": "本アプリが使用しているライブラリ等のライセンス一覧",
+
+  "timelineHome": "ホーム",
+  "timelineLocal": "ローカル",
+  "timelineFederated": "連合",
+  "timelineFavourites": "お気に入り",
+  "timelineBookmarks": "ブックマーク",
+  "timelineNotifications": "通知",
+  "timelineList": "リスト",
+  "columnActionsTooltip": "カラム操作",
+  "columnEdit": "カラムを編集",
+  "columnDelete": "このカラムを削除"
 }

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/l10n.dart';
 import '../utils/snackbar_helpers.dart';
 import '../widgets/settings_section.dart';
 
@@ -23,11 +24,11 @@ class CreditsPage extends StatelessWidget {
         mode: LaunchMode.externalApplication,
       );
       if (!ok && context.mounted) {
-        showErrorSnackBar(context, 'リンクを開けませんでした');
+        showErrorSnackBar(context, context.l10n.linkOpenFailed);
       }
     } catch (e) {
       if (context.mounted) {
-        showErrorSnackBar(context, 'リンクを開けませんでした: $e');
+        showErrorSnackBar(context, context.l10n.linkOpenFailedWithError('$e'));
       }
     }
   }
@@ -35,26 +36,23 @@ class CreditsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('ライセンス・クレジット')),
+      appBar: AppBar(title: Text(context.l10n.creditsTitle)),
       body: SettingsListView(
         children: [
           SettingsSection(
-            title: '素材クレジット',
+            title: context.l10n.creditsMaterialsSection,
             children: [
               ListTile(
                 leading: const Icon(Icons.music_note, color: Colors.orange),
-                title: const Text('効果音: OtoLogic'),
-                subtitle: const Text(
-                  '通知・投稿・引っ張って更新の効果音は OtoLogic の素材を'
-                  '使用しています。\nCC BY 4.0 / https://otologic.jp',
-                ),
+                title: Text(context.l10n.creditsSoundEffects),
+                subtitle: Text(context.l10n.creditsSoundEffectsBody),
                 isThreeLine: true,
                 trailing: const Icon(Icons.open_in_new, size: 18),
                 onTap: () => _open(context, 'https://otologic.jp'),
               ),
               ListTile(
                 leading: const Icon(Icons.copyright, color: Colors.grey),
-                title: const Text('CC BY 4.0 ライセンス全文'),
+                title: Text(context.l10n.creditsCcByFullText),
                 subtitle: const Text(
                   'https://creativecommons.org/licenses/by/4.0/',
                 ),
@@ -67,14 +65,12 @@ class CreditsPage extends StatelessWidget {
             ],
           ),
           SettingsSection(
-            title: 'オープンソース',
+            title: context.l10n.creditsOpenSourceSection,
             children: [
               ListTile(
                 leading: const Icon(Icons.code, color: Colors.blue),
-                title: const Text('オープンソースライセンス'),
-                subtitle: const Text(
-                  '本アプリが使用しているライブラリ等のライセンス一覧',
-                ),
+                title: Text(context.l10n.creditsOssLicenses),
+                subtitle: Text(context.l10n.creditsOssLicensesSubtitle),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () async {
                   final info = await PackageInfo.fromPlatform();

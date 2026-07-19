@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../widgets/network_image_x.dart';
 
+import '../l10n/l10n.dart';
 import '../models/announcement.dart';
 import '../models/auth_account.dart';
 import '../providers/announcements_provider.dart';
@@ -38,11 +39,11 @@ class AnnouncementsPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: onDeckBack == null ? null : BackButton(onPressed: onDeckBack),
-        title: const Text('サーバーからのお知らせ'),
+        title: Text(context.l10n.announcementsTooltip),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: '更新',
+            tooltip: context.l10n.refresh,
             onPressed: () =>
                 ref.read(announcementsProvider.notifier).refresh(),
           ),
@@ -58,14 +59,14 @@ class AnnouncementsPage extends ConsumerWidget {
               children: [
                 const Icon(Icons.error_outline, size: 48, color: Colors.grey),
                 const SizedBox(height: 12),
-                Text('お知らせの取得に失敗しました\n$e',
+                Text(context.l10n.announcementsFetchFailed('$e'),
                     textAlign: TextAlign.center),
                 const SizedBox(height: 16),
                 FilledButton.icon(
                   onPressed: () =>
                       ref.read(announcementsProvider.notifier).refresh(),
                   icon: const Icon(Icons.refresh),
-                  label: const Text('再試行'),
+                  label: Text(context.l10n.retry),
                 ),
               ],
             ),
@@ -78,13 +79,13 @@ class AnnouncementsPage extends ConsumerWidget {
               onRefresh: () =>
                   ref.read(announcementsProvider.notifier).refresh(),
               child: ListView(
-                children: const [
-                  SizedBox(height: 120),
+                children: [
+                  const SizedBox(height: 120),
                   Center(
                     child: Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text('現在お知らせはありません',
-                          style: TextStyle(color: Colors.grey)),
+                      padding: const EdgeInsets.all(24),
+                      child: Text(context.l10n.announcementsEmpty,
+                          style: const TextStyle(color: Colors.grey)),
                     ),
                   ),
                 ],
@@ -184,18 +185,19 @@ class _AnnouncementCard extends ConsumerWidget {
                             .dismiss(announcement);
                       } catch (_) {
                         if (context.mounted) {
-                          showErrorSnackBar(context, '既読化に失敗しました');
+                          showErrorSnackBar(
+                              context, context.l10n.announcementsMarkReadFailed);
                         }
                       }
                     },
                     icon: const Icon(Icons.done, size: 18),
-                    label: const Text('既読にする'),
+                    label: Text(context.l10n.markAsRead),
                   )
                 else
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Text(
-                      '既読',
+                      context.l10n.read,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -269,7 +271,7 @@ class _Header extends StatelessWidget {
               border: Border.all(color: accent.withValues(alpha: 0.6)),
             ),
             child: Text(
-              '未読',
+              context.l10n.unread,
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
@@ -336,7 +338,7 @@ class _ReactionChip extends ConsumerWidget {
           }
         } catch (_) {
           if (context.mounted) {
-            showErrorSnackBar(context, 'リアクション操作に失敗しました');
+            showErrorSnackBar(context, context.l10n.reactionFailed);
           }
         }
       },
@@ -441,7 +443,8 @@ class _AddReactionChip extends ConsumerWidget {
                       .addReaction(announcement, name);
                 } catch (_) {
                   if (context.mounted) {
-                    showErrorSnackBar(context, 'リアクション追加に失敗しました');
+                    showErrorSnackBar(
+                        context, context.l10n.reactionAddFailed);
                   }
                 }
               },
