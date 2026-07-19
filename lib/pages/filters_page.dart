@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/l10n.dart';
 import '../models/auth_account.dart';
 import '../models/filter.dart';
 import '../providers/auth_provider.dart';
@@ -130,17 +131,17 @@ class _FiltersPageState extends ConsumerState<FiltersPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('フィルタを削除'),
-        content: Text('「${filter.title}」を削除します。'),
+        title: Text(ctx.l10n.filterDeleteTitle),
+        content: Text(ctx.l10n.filterDeleteMessage(filter.title)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('削除'),
+            child: Text(ctx.l10n.delete),
           ),
         ],
       ),
@@ -159,10 +160,10 @@ class _FiltersPageState extends ConsumerState<FiltersPage> {
       });
     } on FiltersNotSupportedException catch (_) {
       if (!mounted) return;
-      showErrorSnackBar(context, 'このサーバはフィルタ機能に未対応です');
+      showErrorSnackBar(context, context.l10n.filterUnsupported);
     } catch (e) {
       if (!mounted) return;
-      showErrorSnackBar(context, 'フィルタの削除に失敗しました: $e');
+      showErrorSnackBar(context, context.l10n.filterDeleteFailed('$e'));
     }
   }
 
@@ -171,7 +172,7 @@ class _FiltersPageState extends ConsumerState<FiltersPage> {
     final accounts = ref.watch(authProvider).accounts;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('フィルタ管理')),
+      appBar: AppBar(title: Text(context.l10n.filtersTitle)),
       body: Column(
         children: [
           if (accounts.length > 1) _buildAccountSelector(accounts),
@@ -184,7 +185,7 @@ class _FiltersPageState extends ConsumerState<FiltersPage> {
               heroTag: null,
               onPressed: _createFilter,
               icon: const Icon(Icons.add),
-              label: const Text('フィルタを作成'),
+              label: Text(context.l10n.filterCreate),
             ),
     );
   }
@@ -224,10 +225,10 @@ class _FiltersPageState extends ConsumerState<FiltersPage> {
 
   Widget _buildBody() {
     if (_selectedAccount == null) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text('アカウントが登録されていません'),
+          padding: const EdgeInsets.all(24),
+          child: Text(context.l10n.noAccountsRegistered),
         ),
       );
     }
@@ -243,13 +244,13 @@ class _FiltersPageState extends ConsumerState<FiltersPage> {
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 12),
-              const Text('フィルタを取得できませんでした'),
+              Text(context.l10n.filtersFetchFailed),
               const SizedBox(height: 4),
               Text(_error!, textAlign: TextAlign.center),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _loadFilters,
-                child: const Text('再試行'),
+                child: Text(context.l10n.retry),
               ),
             ],
           ),
@@ -269,11 +270,11 @@ class _FiltersPageState extends ConsumerState<FiltersPage> {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               const SizedBox(height: 12),
-              const Text('フィルタがまだありません'),
+              Text(context.l10n.filtersEmpty),
               const SizedBox(height: 4),
-              const Text(
-                '右下の「+」ボタンから作成できます',
-                style: TextStyle(fontSize: 12),
+              Text(
+                context.l10n.filtersEmptyHint,
+                style: const TextStyle(fontSize: 12),
               ),
             ],
           ),
@@ -294,12 +295,12 @@ class _FiltersPageState extends ConsumerState<FiltersPage> {
                   : Icons.filter_alt_outlined,
             ),
             title: Text(
-              f.title.isEmpty ? '(無題)' : f.title,
+              f.title.isEmpty ? context.l10n.untitled : f.title,
               style: TextStyle(
                 decoration: f.isExpired ? TextDecoration.lineThrough : null,
               ),
             ),
-            subtitle: Text(_subtitleFor(f)),
+            subtitle: Text(_subtitleFor(context, f)),
             trailing: PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
               onSelected: (action) {
@@ -312,20 +313,22 @@ class _FiltersPageState extends ConsumerState<FiltersPage> {
                     break;
                 }
               },
-              itemBuilder: (_) => const [
+              itemBuilder: (_) => [
                 PopupMenuItem(
                   value: 'edit',
                   child: ListTile(
-                    leading: Icon(Icons.edit_outlined),
-                    title: Text('編集'),
+                    leading: const Icon(Icons.edit_outlined),
+                    title: Text(context.l10n.edit),
                     dense: true,
                   ),
                 ),
                 PopupMenuItem(
                   value: 'delete',
                   child: ListTile(
-                    leading: Icon(Icons.delete_outline, color: Colors.red),
-                    title: Text('削除', style: TextStyle(color: Colors.red)),
+                    leading:
+                        const Icon(Icons.delete_outline, color: Colors.red),
+                    title: Text(context.l10n.delete,
+                        style: const TextStyle(color: Colors.red)),
                     dense: true,
                   ),
                 ),
@@ -338,15 +341,15 @@ class _FiltersPageState extends ConsumerState<FiltersPage> {
     );
   }
 
-  String _subtitleFor(MastodonFilter f) {
+  String _subtitleFor(BuildContext context, MastodonFilter f) {
     final parts = <String>[];
-    parts.add('${f.keywords.length} キーワード');
+    parts.add(context.l10n.filterKeywordsCount(f.keywords.length));
     final ctxLabels = f.context
         .map((c) => kFilterContextLabels[c] ?? c)
         .join(', ');
     if (ctxLabels.isNotEmpty) parts.add(ctxLabels);
     parts.add(kFilterActionLabels[f.filterAction] ?? f.filterAction);
-    if (f.isExpired) parts.add('期限切れ');
+    if (f.isExpired) parts.add(context.l10n.filterExpired);
     return parts.join(' / ');
   }
 }

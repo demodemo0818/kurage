@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../l10n/l10n.dart';
 import '../widgets/settings_section.dart';
 import 'column_settings_page.dart';
 import 'appearance_page.dart';
@@ -28,92 +29,92 @@ class SettingsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         leading: onDeckBack == null ? null : BackButton(onPressed: onDeckBack),
-        title: const Text('設定'),
+        title: Text(context.l10n.navSettings),
       ),
       body: SettingsListView(
         children: [
           SettingsSection(
-            title: 'アカウントとコンテンツ',
+            title: context.l10n.settingsAccountContentSection,
             children: [
               _navTile(
                 context,
                 icon: Icons.account_circle,
                 color: Colors.blue,
-                title: 'アカウント設定',
+                title: context.l10n.settingsAccountSettings,
                 builder: (_) => const AccountSettingsPage(),
               ),
               _navTile(
                 context,
                 icon: Icons.view_column,
                 color: Colors.teal,
-                title: 'カラム設定',
+                title: context.l10n.settingsColumnSettings,
                 builder: (_) => const ColumnSettingsPage(),
               ),
               _navTile(
                 context,
                 icon: Icons.list,
                 color: Colors.green,
-                title: 'リスト管理',
+                title: context.l10n.settingsListManagement,
                 builder: (_) => const ListManagementPage(),
               ),
               _navTile(
                 context,
                 icon: Icons.filter_alt_outlined,
                 color: Colors.deepOrange,
-                title: 'フィルタ管理',
+                title: context.l10n.filtersTitle,
                 builder: (_) => const FiltersPage(),
               ),
               _navTile(
                 context,
                 icon: Icons.block,
                 color: Colors.redAccent,
-                title: 'ミュート・ブロック',
+                title: context.l10n.settingsBlockedMuted,
                 builder: (_) => const BlockedMutedPage(),
               ),
               _navTile(
                 context,
                 icon: Icons.schedule,
                 color: Colors.orange,
-                title: '予約投稿管理',
+                title: context.l10n.settingsScheduledPosts,
                 builder: (_) => const ScheduledPostsPage(),
               ),
             ],
           ),
           SettingsSection(
-            title: 'アプリ',
+            title: context.l10n.settingsAppSection,
             children: [
               _navTile(
                 context,
                 icon: Icons.palette,
                 color: Colors.purple,
-                title: '外観設定',
+                title: context.l10n.settingsAppearance,
                 builder: (_) => const AppearanceSettingsPage(),
               ),
               _navTile(
                 context,
                 icon: Icons.settings_applications,
                 color: Colors.blueGrey,
-                title: 'アプリ設定',
+                title: context.l10n.settingsAppSettings,
                 builder: (_) => const AppSettingsPage(),
               ),
               _navTile(
                 context,
                 icon: Icons.lock_outline,
                 color: Colors.red.shade400,
-                title: 'アプリロック',
+                title: context.l10n.appLockTitle,
                 builder: (_) => const AppLockSettingsPage(),
               ),
             ],
           ),
           SettingsSection(
-            title: 'アプリ情報',
+            title: context.l10n.settingsAppInfoSection,
             children: [
               const _VersionTile(),
               _navTile(
                 context,
                 icon: Icons.description_outlined,
                 color: Colors.brown,
-                title: 'ライセンス・クレジット',
+                title: context.l10n.creditsTitle,
                 builder: (_) => const CreditsPage(),
               ),
             ],
@@ -172,7 +173,7 @@ class _VersionTileState extends State<_VersionTile> {
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _versionLabel = '不明');
+      setState(() => _versionLabel = l10n.unknown);
     }
   }
 
@@ -181,8 +182,9 @@ class _VersionTileState extends State<_VersionTile> {
     final loading = _versionLabel.isEmpty;
     return ListTile(
       leading: const Icon(Icons.info_outline, color: Colors.grey),
-      title: const Text('バージョン'),
-      subtitle: Text(loading ? '取得中…' : 'Kurage $_versionLabel'),
+      title: Text(context.l10n.settingsVersion),
+      subtitle: Text(
+          loading ? context.l10n.settingsVersionLoading : 'Kurage $_versionLabel'),
       trailing: const Icon(Icons.content_copy, size: 20),
       onTap: loading
           ? null
@@ -192,9 +194,9 @@ class _VersionTileState extends State<_VersionTile> {
               );
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('バージョンをコピーしました'),
-                  duration: Duration(seconds: 2),
+                SnackBar(
+                  content: Text(context.l10n.versionCopied),
+                  duration: const Duration(seconds: 2),
                 ),
               );
             },

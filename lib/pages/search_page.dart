@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/network_image_x.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/l10n.dart';
 import '../models/auth_account.dart';
 import '../models/status.dart';
 import '../models/emoji.dart';
@@ -233,9 +234,9 @@ class _SearchPageState extends ConsumerState<SearchPage>
         // glyph を行ボックスの中央に置く。これで Xperia 等での見切れを覆いつつ、
         // leading の戻る矢印とも縦位置が揃う。`forceStrutHeight` を使うと glyph が
         // 上寄りになって矢印と揃わなかったため、strut は使わず TextStyle 側で配る。
-        title: const Text(
-          '探索',
-          style: TextStyle(
+        title: Text(
+          context.l10n.searchExplore,
+          style: const TextStyle(
             height: 1.5,
             leadingDistribution: TextLeadingDistribution.even,
           ),
@@ -261,7 +262,7 @@ class _SearchPageState extends ConsumerState<SearchPage>
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: '検索...',
+                    hintText: context.l10n.searchHint,
                     prefixIcon: const Icon(Icons.search),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(25),
@@ -277,11 +278,11 @@ class _SearchPageState extends ConsumerState<SearchPage>
               // タブバー
               TabBar(
                 controller: _tabController,
-                tabs: const [
-                  Tab(text: '投稿'),
-                  Tab(text: 'ハッシュタグ'),
-                  Tab(text: 'ユーザー'),
-                  Tab(text: 'ニュース'),
+                tabs: [
+                  Tab(text: context.l10n.searchTabPosts),
+                  Tab(text: context.l10n.hashtags),
+                  Tab(text: context.l10n.searchTabUsers),
+                  Tab(text: context.l10n.searchTabNews),
                 ],
               ),
             ],
@@ -370,9 +371,9 @@ class _SearchPageState extends ConsumerState<SearchPage>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                '検索に使うアカウント',
-                style: TextStyle(
+              Text(
+                context.l10n.searchAccountLabel,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -453,7 +454,7 @@ class _SearchPageState extends ConsumerState<SearchPage>
     }
     
     if (_trendingPosts.isEmpty) {
-      return const Center(child: Text('注目の投稿がありません'));
+      return Center(child: Text(context.l10n.searchNoTrendingPosts));
     }
 
     final layout = ref.watch(settingsProvider.select((s) => s.timelineLayout));
@@ -488,7 +489,7 @@ class _SearchPageState extends ConsumerState<SearchPage>
     }
     
     if (_trendingHashtags.isEmpty) {
-      return const Center(child: Text('注目のハッシュタグがありません'));
+      return Center(child: Text(context.l10n.searchNoTrendingHashtags));
     }
 
     return RefreshIndicator(
@@ -517,7 +518,7 @@ class _SearchPageState extends ConsumerState<SearchPage>
               ),
             ),
             subtitle: Text(
-              '${hashtag.uses}人が話題にしています',
+              context.l10n.searchTalkingCount(hashtag.uses),
               style: TextStyle(fontSize: settings.fontSize * 0.9),
             ),
             trailing: hashtag.history.isNotEmpty
@@ -549,7 +550,7 @@ class _SearchPageState extends ConsumerState<SearchPage>
     }
     
     if (_suggestedUsers.isEmpty) {
-      return const Center(child: Text('おすすめのユーザーがありません'));
+      return Center(child: Text(context.l10n.searchNoSuggestedUsers));
     }
 
     return RefreshIndicator(
@@ -643,7 +644,8 @@ class _SearchPageState extends ConsumerState<SearchPage>
                 ),
                 trailing: user.followersCount != null
                     ? Text(
-                        '${_formatNumber(user.followersCount!)}フォロワー',
+                        context.l10n.followersCountLabel(
+                            _formatNumber(user.followersCount!)),
                         style: TextStyle(
                           fontSize: settings.fontSize * 0.8,
                           color: Colors.grey,
@@ -670,7 +672,7 @@ class _SearchPageState extends ConsumerState<SearchPage>
     }
     
     if (_trendingNews.isEmpty) {
-      return const Center(child: Text('注目のニュースがありません'));
+      return Center(child: Text(context.l10n.searchNoTrendingNews));
     }
 
     return RefreshIndicator(
@@ -736,7 +738,7 @@ class _SearchPageState extends ConsumerState<SearchPage>
                             ),
                           const SizedBox(height: 8),
                           Text(
-                            '${news.uses}人がシェア',
+                            context.l10n.searchSharedCount(news.uses),
                             style: TextStyle(
                               fontSize: settings.fontSize * 0.8,
                               color: Colors.grey,
@@ -928,7 +930,7 @@ class _SearchResultsPageState extends ConsumerState<SearchResultsPage> {
       debugPrint('Search error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('検索エラー: $e')),
+          SnackBar(content: Text(context.l10n.searchError('$e'))),
         );
       }
     } finally {
@@ -944,7 +946,7 @@ class _SearchResultsPageState extends ConsumerState<SearchResultsPage> {
     
     return Scaffold(
       appBar: AppBar(
-        title: Text('検索: ${widget.query}'),
+        title: Text(context.l10n.searchResultsTitle(widget.query)),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -952,11 +954,11 @@ class _SearchResultsPageState extends ConsumerState<SearchResultsPage> {
               length: 3,
               child: Column(
                 children: [
-                  const TabBar(
+                  TabBar(
                     tabs: [
-                      Tab(text: '投稿'),
-                      Tab(text: 'アカウント'),
-                      Tab(text: 'ハッシュタグ'),
+                      Tab(text: context.l10n.searchTabPosts),
+                      Tab(text: context.l10n.searchTabAccounts),
+                      Tab(text: context.l10n.hashtags),
                     ],
                   ),
                   Expanded(
@@ -983,7 +985,7 @@ class _SearchResultsPageState extends ConsumerState<SearchResultsPage> {
             const Icon(Icons.search_off, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
             Text(
-              '「${widget.query}」に関する投稿が見つかりませんでした',
+              context.l10n.searchNoPostsFound(widget.query),
               style: const TextStyle(fontSize: 16, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
@@ -1019,7 +1021,7 @@ class _SearchResultsPageState extends ConsumerState<SearchResultsPage> {
             const Icon(Icons.person_search, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
             Text(
-              '「${widget.query}」に関するアカウントが見つかりませんでした',
+              context.l10n.searchNoAccountsFound(widget.query),
               style: const TextStyle(fontSize: 16, color: Colors.grey),
               textAlign: TextAlign.center,
             ),
@@ -1055,7 +1057,7 @@ class _SearchResultsPageState extends ConsumerState<SearchResultsPage> {
             const Icon(Icons.tag, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
             Text(
-              '「${widget.query}」に関するハッシュタグが見つかりませんでした',
+              context.l10n.searchNoHashtagsFound(widget.query),
               style: const TextStyle(fontSize: 16, color: Colors.grey),
               textAlign: TextAlign.center,
             ),

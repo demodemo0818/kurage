@@ -442,5 +442,133 @@
     "placeholders": {
       "label": {"type": "String"}
     }
+  },
+
+  "edit": "編集",
+  "unknown": "不明",
+  "untitled": "(無題)",
+  "noAccountsRegistered": "アカウントが登録されていません",
+  "durationSeconds": "{count}秒",
+  "@durationSeconds": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "filtersTitle": "フィルタ管理",
+  "filterDeleteTitle": "フィルタを削除",
+  "filterDeleteMessage": "「{title}」を削除します。",
+  "@filterDeleteMessage": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "filterUnsupported": "このサーバはフィルタ機能に未対応です",
+  "filterDeleteFailed": "フィルタの削除に失敗しました: {error}",
+  "@filterDeleteFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "filterCreate": "フィルタを作成",
+  "filtersFetchFailed": "フィルタを取得できませんでした",
+  "filtersEmpty": "フィルタがまだありません",
+  "filtersEmptyHint": "右下の「+」ボタンから作成できます",
+  "filterKeywordsCount": "{count} キーワード",
+  "@filterKeywordsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "filterExpired": "期限切れ",
+
+  "settingsAccountContentSection": "アカウントとコンテンツ",
+  "settingsAccountSettings": "アカウント設定",
+  "settingsColumnSettings": "カラム設定",
+  "settingsListManagement": "リスト管理",
+  "settingsBlockedMuted": "ミュート・ブロック",
+  "settingsScheduledPosts": "予約投稿管理",
+  "settingsAppSection": "アプリ",
+  "settingsAppearance": "外観設定",
+  "settingsAppSettings": "アプリ設定",
+  "settingsAppInfoSection": "アプリ情報",
+  "settingsVersion": "バージョン",
+  "settingsVersionLoading": "取得中…",
+  "versionCopied": "バージョンをコピーしました",
+
+  "appLockTitle": "アプリロック",
+  "appLockDisableTitle": "アプリロックを無効化",
+  "appLockDisableMessage": "PIN も削除されます。よろしいですか？",
+  "appLockDisableAction": "無効化",
+  "appLockTimeoutTitle": "自動ロックまでの時間",
+  "appLockImmediately": "即時",
+  "appLockEnableTitle": "アプリロックを有効にする",
+  "appLockEnableSubtitle": "起動時とバックグラウンド復帰時に PIN / 生体認証を要求します",
+  "appLockSettingsSection": "ロック設定",
+  "appLockChangePin": "PIN を変更",
+  "appLockUseBiometrics": "生体認証を使う",
+  "appLockBiometricsWebUnavailable": "Web 版では生体認証は使えません (PIN のみ)",
+  "appLockBiometricsDeviceUnavailable": "この端末では生体認証が利用できません",
+  "appLockBiometricsSubtitle": "指紋 / 顔認証で解除できるようにします",
+
+  "searchExplore": "探索",
+  "searchHint": "検索...",
+  "searchTabPosts": "投稿",
+  "searchTabUsers": "ユーザー",
+  "searchTabNews": "ニュース",
+  "searchTabAccounts": "アカウント",
+  "searchAccountLabel": "検索に使うアカウント",
+  "searchNoTrendingPosts": "注目の投稿がありません",
+  "searchNoTrendingHashtags": "注目のハッシュタグがありません",
+  "searchTalkingCount": "{count}人が話題にしています",
+  "@searchTalkingCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "searchNoSuggestedUsers": "おすすめのユーザーがありません",
+  "followersCountLabel": "{count}フォロワー",
+  "@followersCountLabel": {
+    "description": "count は 1.2万 のような整形済み文字列",
+    "placeholders": {
+      "count": {"type": "String"}
+    }
+  },
+  "searchNoTrendingNews": "注目のニュースがありません",
+  "searchSharedCount": "{count}人がシェア",
+  "@searchSharedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "searchError": "検索エラー: {error}",
+  "@searchError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "searchResultsTitle": "検索: {query}",
+  "@searchResultsTitle": {
+    "placeholders": {
+      "query": {"type": "String"}
+    }
+  },
+  "searchNoPostsFound": "「{query}」に関する投稿が見つかりませんでした",
+  "@searchNoPostsFound": {
+    "placeholders": {
+      "query": {"type": "String"}
+    }
+  },
+  "searchNoAccountsFound": "「{query}」に関するアカウントが見つかりませんでした",
+  "@searchNoAccountsFound": {
+    "placeholders": {
+      "query": {"type": "String"}
+    }
+  },
+  "searchNoHashtagsFound": "「{query}」に関するハッシュタグが見つかりませんでした",
+  "@searchNoHashtagsFound": {
+    "placeholders": {
+      "query": {"type": "String"}
+    }
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/l10n.dart';
 import '../providers/settings_provider.dart';
 import '../services/app_lock_service.dart';
 import '../widgets/settings_section.dart';
@@ -58,16 +59,16 @@ class _AppLockSettingsPageState extends ConsumerState<AppLockSettingsPage> {
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('アプリロックを無効化'),
-        content: const Text('PIN も削除されます。よろしいですか？'),
+        title: Text(ctx.l10n.appLockDisableTitle),
+        content: Text(ctx.l10n.appLockDisableMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('無効化'),
+            child: Text(ctx.l10n.appLockDisableAction),
           ),
         ],
       ),
@@ -87,9 +88,9 @@ class _AppLockSettingsPageState extends ConsumerState<AppLockSettingsPage> {
     final selected = await showDialog<int>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text('自動ロックまでの時間'),
+        title: Text(context.l10n.appLockTimeoutTitle),
         children: [
-          for (final entry in _timeoutOptions.entries)
+          for (final entry in _timeoutOptions(context.l10n).entries)
             RadioListTile<int>(
               title: Text(entry.value),
               value: entry.key,
@@ -108,14 +109,14 @@ class _AppLockSettingsPageState extends ConsumerState<AppLockSettingsPage> {
     }
   }
 
-  static const Map<int, String> _timeoutOptions = {
-    0: '即時',
-    30: '30 秒',
-    60: '1 分',
-    300: '5 分',
-    900: '15 分',
-    1800: '30 分',
-  };
+  static Map<int, String> _timeoutOptions(AppLocalizations l10n) => {
+        0: l10n.appLockImmediately,
+        30: l10n.durationSeconds(30),
+        60: l10n.durationMinutes(1),
+        300: l10n.durationMinutes(5),
+        900: l10n.durationMinutes(15),
+        1800: l10n.durationMinutes(30),
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -123,7 +124,7 @@ class _AppLockSettingsPageState extends ConsumerState<AppLockSettingsPage> {
     final notifier = ref.read(settingsProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('アプリロック')),
+      appBar: AppBar(title: Text(context.l10n.appLockTitle)),
       body: SettingsListView(
         children: [
           SettingsSection(
@@ -131,9 +132,8 @@ class _AppLockSettingsPageState extends ConsumerState<AppLockSettingsPage> {
               SwitchListTile(
                 secondary:
                     Icon(Icons.lock_outline, color: Colors.red.shade400),
-                title: const Text('アプリロックを有効にする'),
-                subtitle: const Text(
-                    '起動時とバックグラウンド復帰時に PIN / 生体認証を要求します'),
+                title: Text(context.l10n.appLockEnableTitle),
+                subtitle: Text(context.l10n.appLockEnableSubtitle),
                 value: settings.appLockEnabled,
                 onChanged: _onToggleEnabled,
               ),
@@ -141,11 +141,11 @@ class _AppLockSettingsPageState extends ConsumerState<AppLockSettingsPage> {
           ),
           if (settings.appLockEnabled)
             SettingsSection(
-              title: 'ロック設定',
+              title: context.l10n.appLockSettingsSection,
               children: [
                 ListTile(
                   leading: const Icon(Icons.pin, color: Colors.indigo),
-                  title: const Text('PIN を変更'),
+                  title: Text(context.l10n.appLockChangePin),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: _changePin,
                 ),
@@ -156,13 +156,13 @@ class _AppLockSettingsPageState extends ConsumerState<AppLockSettingsPage> {
                         ? Colors.grey
                         : Colors.teal,
                   ),
-                  title: const Text('生体認証を使う'),
+                  title: Text(context.l10n.appLockUseBiometrics),
                   subtitle: Text(
                     _biometricSupported == false
                         ? (kIsWeb
-                            ? 'Web 版では生体認証は使えません (PIN のみ)'
-                            : 'この端末では生体認証が利用できません')
-                        : '指紋 / 顔認証で解除できるようにします',
+                            ? context.l10n.appLockBiometricsWebUnavailable
+                            : context.l10n.appLockBiometricsDeviceUnavailable)
+                        : context.l10n.appLockBiometricsSubtitle,
                   ),
                   value: settings.appLockBiometric &&
                       _biometricSupported != false,
@@ -173,10 +173,10 @@ class _AppLockSettingsPageState extends ConsumerState<AppLockSettingsPage> {
                 ListTile(
                   leading:
                       const Icon(Icons.schedule, color: Colors.orange),
-                  title: const Text('自動ロックまでの時間'),
-                  subtitle: Text(
-                      _timeoutOptions[settings.appLockTimeoutSeconds] ??
-                          '1 分'),
+                  title: Text(context.l10n.appLockTimeoutTitle),
+                  subtitle: Text(_timeoutOptions(context.l10n)[
+                          settings.appLockTimeoutSeconds] ??
+                      context.l10n.durationMinutes(1)),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: _showTimeoutPicker,
                 ),
