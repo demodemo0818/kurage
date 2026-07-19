@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import '../l10n/l10n.dart';
 import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/analytics_service.dart';
@@ -33,18 +34,18 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('アプリ設定'),
+        title: Text(context.l10n.appSettingsTitle),
       ),
       body: SettingsListView(
         children: [
           // ========== リアクション確認 ==========
           SettingsSection(
-            title: 'リアクション確認',
+            title: context.l10n.appSettingsSectionConfirmations,
             children: [
               SwitchListTile(
                 secondary: const Icon(Icons.repeat, color: Colors.green),
-                title: const Text('ブースト時の確認ダイアログ'),
-                subtitle: const Text('ブースト追加時に確認ダイアログを表示'),
+                title: Text(context.l10n.appSettingsConfirmReblogTitle),
+                subtitle: Text(context.l10n.appSettingsConfirmReblogSubtitle),
                 value: settings.confirmReblog,
                 onChanged: (value) =>
                     settingsNotifier.setConfirmReblog(value),
@@ -52,32 +53,34 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
               SwitchListTile(
                 secondary:
                     const Icon(Icons.repeat_on_outlined, color: Colors.green),
-                title: const Text('ブースト解除時の確認ダイアログ'),
-                subtitle: const Text('ブースト解除時に確認ダイアログを表示'),
+                title: Text(context.l10n.appSettingsConfirmUnreblogTitle),
+                subtitle: Text(context.l10n.appSettingsConfirmUnreblogSubtitle),
                 value: settings.confirmUnreblog,
                 onChanged: (value) =>
                     settingsNotifier.setConfirmUnreblog(value),
               ),
               SwitchListTile(
                 secondary: const Icon(Icons.star, color: Colors.amber),
-                title: const Text('お気に入り時の確認ダイアログ'),
-                subtitle: const Text('お気に入り追加時に確認ダイアログを表示'),
+                title: Text(context.l10n.appSettingsConfirmFavouriteTitle),
+                subtitle:
+                    Text(context.l10n.appSettingsConfirmFavouriteSubtitle),
                 value: settings.confirmFavourite,
                 onChanged: (value) =>
                     settingsNotifier.setConfirmFavourite(value),
               ),
               SwitchListTile(
                 secondary: const Icon(Icons.star_border, color: Colors.amber),
-                title: const Text('お気に入り解除時の確認ダイアログ'),
-                subtitle: const Text('お気に入り解除時に確認ダイアログを表示'),
+                title: Text(context.l10n.appSettingsConfirmUnfavouriteTitle),
+                subtitle:
+                    Text(context.l10n.appSettingsConfirmUnfavouriteSubtitle),
                 value: settings.confirmUnfavourite,
                 onChanged: (value) =>
                     settingsNotifier.setConfirmUnfavourite(value),
               ),
               SwitchListTile(
                 secondary: const Icon(Icons.bookmark, color: Colors.indigo),
-                title: const Text('ブックマーク時の確認ダイアログ'),
-                subtitle: const Text('ブックマーク追加時に確認ダイアログを表示'),
+                title: Text(context.l10n.appSettingsConfirmBookmarkTitle),
+                subtitle: Text(context.l10n.appSettingsConfirmBookmarkSubtitle),
                 value: settings.confirmBookmark,
                 onChanged: (value) =>
                     settingsNotifier.setConfirmBookmark(value),
@@ -85,8 +88,9 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
               SwitchListTile(
                 secondary:
                     const Icon(Icons.bookmark_border, color: Colors.indigo),
-                title: const Text('ブックマーク解除時の確認ダイアログ'),
-                subtitle: const Text('ブックマーク解除時に確認ダイアログを表示'),
+                title: Text(context.l10n.appSettingsConfirmUnbookmarkTitle),
+                subtitle:
+                    Text(context.l10n.appSettingsConfirmUnbookmarkSubtitle),
                 value: settings.confirmUnbookmark,
                 onChanged: (value) =>
                     settingsNotifier.setConfirmUnbookmark(value),
@@ -96,13 +100,12 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
 
           // ========== その他 ==========
           SettingsSection(
-            title: 'その他',
+            title: context.l10n.appSettingsSectionOther,
             children: [
               SwitchListTile(
                 secondary: const Icon(Icons.exit_to_app, color: Colors.red),
-                title: const Text('アプリ終了時の確認ダイアログ'),
-                subtitle: const Text(
-                    '戻るボタンでアプリを終了する際に確認ダイアログを表示します'),
+                title: Text(context.l10n.appSettingsConfirmAppExitTitle),
+                subtitle: Text(context.l10n.appSettingsConfirmAppExitSubtitle),
                 value: settings.confirmAppExit,
                 onChanged: (value) {
                   settingsNotifier.setConfirmAppExit(value);
@@ -116,9 +119,9 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
                 SwitchListTile(
                   secondary:
                       const Icon(Icons.bedtime_off, color: Colors.purple),
-                  title: const Text('スリープ無効化'),
+                  title: Text(context.l10n.appSettingsKeepScreenOnTitle),
                   subtitle:
-                      const Text('アプリ使用中の画面の自動消灯を防ぎます'),
+                      Text(context.l10n.appSettingsKeepScreenOnSubtitle),
                   value: settings.keepScreenOn,
                   onChanged: (value) async {
                     await settingsNotifier.setKeepScreenOn(value);
@@ -134,23 +137,24 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
           // ため、保存先を選べるデスクトップ (Windows/macOS/Linux) でのみ出す。
           if (isDesktop())
             SettingsSection(
-              title: '画像の保存先',
+              title: context.l10n.appSettingsSectionImageSave,
               children: [
                 ListTile(
                   leading:
                       const Icon(Icons.folder_outlined, color: Colors.amber),
-                  title: const Text('保存先フォルダ'),
+                  title: Text(context.l10n.appSettingsImageSaveDirTitle),
                   subtitle: Text(
                     settings.confirmImageSaveLocation
-                        ? '「保存先を毎回確認する」が ON のとき無視されます'
+                        ? context.l10n.appSettingsImageSaveDirIgnored
                         : ((settings.imageSaveDirectory?.isNotEmpty ?? false)
                             ? settings.imageSaveDirectory!
-                            : 'ダウンロード（既定）'),
+                            : context.l10n.appSettingsImageSaveDirDefault),
                   ),
                   trailing: (settings.imageSaveDirectory?.isNotEmpty ?? false)
                       ? IconButton(
                           icon: const Icon(Icons.close),
-                          tooltip: '既定（ダウンロード）に戻す',
+                          tooltip:
+                              context.l10n.appSettingsImageSaveDirResetTooltip,
                           onPressed: () =>
                               settingsNotifier.setImageSaveDirectory(null),
                         )
@@ -164,9 +168,9 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
                 ),
                 SwitchListTile(
                   secondary: const Icon(Icons.save_as, color: Colors.amber),
-                  title: const Text('保存先を毎回確認する'),
-                  subtitle: const Text(
-                      '画像を保存するたびに保存先を選ぶダイアログを表示します'),
+                  title: Text(context.l10n.appSettingsConfirmImageSaveTitle),
+                  subtitle:
+                      Text(context.l10n.appSettingsConfirmImageSaveSubtitle),
                   value: settings.confirmImageSaveLocation,
                   onChanged: (value) =>
                       settingsNotifier.setConfirmImageSaveLocation(value),
@@ -178,31 +182,29 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
           // アプリ表示中 (フォアグラウンド) のみ。音源は assets/sounds/ に
           // 同梱済み (notification.mp3 / post.mp3 / refresh.mp3)。
           SettingsSection(
-            title: 'サウンド（効果音）',
+            title: context.l10n.appSettingsSectionSound,
             children: [
               SwitchListTile(
                 secondary: const Icon(Icons.notifications_active,
                     color: Colors.orange),
-                title: const Text('通知受信時に音を鳴らす'),
-                subtitle: const Text(
-                    'アプリ表示中に通知が届いたとき効果音を鳴らします'),
+                title: Text(context.l10n.appSettingsSoundNotificationTitle),
+                subtitle:
+                    Text(context.l10n.appSettingsSoundNotificationSubtitle),
                 value: settings.soundOnNotification,
                 onChanged: (value) =>
                     settingsNotifier.setSoundOnNotification(value),
               ),
               SwitchListTile(
                 secondary: const Icon(Icons.send, color: Colors.blue),
-                title: const Text('投稿完了時に音を鳴らす'),
-                subtitle: const Text(
-                    '投稿が完了したとき効果音を鳴らします'),
+                title: Text(context.l10n.appSettingsSoundPostTitle),
+                subtitle: Text(context.l10n.appSettingsSoundPostSubtitle),
                 value: settings.soundOnPost,
                 onChanged: (value) => settingsNotifier.setSoundOnPost(value),
               ),
               SwitchListTile(
                 secondary: const Icon(Icons.refresh, color: Colors.teal),
-                title: const Text('引っ張って更新時に音を鳴らす'),
-                subtitle: const Text(
-                    'タイムラインを引っ張って更新したとき効果音を鳴らします'),
+                title: Text(context.l10n.appSettingsSoundRefreshTitle),
+                subtitle: Text(context.l10n.appSettingsSoundRefreshSubtitle),
                 value: settings.soundOnRefresh,
                 onChanged: (value) => settingsNotifier.setSoundOnRefresh(value),
               ),
@@ -214,14 +216,12 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
           // 某検索サイト風の見た目に切り替える隠し機能。
           if (isWebOrDesktop())
             SettingsSection(
-              title: 'ボスキー（偽装モード）',
+              title: context.l10n.appSettingsSectionBossKey,
               children: [
                 SwitchListTile(
                   secondary: const Icon(Icons.search, color: Colors.blue),
-                  title: const Text('ボスキーを有効にする'),
-                  subtitle: const Text(
-                      'F9 でアプリ全体を某検索サイト風の見た目に切り替えます'
-                      '（もう一度 F9 で戻る。macOS では Fn+F9 の場合あり）'),
+                  title: Text(context.l10n.appSettingsBossKeyTitle),
+                  subtitle: Text(context.l10n.appSettingsBossKeySubtitle),
                   value: settings.bossKeyEnabled,
                   onChanged: (value) =>
                       settingsNotifier.setBossKeyEnabled(value),
@@ -231,21 +231,19 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
 
           // ========== バックアップ ==========
           SettingsSection(
-            title: 'バックアップ',
+            title: context.l10n.appSettingsSectionBackup,
             children: [
               ListTile(
                 leading: const Icon(Icons.upload_file, color: Colors.blue),
-                title: const Text('設定をエクスポート'),
-                subtitle: const Text(
-                    '設定・カラム・アカウントを .json に書き出します (アクセストークンを含む)'),
+                title: Text(context.l10n.appSettingsExportTitle),
+                subtitle: Text(context.l10n.appSettingsExportSubtitle),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: _exportBackup,
               ),
               ListTile(
                 leading: const Icon(Icons.download, color: Colors.green),
-                title: const Text('設定をインポート'),
-                subtitle: const Text(
-                    'バックアップ .json から復元します (現在のデータを上書き)'),
+                title: Text(context.l10n.appSettingsImportTitle),
+                subtitle: Text(context.l10n.appSettingsImportSubtitle),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: _importBackup,
               ),
@@ -257,15 +255,14 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
           // 設定項目自体を出さない (機能が無効なので)。
           if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
             SettingsSection(
-              title: '通知',
+              title: context.l10n.appSettingsSectionNotifications,
               children: [
                 SwitchListTile(
                   secondary: const Icon(
                       Icons.notifications_active_outlined,
                       color: Colors.teal),
-                  title: const Text('プッシュ通知'),
-                  subtitle: const Text(
-                      'メンション・ブースト・お気に入りなどの通知を受け取ります。オフにするとサーバへの購読を解除します'),
+                  title: Text(context.l10n.appSettingsPushTitle),
+                  subtitle: Text(context.l10n.appSettingsPushSubtitle),
                   value: settings.pushNotificationsEnabled,
                   onChanged: (value) async {
                     await settingsNotifier
@@ -281,9 +278,8 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
                 ListTile(
                   leading: const Icon(Icons.troubleshoot_outlined,
                       color: Colors.teal),
-                  title: const Text('プッシュ通知の状態を確認'),
-                  subtitle: const Text(
-                      '通知権限・接続状態を確認し、全アカウントの購読を再登録します。通知が届かないときにお試しください'),
+                  title: Text(context.l10n.appSettingsPushDiagTitle),
+                  subtitle: Text(context.l10n.appSettingsPushDiagSubtitle),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: _runPushDiagnostics,
                 ),
@@ -291,14 +287,13 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
             ),
 
           SettingsSection(
-            title: 'プライバシー・サポート',
+            title: context.l10n.appSettingsSectionPrivacy,
             children: [
               SwitchListTile(
                 secondary:
                     const Icon(Icons.bug_report_outlined, color: Colors.teal),
-                title: const Text('クラッシュレポートを送信'),
-                subtitle: const Text(
-                    'アプリが異常終了したときにスタックトレースを開発者に送信します (個人を特定できる情報は含みません)'),
+                title: Text(context.l10n.appSettingsCrashReportTitle),
+                subtitle: Text(context.l10n.appSettingsCrashReportSubtitle),
                 value: settings.crashReportingEnabled,
                 onChanged: (value) async {
                   await settingsNotifier.setCrashReportingEnabled(value);
@@ -318,9 +313,8 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
               SwitchListTile(
                 secondary:
                     const Icon(Icons.insights_outlined, color: Colors.teal),
-                title: const Text('利用状況の解析を送信'),
-                subtitle: const Text(
-                    'どの機能がどれくらい使われているかの匿名の集計情報を送信します (個人やアカウント・投稿内容を特定できる情報は含みません)'),
+                title: Text(context.l10n.appSettingsAnalyticsTitle),
+                subtitle: Text(context.l10n.appSettingsAnalyticsSubtitle),
                 value: settings.analyticsEnabled,
                 onChanged: (value) async {
                   await settingsNotifier.setAnalyticsEnabled(value);
@@ -352,12 +346,12 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => const AlertDialog(
+      builder: (ctx) => AlertDialog(
         content: Row(
           children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 20),
-            Expanded(child: Text('確認中…')),
+            const CircularProgressIndicator(),
+            const SizedBox(width: 20),
+            Expanded(child: Text(context.l10n.appSettingsPushChecking)),
           ],
         ),
       ),
@@ -367,7 +361,7 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
     try {
       lines = await PushNotificationService().runDiagnostics();
     } catch (e) {
-      lines = ['診断に失敗しました: $e'];
+      lines = [l10n.appSettingsPushDiagFailed('$e')];
     }
 
     if (!mounted) return;
@@ -376,14 +370,14 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('プッシュ通知の状態'),
+        title: Text(ctx.l10n.appSettingsPushStatusTitle),
         content: SingleChildScrollView(
           child: Text(lines.join('\n\n')),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('閉じる'),
+            child: Text(ctx.l10n.close),
           ),
         ],
       ),
@@ -398,27 +392,22 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
     final proceed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.warning_amber, color: Colors.orange),
-            SizedBox(width: 8),
-            Expanded(child: Text('エクスポートの注意')),
+            const Icon(Icons.warning_amber, color: Colors.orange),
+            const SizedBox(width: 8),
+            Expanded(child: Text(ctx.l10n.appSettingsExportWarnTitle)),
           ],
         ),
-        content: Text(
-          'このバックアップには全アカウント ($accountCount 件) のアクセストークン '
-          '(ログイン情報) が含まれます。\n\n'
-          'ファイルが第三者の手に渡るとアカウントを乗っ取られる恐れがあります。'
-          '保存先・共有先に十分注意してください。',
-        ),
+        content: Text(ctx.l10n.appSettingsExportWarnBody(accountCount)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('続行'),
+            child: Text(ctx.l10n.appSettingsContinue),
           ),
         ],
       ),
@@ -431,12 +420,12 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
       if (!mounted) return;
       if (saved) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('バックアップを書き出しました')),
+          SnackBar(content: Text(context.l10n.appSettingsExportDone)),
         );
       }
     } catch (e) {
       if (!mounted) return;
-      showErrorSnackBar(context, 'エクスポートに失敗しました: $e');
+      showErrorSnackBar(context, context.l10n.appSettingsExportFailed('$e'));
     }
   }
 
@@ -448,7 +437,7 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
       raw = await pickBackupFile();
     } catch (e) {
       if (!mounted) return;
-      showErrorSnackBar(context, 'ファイルを開けませんでした: $e');
+      showErrorSnackBar(context, context.l10n.appSettingsFileOpenFailed('$e'));
       return;
     }
     if (raw == null) return; // キャンセル
@@ -458,11 +447,13 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
       content = parseBackupJson(raw);
     } on FormatException catch (e) {
       if (!mounted) return;
-      showErrorSnackBar(context, 'インポートできませんでした: ${e.message}');
+      showErrorSnackBar(
+          context, context.l10n.appSettingsImportParseFailed(e.message));
       return;
     } catch (e) {
       if (!mounted) return;
-      showErrorSnackBar(context, 'インポートできませんでした: $e');
+      showErrorSnackBar(
+          context, context.l10n.appSettingsImportParseFailed('$e'));
       return;
     }
 
@@ -470,24 +461,25 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
     final proceed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('バックアップを復元'),
+        title: Text(ctx.l10n.appSettingsImportConfirmTitle),
         content: Text(
-          'このファイルには以下が含まれます:\n'
-          '・アカウント ${content.accountCount} 件\n'
-          '・カラム ${content.columnCount} 件\n'
-          '・設定 ${content.hasSettings ? "あり" : "なし"}\n\n'
-          'インポートすると現在のアカウント・カラム・設定は上書きされます。'
-          '続行しますか？',
+          ctx.l10n.appSettingsImportConfirmBody(
+            content.accountCount,
+            content.columnCount,
+            content.hasSettings
+                ? ctx.l10n.appSettingsImportHasSettingsYes
+                : ctx.l10n.appSettingsImportHasSettingsNo,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('インポート'),
+            child: Text(ctx.l10n.appSettingsImportAction),
           ),
         ],
       ),
@@ -498,13 +490,13 @@ class _AppSettingsPageState extends ConsumerState<AppSettingsPage> {
       await applyBackup(ref, content);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('インポートしました (一部はアプリ再起動後に反映されます)'),
+        SnackBar(
+          content: Text(context.l10n.appSettingsImportDone),
         ),
       );
     } catch (e) {
       if (!mounted) return;
-      showErrorSnackBar(context, 'インポートに失敗しました: $e');
+      showErrorSnackBar(context, context.l10n.appSettingsImportFailed('$e'));
     }
   }
 }

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/l10n.dart';
 import '../models/account.dart';
 import '../models/notification_item.dart';
 import '../models/notification_group.dart';
@@ -226,12 +227,12 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
 
     final Widget body = asyncList.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('エラー：$e')),
+      error: (e, _) => Center(child: Text(context.l10n.genericError('$e'))),
       data: (items) {
         // フィルタ適用
         final filtered = items.where((n) => _filters[n.type]!).toList();
         if (filtered.isEmpty) {
-          return const Center(child: Text('該当する通知がありません'));
+          return Center(child: Text(context.l10n.notifFilterNoMatch));
         }
         return NotificationListener<ScrollNotification>(
           onNotification: (sn) {
@@ -315,7 +316,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
         leading: widget.onDeckBack == null
             ? null
             : BackButton(onPressed: widget.onDeckBack),
-        title: const Text('通知'),
+        title: Text(context.l10n.navNotifications),
         actions: [filterAction],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
@@ -482,7 +483,8 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
     if (g.isGroup) {
       final others = g.notificationsCount - 1;
       spans.add(TextSpan(
-        text: ' 他 $others 人が${_getNotificationVerb(g.type)}',
+        text: context.l10n
+            .notifGroupOthersSuffix(others, _getNotificationVerb(g.type)),
         style: normalStyle,
       ));
       // 「全員を見る」リンクはここには足さない。RichText の
@@ -512,7 +514,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
       child: Padding(
         padding: const EdgeInsets.only(top: 2),
         child: Text(
-          '全員を見る',
+          context.l10n.notifSeeAll,
           style: baseStyle.copyWith(
             fontWeight: FontWeight.normal,
             color: Colors.blue,
@@ -585,7 +587,8 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                         color: _getNotificationColor(g.type)),
                     const SizedBox(width: 8),
                     Text(
-                      '${_getNotificationVerb(g.type)} (${g.notificationsCount} 件)',
+                      context.l10n.notifSheetTitle(
+                          _getNotificationVerb(g.type), g.notificationsCount),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -894,29 +897,29 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
   String _getNotificationVerb(NotificationType type) {
     switch (type) {
       case NotificationType.favourite:
-        return 'お気に入りに追加しました';
+        return context.l10n.notifVerbFavourite;
       case NotificationType.reblog:
-        return 'ブーストしました';
+        return context.l10n.notifVerbReblog;
       case NotificationType.reaction:
-        return 'リアクションしました';
+        return context.l10n.notifVerbReaction;
       case NotificationType.follow:
-        return 'あなたをフォローしました';
+        return context.l10n.notifVerbFollow;
       case NotificationType.followRequest:
-        return 'フォローリクエストを送信しました';
+        return context.l10n.notifVerbFollowRequest;
       case NotificationType.poll:
-        return '投票が終了しました';
+        return context.l10n.notifVerbPoll;
       case NotificationType.status:
-        return '投稿しました';
+        return context.l10n.notifVerbStatus;
       case NotificationType.quote:
-        return 'あなたの投稿を引用しました';
+        return context.l10n.notifVerbQuote;
       case NotificationType.addedToCollection:
-        return 'あなたをコレクションに追加しました';
+        return context.l10n.notifVerbAddedToCollection;
       case NotificationType.collectionUpdate:
-        return 'コレクションを更新しました';
+        return context.l10n.notifVerbCollectionUpdate;
       case NotificationType.mention:
       case NotificationType.reply:
       case NotificationType.unknown:
-        return '通知';
+        return context.l10n.notifVerbGeneric;
     }
   }
 
@@ -924,50 +927,53 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
   String _getNotificationLabel(NotificationType type) {
     switch (type) {
       case NotificationType.favourite:
-        return 'がお気に入りに追加しました';
+        return context.l10n.notifLabelFavourite;
       case NotificationType.reblog:
-        return 'がブーストしました';
+        return context.l10n.notifLabelReblog;
       case NotificationType.reaction:
-        return 'がリアクションしました';
+        return context.l10n.notifLabelReaction;
       case NotificationType.mention:
-        return 'があなたにメンションしました';
+        return context.l10n.notifLabelMention;
       case NotificationType.reply:
-        return 'が返信しました';
+        return context.l10n.notifLabelReply;
       case NotificationType.follow:
-        return 'があなたをフォローしました';
+        return context.l10n.notifLabelFollow;
       case NotificationType.poll:
-        return 'の投票が終了しました';
+        return context.l10n.notifLabelPoll;
       case NotificationType.followRequest:
-        return 'がフォローリクエストを送信しました';
+        return context.l10n.notifLabelFollowRequest;
       case NotificationType.status:
-        return 'が投稿しました';
+        return context.l10n.notifLabelStatus;
       case NotificationType.quote:
-        return 'があなたの投稿を引用しました';
+        return context.l10n.notifLabelQuote;
       case NotificationType.addedToCollection:
-        return 'があなたをコレクションに追加しました';
+        return context.l10n.notifLabelAddedToCollection;
       case NotificationType.collectionUpdate:
-        return 'のコレクションが更新されました';
+        return context.l10n.notifLabelCollectionUpdate;
       case NotificationType.unknown:
-        return 'からの通知';
+        return context.l10n.notifLabelUnknown;
     }
   }
 
   // フィルタダイアログ用ラベル
   String _filterLabel(NotificationType t) {
     switch (t) {
-      case NotificationType.mention:      return 'メンション';
-      case NotificationType.reply:        return '返信';
-      case NotificationType.favourite:    return 'お気に入り';
-      case NotificationType.reblog:       return 'ブースト';
-      case NotificationType.follow:       return 'フォロー';
-      case NotificationType.poll:         return '投票';
-      case NotificationType.reaction:     return 'リアクション';
-      case NotificationType.followRequest:return 'フォローリクエスト';
-      case NotificationType.status:       return '投稿通知';
-      case NotificationType.quote:        return '引用';
-      case NotificationType.addedToCollection: return 'コレクション追加';
-      case NotificationType.collectionUpdate:  return 'コレクション更新';
-      case NotificationType.unknown:      return 'その他';
+      case NotificationType.mention:      return context.l10n.notifTypeMention;
+      case NotificationType.reply:        return context.l10n.notifTypeReply;
+      case NotificationType.favourite:    return context.l10n.notifTypeFavourite;
+      case NotificationType.reblog:       return context.l10n.notifTypeReblog;
+      case NotificationType.follow:       return context.l10n.notifTypeFollow;
+      case NotificationType.poll:         return context.l10n.notifTypePoll;
+      case NotificationType.reaction:     return context.l10n.notifTypeReaction;
+      case NotificationType.followRequest:
+        return context.l10n.notifTypeFollowRequest;
+      case NotificationType.status:       return context.l10n.notifTypeStatus;
+      case NotificationType.quote:        return context.l10n.notifTypeQuote;
+      case NotificationType.addedToCollection:
+        return context.l10n.notifTypeAddedToCollection;
+      case NotificationType.collectionUpdate:
+        return context.l10n.notifTypeCollectionUpdate;
+      case NotificationType.unknown:      return context.l10n.notifTypeOther;
     }
   }
 
@@ -997,7 +1003,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                 children: [
                   Icon(Icons.filter_list, color: accent),
                   const SizedBox(width: 8),
-                  const Text('通知フィルター'),
+                  Text(context.l10n.notifFilterTitle),
                 ],
               ),
               content: SizedBox(
@@ -1013,7 +1019,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
                       ),
                       child: CheckboxListTile(
                         title: Text(
-                          '全て選択/解除',
+                          context.l10n.notifFilterSelectAll,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: accent,
@@ -1070,7 +1076,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('閉じる'),
+                  child: Text(context.l10n.close),
                 ),
               ],
             );

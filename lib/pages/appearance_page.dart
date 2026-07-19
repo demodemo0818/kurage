@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/l10n.dart';
 import '../providers/settings_provider.dart';
 import '../utils/app_fonts.dart';
 import '../widgets/settings_section.dart';
@@ -27,8 +28,8 @@ class AppearanceSettingsPage extends ConsumerWidget {
   ];
 
   /// フォント設定の現在値ラベル。null = 端末デフォルト。
-  String _fontLabel(String? key) {
-    if (key == null) return '端末デフォルト';
+  String _fontLabel(BuildContext context, String? key) {
+    if (key == null) return context.l10n.appearanceFontDeviceDefault;
     return appFontByKey(key)?.label ?? key;
   }
 
@@ -44,11 +45,11 @@ class AppearanceSettingsPage extends ConsumerWidget {
     final selected = await showDialog<String>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text('フォント'),
+        title: Text(context.l10n.appearanceFontTitle),
         children: [
           RadioListTile<String>(
-            title: const Text('端末デフォルト'),
-            subtitle: const Text('OS のフォント（ダウンロードなし）'),
+            title: Text(context.l10n.appearanceFontDeviceDefault),
+            subtitle: Text(context.l10n.appearanceFontDeviceDefaultSubtitle),
             value: deviceDefault,
             // ignore: deprecated_member_use
             groupValue: current ?? deviceDefault,
@@ -64,14 +65,11 @@ class AppearanceSettingsPage extends ConsumerWidget {
               // ignore: deprecated_member_use
               onChanged: (v) => Navigator.pop(context, v),
             ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(24, 8, 24, 12),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
             child: Text(
-              'フォントを変更すると初回はダウンロードが発生し、その分'
-              'キャッシュ（端末ストレージ）が増えます。日本語フォントは字数が'
-              '多く、1 書体あたり数 MB〜十数 MB になることがあります。'
-              '2 回目以降はキャッシュから読み込みます。',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              context.l10n.appearanceFontDownloadNote,
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ),
         ],
@@ -84,14 +82,14 @@ class AppearanceSettingsPage extends ConsumerWidget {
     }
   }
 
-  String _themeModeLabel(ThemeMode mode) {
+  String _themeModeLabel(BuildContext context, ThemeMode mode) {
     switch (mode) {
       case ThemeMode.light:
-        return 'ライト';
+        return context.l10n.appearanceThemeModeLight;
       case ThemeMode.dark:
-        return 'ダーク';
+        return context.l10n.appearanceThemeModeDark;
       case ThemeMode.system:
-        return 'システム設定に追従';
+        return context.l10n.appearanceThemeModeSystem;
     }
   }
 
@@ -103,11 +101,11 @@ class AppearanceSettingsPage extends ConsumerWidget {
     final selected = await showDialog<ThemeMode>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text('テーマモード'),
+        title: Text(context.l10n.appearanceThemeModeTitle),
         children: [
           for (final mode in ThemeMode.values)
             RadioListTile<ThemeMode>(
-              title: Text(_themeModeLabel(mode)),
+              title: Text(_themeModeLabel(context, mode)),
               value: mode,
               // ignore: deprecated_member_use
               groupValue: current,
@@ -122,21 +120,21 @@ class AppearanceSettingsPage extends ConsumerWidget {
     }
   }
 
-  String _timelineLayoutLabel(TimelineLayout layout) {
+  String _timelineLayoutLabel(BuildContext context, TimelineLayout layout) {
     switch (layout) {
       case TimelineLayout.line:
-        return '線で区切る';
+        return context.l10n.appearanceTimelineLayoutLine;
       case TimelineLayout.card:
-        return 'カードで区切る';
+        return context.l10n.appearanceTimelineLayoutCard;
     }
   }
 
-  String _mediaLayoutLabel(MediaLayout layout) {
+  String _mediaLayoutLabel(BuildContext context, MediaLayout layout) {
     switch (layout) {
       case MediaLayout.horizontal:
-        return '横スクロール';
+        return context.l10n.appearanceMediaLayoutHorizontal;
       case MediaLayout.grid:
-        return 'グリッド表示';
+        return context.l10n.appearanceMediaLayoutGrid;
     }
   }
 
@@ -148,15 +146,15 @@ class AppearanceSettingsPage extends ConsumerWidget {
     final selected = await showDialog<MediaLayout>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text('サムネイル表示'),
+        title: Text(context.l10n.appearanceMediaLayoutTitle),
         children: [
           for (final layout in MediaLayout.values)
             RadioListTile<MediaLayout>(
-              title: Text(_mediaLayoutLabel(layout)),
+              title: Text(_mediaLayoutLabel(context, layout)),
               subtitle: Text(
                 layout == MediaLayout.horizontal
-                    ? '高さ固定の横並びで一覧表示'
-                    : '枚数に合わせてタイル状に並べる (1〜4 枚、それ以上は +N)',
+                    ? context.l10n.appearanceMediaLayoutHorizontalDesc
+                    : context.l10n.appearanceMediaLayoutGridDesc,
               ),
               value: layout,
               // ignore: deprecated_member_use
@@ -172,12 +170,12 @@ class AppearanceSettingsPage extends ConsumerWidget {
     }
   }
 
-  String _ogpLayoutLabel(OgpLayout layout) {
+  String _ogpLayoutLabel(BuildContext context, OgpLayout layout) {
     switch (layout) {
       case OgpLayout.standard:
-        return '大きく表示';
+        return context.l10n.appearanceOgpStandard;
       case OgpLayout.compact:
-        return 'コンパクト表示';
+        return context.l10n.appearanceOgpCompact;
     }
   }
 
@@ -189,15 +187,15 @@ class AppearanceSettingsPage extends ConsumerWidget {
     final selected = await showDialog<OgpLayout>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text('リンクプレビュー表示'),
+        title: Text(context.l10n.appearanceOgpTitle),
         children: [
           for (final layout in OgpLayout.values)
             RadioListTile<OgpLayout>(
-              title: Text(_ogpLayoutLabel(layout)),
+              title: Text(_ogpLayoutLabel(context, layout)),
               subtitle: Text(
                 layout == OgpLayout.standard
-                    ? '従来の 16:9 ヘッダー画像 + 題名 + 説明'
-                    : '左に小サムネ + 題名・ドメインを横並びで省スペース表示',
+                    ? context.l10n.appearanceOgpStandardDesc
+                    : context.l10n.appearanceOgpCompactDesc,
               ),
               value: layout,
               // ignore: deprecated_member_use
@@ -221,15 +219,15 @@ class AppearanceSettingsPage extends ConsumerWidget {
     final selected = await showDialog<TimelineLayout>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text('タイムラインの区切り'),
+        title: Text(context.l10n.appearanceTimelineLayoutPickerTitle),
         children: [
           for (final layout in TimelineLayout.values)
             RadioListTile<TimelineLayout>(
-              title: Text(_timelineLayoutLabel(layout)),
+              title: Text(_timelineLayoutLabel(context, layout)),
               subtitle: Text(
                 layout == TimelineLayout.line
-                    ? '従来の細い水平線'
-                    : '各投稿を角丸カードで囲む',
+                    ? context.l10n.appearanceTimelineLayoutLineDesc
+                    : context.l10n.appearanceTimelineLayoutCardDesc,
               ),
               value: layout,
               // ignore: deprecated_member_use
@@ -255,7 +253,7 @@ class AppearanceSettingsPage extends ConsumerWidget {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('テーマカラーを選択'),
+        title: Text(context.l10n.appearanceColorPickerTitle),
         content: StatefulBuilder(
           builder: (context, setState) => Column(
             mainAxisSize: MainAxisSize.min,
@@ -275,9 +273,9 @@ class AppearanceSettingsPage extends ConsumerWidget {
                 ),
               ),
               // プリセットカラー
-              const Text(
-                'プリセットカラー',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              Text(
+                context.l10n.appearancePresetColors,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -318,15 +316,15 @@ class AppearanceSettingsPage extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               // カスタムカラー（スライダー）
-              const Text(
-                'カスタムカラー',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              Text(
+                context.l10n.appearanceCustomColor,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               // 色相スライダー
               Row(
                 children: [
-                  const Text('色相'),
+                  Text(context.l10n.appearanceHue),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Slider(
@@ -349,14 +347,14 @@ class AppearanceSettingsPage extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('キャンセル'),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             onPressed: () {
               notifier.setThemeColor(selectedColor);
               Navigator.of(context).pop();
             },
-            child: const Text('適用'),
+            child: Text(context.l10n.appearanceApply),
           ),
         ],
       ),
@@ -370,24 +368,24 @@ class AppearanceSettingsPage extends ConsumerWidget {
     final notifier = ref.read(settingsProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('外観設定')),
+      appBar: AppBar(title: Text(context.l10n.appearanceTitle)),
       body: SettingsListView(
         children: [
           // ========== テーマ設定 ==========
           SettingsSection(
-            title: 'テーマ',
+            title: context.l10n.appearanceSectionTheme,
             children: [
               ListTile(
                 leading: const Icon(Icons.brightness_6, color: Colors.amber),
-                title: const Text('テーマモード'),
-                subtitle: Text(_themeModeLabel(settings.themeMode)),
+                title: Text(context.l10n.appearanceThemeModeTitle),
+                subtitle: Text(_themeModeLabel(context, settings.themeMode)),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () =>
                     _showThemeModePicker(context, settings.themeMode, notifier),
               ),
               ListTile(
-                title: const Text('テーマカラー'),
-                subtitle: const Text('アプリ全体のアクセントカラーを変更します'),
+                title: Text(context.l10n.appearanceThemeColorTitle),
+                subtitle: Text(context.l10n.appearanceThemeColorSubtitle),
                 leading: const Icon(Icons.color_lens, color: Colors.pink),
                 trailing: Container(
                   width: 28,
@@ -410,13 +408,14 @@ class AppearanceSettingsPage extends ConsumerWidget {
 
           // ========== タイムライン表示 ==========
           SettingsSection(
-            title: 'タイムライン表示',
+            title: context.l10n.appearanceSectionTimeline,
             children: [
               ListTile(
                 leading:
                     const Icon(Icons.dashboard_customize, color: Colors.purple),
-                title: const Text('投稿の区切り'),
-                subtitle: Text(_timelineLayoutLabel(settings.timelineLayout)),
+                title: Text(context.l10n.appearancePostSeparatorTitle),
+                subtitle: Text(
+                    _timelineLayoutLabel(context, settings.timelineLayout)),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _showTimelineLayoutPicker(
                   context,
@@ -426,8 +425,8 @@ class AppearanceSettingsPage extends ConsumerWidget {
               ),
               ListTile(
                 leading: const Icon(Icons.grid_view, color: Colors.teal),
-                title: const Text('サムネイル表示'),
-                subtitle: Text(_mediaLayoutLabel(settings.mediaLayout)),
+                title: Text(context.l10n.appearanceMediaLayoutTitle),
+                subtitle: Text(_mediaLayoutLabel(context, settings.mediaLayout)),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _showMediaLayoutPicker(
                   context,
@@ -443,19 +442,19 @@ class AppearanceSettingsPage extends ConsumerWidget {
                 _SliderTile(
                   icon: Icons.photo_size_select_large,
                   iconColor: Colors.pink,
-                  title: '画像のサムネイルサイズ',
+                  title: context.l10n.appearancePhotoSizeTitle,
                   value: settings.photoSize,
                   min: 60,
                   max: 200,
                   divisions: 14,
                   label: '${settings.photoSize.toStringAsFixed(0)}px',
-                  description: 'タイムラインに並ぶ画像サムネイルの大きさ (横スクロール表示のみ)',
+                  description: context.l10n.appearancePhotoSizeDesc,
                   onChanged: notifier.setPhotoSize,
                 ),
               ListTile(
                 leading: const Icon(Icons.link, color: Colors.indigo),
-                title: const Text('リンクプレビュー表示'),
-                subtitle: Text(_ogpLayoutLabel(settings.ogpLayout)),
+                title: Text(context.l10n.appearanceOgpTitle),
+                subtitle: Text(_ogpLayoutLabel(context, settings.ogpLayout)),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _showOgpLayoutPicker(
                   context,
@@ -464,39 +463,39 @@ class AppearanceSettingsPage extends ConsumerWidget {
                 ),
               ),
               SwitchListTile(
-                title: const Text('相対時間を表示'),
-                subtitle: const Text('「5分前」のような相対的な時間表示を使用'),
+                title: Text(context.l10n.appearanceRelativeTimeTitle),
+                subtitle: Text(context.l10n.appearanceRelativeTimeSubtitle),
                 value: settings.useRelativeTime,
                 onChanged: notifier.setUseRelativeTime,
                 secondary:
                     const Icon(Icons.access_time, color: Colors.blueGrey),
               ),
               SwitchListTile(
-                title: const Text('ユーザーIDを表示'),
-                subtitle: const Text('@username@domain の形式でユーザーIDを表示'),
+                title: Text(context.l10n.appearanceShowUserIdTitle),
+                subtitle: Text(context.l10n.appearanceShowUserIdSubtitle),
                 value: settings.showUserId,
                 onChanged: notifier.setShowUserId,
                 secondary:
                     const Icon(Icons.alternate_email, color: Colors.blue),
               ),
               SwitchListTile(
-                title: const Text('投稿アクションバーを常に表示'),
-                subtitle: const Text('返信・ブースト・お気に入りボタンを常に表示'),
+                title: Text(context.l10n.appearanceShowPostActionsTitle),
+                subtitle: Text(context.l10n.appearanceShowPostActionsSubtitle),
                 value: settings.showPostActions,
                 onChanged: notifier.setShowPostActions,
                 secondary: const Icon(Icons.touch_app, color: Colors.green),
               ),
               SwitchListTile(
-                title: const Text('リアクション数を表示'),
-                subtitle: const Text('ブーストやお気に入りの数を表示'),
+                title: Text(context.l10n.appearanceShowReactionCountsTitle),
+                subtitle:
+                    Text(context.l10n.appearanceShowReactionCountsSubtitle),
                 value: settings.showReactionCounts,
                 onChanged: notifier.setShowReactionCounts,
                 secondary: const Icon(Icons.numbers, color: Colors.orange),
               ),
               SwitchListTile(
-                title: const Text('投稿元アプリを表示'),
-                subtitle: const Text(
-                    '投稿元クライアント名を表示 (投稿者が開示している場合のみ)'),
+                title: Text(context.l10n.appearanceShowViaTitle),
+                subtitle: Text(context.l10n.appearanceShowViaSubtitle),
                 value: settings.showVia,
                 onChanged: notifier.setShowVia,
                 secondary:
@@ -507,14 +506,13 @@ class AppearanceSettingsPage extends ConsumerWidget {
 
           // ========== 通知表示 ==========
           SettingsSection(
-            title: '通知表示',
+            title: context.l10n.appearanceSectionNotifications,
             children: [
               SwitchListTile(
                 secondary:
                     const Icon(Icons.layers_outlined, color: Colors.deepPurple),
-                title: const Text('通知をグルーピング表示'),
-                subtitle: const Text(
-                    '同じ投稿への複数リアクションを「○○さん 他N人が…」とまとめます (Mastodon 4.3+)'),
+                title: Text(context.l10n.appearanceGroupNotifTitle),
+                subtitle: Text(context.l10n.appearanceGroupNotifSubtitle),
                 value: settings.groupedNotifications,
                 onChanged: notifier.setGroupedNotifications,
               ),
@@ -523,13 +521,13 @@ class AppearanceSettingsPage extends ConsumerWidget {
 
           // ========== 文字とレイアウト ==========
           SettingsSection(
-            title: '文字とレイアウト',
+            title: context.l10n.appearanceSectionText,
             children: [
               ListTile(
                 leading:
                     const Icon(Icons.font_download, color: Colors.indigo),
-                title: const Text('フォント'),
-                subtitle: Text(_fontLabel(settings.fontFamily)),
+                title: Text(context.l10n.appearanceFontTitle),
+                subtitle: Text(_fontLabel(context, settings.fontFamily)),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () =>
                     _showFontPicker(context, settings.fontFamily, notifier),
@@ -537,7 +535,7 @@ class AppearanceSettingsPage extends ConsumerWidget {
               _SliderTile(
                 icon: Icons.format_size,
                 iconColor: Colors.indigo,
-                title: '文字サイズ',
+                title: context.l10n.appearanceFontSizeTitle,
                 value: settings.fontSize,
                 min: 10,
                 max: 24,
@@ -549,29 +547,32 @@ class AppearanceSettingsPage extends ConsumerWidget {
               _SliderTile(
                 icon: Icons.format_line_spacing,
                 iconColor: Colors.deepPurple,
-                title: '行間',
+                title: context.l10n.appearanceLineHeightTitle,
                 value: settings.lineHeight,
                 min: 1.0,
                 max: 2.0,
                 divisions: 10,
-                label: '${settings.lineHeight.toStringAsFixed(1)}倍',
-                description: '本文の行間',
+                label: context.l10n.appearanceLineHeightValue(
+                    settings.lineHeight.toStringAsFixed(1)),
+                description: context.l10n.appearanceLineHeightDesc,
                 onChanged: notifier.setLineHeight,
               ),
               _SliderTile(
                 icon: Icons.unfold_less,
                 iconColor: Colors.brown,
-                title: '投稿の折りたたみ行数',
+                title: context.l10n.appearanceCollapseTitle,
                 value: settings.collapseAfterLines.toDouble(),
                 min: 0,
                 max: 20,
                 divisions: 20,
                 label: settings.collapseAfterLines == 0
-                    ? '無効'
-                    : '${settings.collapseAfterLines}行',
+                    ? context.l10n.appearanceCollapseDisabled
+                    : context.l10n
+                        .appearanceCollapseLines(settings.collapseAfterLines),
                 description: settings.collapseAfterLines == 0
-                    ? '無効（すべて表示）'
-                    : '${settings.collapseAfterLines}行を超える投稿を折りたたみます',
+                    ? context.l10n.appearanceCollapseDescDisabled
+                    : context.l10n.appearanceCollapseDescLines(
+                        settings.collapseAfterLines),
                 onChanged: (v) =>
                     notifier.setCollapseAfterLines(v.toInt()),
               ),
@@ -580,23 +581,23 @@ class AppearanceSettingsPage extends ConsumerWidget {
 
           // ========== アイコンとボタン ==========
           SettingsSection(
-            title: 'アイコンとボタン',
+            title: context.l10n.appearanceSectionIcons,
             children: [
               _SliderTile(
                 icon: Icons.account_circle,
                 iconColor: Colors.blue,
-                title: 'アイコンのサイズ',
+                title: context.l10n.appearanceAvatarSizeTitle,
                 value: settings.avatarSize,
                 min: 24,
                 max: 72,
                 divisions: 12,
                 label: '${settings.avatarSize.toStringAsFixed(0)}px',
-                description: 'プロフィールアイコンの直径',
+                description: context.l10n.appearanceAvatarSizeDesc,
                 onChanged: notifier.setAvatarSize,
               ),
               SwitchListTile(
-                title: const Text('アイコンを四角表示'),
-                subtitle: const Text('プロフィールアイコンを四角形で表示'),
+                title: Text(context.l10n.appearanceAvatarSquareTitle),
+                subtitle: Text(context.l10n.appearanceAvatarSquareSubtitle),
                 value: settings.isAvatarSquare,
                 onChanged: notifier.setAvatarSquare,
                 secondary: const Icon(Icons.crop_square, color: Colors.teal),
@@ -604,13 +605,13 @@ class AppearanceSettingsPage extends ConsumerWidget {
               _SliderTile(
                 icon: Icons.star_border,
                 iconColor: Colors.amber,
-                title: 'アクションボタンのサイズ',
+                title: context.l10n.appearanceActionIconSizeTitle,
                 value: settings.actionIconSize,
                 min: 16,
                 max: 32,
                 divisions: 16,
                 label: '${settings.actionIconSize.toStringAsFixed(0)}px',
-                description: '返信・ブースト・お気に入りボタン',
+                description: context.l10n.appearanceActionIconSizeDesc,
                 onChanged: notifier.setActionIconSize,
               ),
             ],
@@ -618,30 +619,30 @@ class AppearanceSettingsPage extends ConsumerWidget {
 
           // ========== カスタム絵文字 ==========
           SettingsSection(
-            title: 'カスタム絵文字',
+            title: context.l10n.appearanceSectionEmoji,
             children: [
               _SliderTile(
                 icon: Icons.badge,
                 iconColor: Colors.orange,
-                title: '表示名での絵文字サイズ',
+                title: context.l10n.appearanceEmojiDisplayNameTitle,
                 value: settings.emojiScaleInDisplayName,
                 min: 0.4,
                 max: 4.0,
                 divisions: 18,
                 label: '${(settings.emojiScaleInDisplayName * 100).round()}%',
-                description: 'ユーザー名内のカスタム絵文字',
+                description: context.l10n.appearanceEmojiDisplayNameDesc,
                 onChanged: notifier.setEmojiScaleInDisplayName,
               ),
               _SliderTile(
                 icon: Icons.text_snippet,
                 iconColor: Colors.green,
-                title: '本文での絵文字サイズ',
+                title: context.l10n.appearanceEmojiContentTitle,
                 value: settings.emojiScale,
                 min: 0.4,
                 max: 4.0,
                 divisions: 18,
                 label: '${(settings.emojiScale * 100).round()}%',
-                description: '投稿本文内のカスタム絵文字',
+                description: context.l10n.appearanceEmojiContentDesc,
                 onChanged: notifier.setEmojiScale,
               ),
             ],
@@ -649,11 +650,11 @@ class AppearanceSettingsPage extends ConsumerWidget {
 
           // アニメーション (カスタム絵文字に紐付くサブセクション)
           SettingsSection(
-            title: 'アニメーション',
+            title: context.l10n.appearanceSectionAnimation,
             children: [
               SwitchListTile(
-                title: const Text('表示名でのアニメーションを無効化'),
-                subtitle: const Text('ユーザー名のカスタム絵文字アニメーションを停止'),
+                title: Text(context.l10n.appearanceDisableAnimNameTitle),
+                subtitle: Text(context.l10n.appearanceDisableAnimNameSubtitle),
                 value: settings.disableCustomEmojiAnimationInDisplayName,
                 onChanged:
                     notifier.setDisableCustomEmojiAnimationInDisplayName,
@@ -661,8 +662,9 @@ class AppearanceSettingsPage extends ConsumerWidget {
                     color: Colors.deepPurple),
               ),
               SwitchListTile(
-                title: const Text('本文でのアニメーションを無効化'),
-                subtitle: const Text('投稿本文のカスタム絵文字アニメーションを停止'),
+                title: Text(context.l10n.appearanceDisableAnimContentTitle),
+                subtitle:
+                    Text(context.l10n.appearanceDisableAnimContentSubtitle),
                 value: settings.disableCustomEmojiAnimationInContent,
                 onChanged: notifier.setDisableCustomEmojiAnimationInContent,
                 secondary:
@@ -673,18 +675,18 @@ class AppearanceSettingsPage extends ConsumerWidget {
 
           // ========== メディアとコンテンツ ==========
           SettingsSection(
-            title: 'メディアとコンテンツ',
+            title: context.l10n.appearanceSectionMedia,
             children: [
               SwitchListTile(
-                title: const Text('メディアのぼかしを常に解除'),
-                subtitle: const Text('NSFW や CW のメディアも、常にぼかしなしで表示'),
+                title: Text(context.l10n.appearanceNoBlurTitle),
+                subtitle: Text(context.l10n.appearanceNoBlurSubtitle),
                 value: settings.disableMediaBlur,
                 onChanged: notifier.setDisableMediaBlur,
                 secondary: const Icon(Icons.blur_off, color: Colors.cyan),
               ),
               SwitchListTile(
-                title: const Text('CWを常に開く'),
-                subtitle: const Text('コンテンツ警告のある投稿を常に展開表示'),
+                title: Text(context.l10n.appearanceExpandCwTitle),
+                subtitle: Text(context.l10n.appearanceExpandCwSubtitle),
                 value: settings.alwaysExpandCW,
                 onChanged: notifier.setAlwaysExpandCW,
                 secondary: const Icon(Icons.visibility, color: Colors.amber),

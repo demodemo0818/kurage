@@ -1054,5 +1054,265 @@
     "placeholders": {
       "domain": {"type": "String"}
     }
-  }
+  },
+
+  "notifFilterNoMatch": "該当する通知がありません",
+  "notifSeeAll": "全員を見る",
+  "notifSheetTitle": "{verb} ({count} 件)",
+  "@notifSheetTitle": {
+    "placeholders": {
+      "verb": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "notifGroupOthersSuffix": " 他 {count} 人が{verb}",
+  "@notifGroupOthersSuffix": {
+    "description": "グループ通知ヘッダーの表示名に続く後半。例: 「Name 他 3 人がブーストしました」",
+    "placeholders": {
+      "count": {"type": "int"},
+      "verb": {"type": "String"}
+    }
+  },
+  "notifFilterTitle": "通知フィルター",
+  "notifFilterSelectAll": "全て選択/解除",
+  "notifVerbFavourite": "お気に入りに追加しました",
+  "notifVerbReblog": "ブーストしました",
+  "notifVerbReaction": "リアクションしました",
+  "notifVerbFollow": "あなたをフォローしました",
+  "notifVerbFollowRequest": "フォローリクエストを送信しました",
+  "notifVerbPoll": "投票が終了しました",
+  "notifVerbStatus": "投稿しました",
+  "notifVerbQuote": "あなたの投稿を引用しました",
+  "notifVerbAddedToCollection": "あなたをコレクションに追加しました",
+  "notifVerbCollectionUpdate": "コレクションを更新しました",
+  "notifVerbGeneric": "通知",
+  "notifLabelFavourite": "がお気に入りに追加しました",
+  "notifLabelReblog": "がブーストしました",
+  "notifLabelReaction": "がリアクションしました",
+  "notifLabelMention": "があなたにメンションしました",
+  "notifLabelReply": "が返信しました",
+  "notifLabelFollow": "があなたをフォローしました",
+  "notifLabelPoll": "の投票が終了しました",
+  "notifLabelFollowRequest": "がフォローリクエストを送信しました",
+  "notifLabelStatus": "が投稿しました",
+  "notifLabelQuote": "があなたの投稿を引用しました",
+  "notifLabelAddedToCollection": "があなたをコレクションに追加しました",
+  "notifLabelCollectionUpdate": "のコレクションが更新されました",
+  "notifLabelUnknown": "からの通知",
+  "notifTypeMention": "メンション",
+  "notifTypeReply": "返信",
+  "notifTypeFavourite": "お気に入り",
+  "notifTypeReblog": "ブースト",
+  "notifTypeFollow": "フォロー",
+  "notifTypePoll": "投票",
+  "notifTypeReaction": "リアクション",
+  "notifTypeFollowRequest": "フォローリクエスト",
+  "notifTypeStatus": "投稿通知",
+  "notifTypeQuote": "引用",
+  "notifTypeAddedToCollection": "コレクション追加",
+  "notifTypeCollectionUpdate": "コレクション更新",
+  "notifTypeOther": "その他",
+
+  "appSettingsTitle": "アプリ設定",
+  "appSettingsSectionConfirmations": "リアクション確認",
+  "appSettingsConfirmReblogTitle": "ブースト時の確認ダイアログ",
+  "appSettingsConfirmReblogSubtitle": "ブースト追加時に確認ダイアログを表示",
+  "appSettingsConfirmUnreblogTitle": "ブースト解除時の確認ダイアログ",
+  "appSettingsConfirmUnreblogSubtitle": "ブースト解除時に確認ダイアログを表示",
+  "appSettingsConfirmFavouriteTitle": "お気に入り時の確認ダイアログ",
+  "appSettingsConfirmFavouriteSubtitle": "お気に入り追加時に確認ダイアログを表示",
+  "appSettingsConfirmUnfavouriteTitle": "お気に入り解除時の確認ダイアログ",
+  "appSettingsConfirmUnfavouriteSubtitle": "お気に入り解除時に確認ダイアログを表示",
+  "appSettingsConfirmBookmarkTitle": "ブックマーク時の確認ダイアログ",
+  "appSettingsConfirmBookmarkSubtitle": "ブックマーク追加時に確認ダイアログを表示",
+  "appSettingsConfirmUnbookmarkTitle": "ブックマーク解除時の確認ダイアログ",
+  "appSettingsConfirmUnbookmarkSubtitle": "ブックマーク解除時に確認ダイアログを表示",
+  "appSettingsSectionOther": "その他",
+  "appSettingsConfirmAppExitTitle": "アプリ終了時の確認ダイアログ",
+  "appSettingsConfirmAppExitSubtitle": "戻るボタンでアプリを終了する際に確認ダイアログを表示します",
+  "appSettingsKeepScreenOnTitle": "スリープ無効化",
+  "appSettingsKeepScreenOnSubtitle": "アプリ使用中の画面の自動消灯を防ぎます",
+  "appSettingsSectionImageSave": "画像の保存先",
+  "appSettingsImageSaveDirTitle": "保存先フォルダ",
+  "appSettingsImageSaveDirIgnored": "「保存先を毎回確認する」が ON のとき無視されます",
+  "appSettingsImageSaveDirDefault": "ダウンロード（既定）",
+  "appSettingsImageSaveDirResetTooltip": "既定（ダウンロード）に戻す",
+  "appSettingsConfirmImageSaveTitle": "保存先を毎回確認する",
+  "appSettingsConfirmImageSaveSubtitle": "画像を保存するたびに保存先を選ぶダイアログを表示します",
+  "appSettingsSectionSound": "サウンド（効果音）",
+  "appSettingsSoundNotificationTitle": "通知受信時に音を鳴らす",
+  "appSettingsSoundNotificationSubtitle": "アプリ表示中に通知が届いたとき効果音を鳴らします",
+  "appSettingsSoundPostTitle": "投稿完了時に音を鳴らす",
+  "appSettingsSoundPostSubtitle": "投稿が完了したとき効果音を鳴らします",
+  "appSettingsSoundRefreshTitle": "引っ張って更新時に音を鳴らす",
+  "appSettingsSoundRefreshSubtitle": "タイムラインを引っ張って更新したとき効果音を鳴らします",
+  "appSettingsSectionBossKey": "ボスキー（偽装モード）",
+  "appSettingsBossKeyTitle": "ボスキーを有効にする",
+  "appSettingsBossKeySubtitle": "F9 でアプリ全体を某検索サイト風の見た目に切り替えます（もう一度 F9 で戻る。macOS では Fn+F9 の場合あり）",
+  "appSettingsSectionBackup": "バックアップ",
+  "appSettingsExportTitle": "設定をエクスポート",
+  "appSettingsExportSubtitle": "設定・カラム・アカウントを .json に書き出します (アクセストークンを含む)",
+  "appSettingsImportTitle": "設定をインポート",
+  "appSettingsImportSubtitle": "バックアップ .json から復元します (現在のデータを上書き)",
+  "appSettingsSectionNotifications": "通知",
+  "appSettingsPushTitle": "プッシュ通知",
+  "appSettingsPushSubtitle": "メンション・ブースト・お気に入りなどの通知を受け取ります。オフにするとサーバへの購読を解除します",
+  "appSettingsPushDiagTitle": "プッシュ通知の状態を確認",
+  "appSettingsPushDiagSubtitle": "通知権限・接続状態を確認し、全アカウントの購読を再登録します。通知が届かないときにお試しください",
+  "appSettingsSectionPrivacy": "プライバシー・サポート",
+  "appSettingsCrashReportTitle": "クラッシュレポートを送信",
+  "appSettingsCrashReportSubtitle": "アプリが異常終了したときにスタックトレースを開発者に送信します (個人を特定できる情報は含みません)",
+  "appSettingsAnalyticsTitle": "利用状況の解析を送信",
+  "appSettingsAnalyticsSubtitle": "どの機能がどれくらい使われているかの匿名の集計情報を送信します (個人やアカウント・投稿内容を特定できる情報は含みません)",
+  "appSettingsPushChecking": "確認中…",
+  "appSettingsPushDiagFailed": "診断に失敗しました: {error}",
+  "@appSettingsPushDiagFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "appSettingsPushStatusTitle": "プッシュ通知の状態",
+  "appSettingsExportWarnTitle": "エクスポートの注意",
+  "appSettingsExportWarnBody": "このバックアップには全アカウント ({count} 件) のアクセストークン (ログイン情報) が含まれます。\n\nファイルが第三者の手に渡るとアカウントを乗っ取られる恐れがあります。保存先・共有先に十分注意してください。",
+  "@appSettingsExportWarnBody": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "appSettingsContinue": "続行",
+  "appSettingsExportDone": "バックアップを書き出しました",
+  "appSettingsExportFailed": "エクスポートに失敗しました: {error}",
+  "@appSettingsExportFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "appSettingsFileOpenFailed": "ファイルを開けませんでした: {error}",
+  "@appSettingsFileOpenFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "appSettingsImportParseFailed": "インポートできませんでした: {error}",
+  "@appSettingsImportParseFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "appSettingsImportConfirmTitle": "バックアップを復元",
+  "appSettingsImportConfirmBody": "このファイルには以下が含まれます:\n・アカウント {accounts} 件\n・カラム {columns} 件\n・設定 {settings}\n\nインポートすると現在のアカウント・カラム・設定は上書きされます。続行しますか？",
+  "@appSettingsImportConfirmBody": {
+    "placeholders": {
+      "accounts": {"type": "int"},
+      "columns": {"type": "int"},
+      "settings": {"type": "String"}
+    }
+  },
+  "appSettingsImportHasSettingsYes": "あり",
+  "appSettingsImportHasSettingsNo": "なし",
+  "appSettingsImportAction": "インポート",
+  "appSettingsImportDone": "インポートしました (一部はアプリ再起動後に反映されます)",
+  "appSettingsImportFailed": "インポートに失敗しました: {error}",
+  "@appSettingsImportFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "appearanceTitle": "外観設定",
+  "appearanceFontTitle": "フォント",
+  "appearanceFontDeviceDefault": "端末デフォルト",
+  "appearanceFontDeviceDefaultSubtitle": "OS のフォント（ダウンロードなし）",
+  "appearanceFontDownloadNote": "フォントを変更すると初回はダウンロードが発生し、その分キャッシュ（端末ストレージ）が増えます。日本語フォントは字数が多く、1 書体あたり数 MB〜十数 MB になることがあります。2 回目以降はキャッシュから読み込みます。",
+  "appearanceThemeModeTitle": "テーマモード",
+  "appearanceThemeModeLight": "ライト",
+  "appearanceThemeModeDark": "ダーク",
+  "appearanceThemeModeSystem": "システム設定に追従",
+  "appearanceTimelineLayoutLine": "線で区切る",
+  "appearanceTimelineLayoutCard": "カードで区切る",
+  "appearanceTimelineLayoutPickerTitle": "タイムラインの区切り",
+  "appearanceTimelineLayoutLineDesc": "従来の細い水平線",
+  "appearanceTimelineLayoutCardDesc": "各投稿を角丸カードで囲む",
+  "appearanceMediaLayoutTitle": "サムネイル表示",
+  "appearanceMediaLayoutHorizontal": "横スクロール",
+  "appearanceMediaLayoutGrid": "グリッド表示",
+  "appearanceMediaLayoutHorizontalDesc": "高さ固定の横並びで一覧表示",
+  "appearanceMediaLayoutGridDesc": "枚数に合わせてタイル状に並べる (1〜4 枚、それ以上は +N)",
+  "appearanceOgpTitle": "リンクプレビュー表示",
+  "appearanceOgpStandard": "大きく表示",
+  "appearanceOgpCompact": "コンパクト表示",
+  "appearanceOgpStandardDesc": "従来の 16:9 ヘッダー画像 + 題名 + 説明",
+  "appearanceOgpCompactDesc": "左に小サムネ + 題名・ドメインを横並びで省スペース表示",
+  "appearanceColorPickerTitle": "テーマカラーを選択",
+  "appearancePresetColors": "プリセットカラー",
+  "appearanceCustomColor": "カスタムカラー",
+  "appearanceHue": "色相",
+  "appearanceApply": "適用",
+  "appearanceSectionTheme": "テーマ",
+  "appearanceThemeColorTitle": "テーマカラー",
+  "appearanceThemeColorSubtitle": "アプリ全体のアクセントカラーを変更します",
+  "appearanceSectionTimeline": "タイムライン表示",
+  "appearancePostSeparatorTitle": "投稿の区切り",
+  "appearancePhotoSizeTitle": "画像のサムネイルサイズ",
+  "appearancePhotoSizeDesc": "タイムラインに並ぶ画像サムネイルの大きさ (横スクロール表示のみ)",
+  "appearanceRelativeTimeTitle": "相対時間を表示",
+  "appearanceRelativeTimeSubtitle": "「5分前」のような相対的な時間表示を使用",
+  "appearanceShowUserIdTitle": "ユーザーIDを表示",
+  "appearanceShowUserIdSubtitle": "@username@domain の形式でユーザーIDを表示",
+  "appearanceShowPostActionsTitle": "投稿アクションバーを常に表示",
+  "appearanceShowPostActionsSubtitle": "返信・ブースト・お気に入りボタンを常に表示",
+  "appearanceShowReactionCountsTitle": "リアクション数を表示",
+  "appearanceShowReactionCountsSubtitle": "ブーストやお気に入りの数を表示",
+  "appearanceShowViaTitle": "投稿元アプリを表示",
+  "appearanceShowViaSubtitle": "投稿元クライアント名を表示 (投稿者が開示している場合のみ)",
+  "appearanceSectionNotifications": "通知表示",
+  "appearanceGroupNotifTitle": "通知をグルーピング表示",
+  "appearanceGroupNotifSubtitle": "同じ投稿への複数リアクションを「○○さん 他N人が…」とまとめます (Mastodon 4.3+)",
+  "appearanceSectionText": "文字とレイアウト",
+  "appearanceFontSizeTitle": "文字サイズ",
+  "appearanceLineHeightTitle": "行間",
+  "appearanceLineHeightDesc": "本文の行間",
+  "appearanceLineHeightValue": "{value}倍",
+  "@appearanceLineHeightValue": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "appearanceCollapseTitle": "投稿の折りたたみ行数",
+  "appearanceCollapseDisabled": "無効",
+  "appearanceCollapseLines": "{n}行",
+  "@appearanceCollapseLines": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "appearanceCollapseDescDisabled": "無効（すべて表示）",
+  "appearanceCollapseDescLines": "{n}行を超える投稿を折りたたみます",
+  "@appearanceCollapseDescLines": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "appearanceSectionIcons": "アイコンとボタン",
+  "appearanceAvatarSizeTitle": "アイコンのサイズ",
+  "appearanceAvatarSizeDesc": "プロフィールアイコンの直径",
+  "appearanceAvatarSquareTitle": "アイコンを四角表示",
+  "appearanceAvatarSquareSubtitle": "プロフィールアイコンを四角形で表示",
+  "appearanceActionIconSizeTitle": "アクションボタンのサイズ",
+  "appearanceActionIconSizeDesc": "返信・ブースト・お気に入りボタン",
+  "appearanceSectionEmoji": "カスタム絵文字",
+  "appearanceEmojiDisplayNameTitle": "表示名での絵文字サイズ",
+  "appearanceEmojiDisplayNameDesc": "ユーザー名内のカスタム絵文字",
+  "appearanceEmojiContentTitle": "本文での絵文字サイズ",
+  "appearanceEmojiContentDesc": "投稿本文内のカスタム絵文字",
+  "appearanceSectionAnimation": "アニメーション",
+  "appearanceDisableAnimNameTitle": "表示名でのアニメーションを無効化",
+  "appearanceDisableAnimNameSubtitle": "ユーザー名のカスタム絵文字アニメーションを停止",
+  "appearanceDisableAnimContentTitle": "本文でのアニメーションを無効化",
+  "appearanceDisableAnimContentSubtitle": "投稿本文のカスタム絵文字アニメーションを停止",
+  "appearanceSectionMedia": "メディアとコンテンツ",
+  "appearanceNoBlurTitle": "メディアのぼかしを常に解除",
+  "appearanceNoBlurSubtitle": "NSFW や CW のメディアも、常にぼかしなしで表示",
+  "appearanceExpandCwTitle": "CWを常に開く",
+  "appearanceExpandCwSubtitle": "コンテンツ警告のある投稿を常に展開表示"
 }
