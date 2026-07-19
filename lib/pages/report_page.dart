@@ -18,6 +18,7 @@
 import '../widgets/network_image_x.dart';
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n.dart';
 import '../models/account.dart';
 import '../models/auth_account.dart';
 import '../models/instance_rule.dart';
@@ -169,21 +170,21 @@ class _ReportPageState extends State<ReportPage> {
       builder: (ctx) {
         final n = _selectedStatusIds.length;
         return AlertDialog(
-          title: const Text('通報を送信'),
+          title: Text(ctx.l10n.reportSendTitle),
           content: Text(
-            '@${widget.targetAccount.acct} を通報します。'
-            '${n > 0 ? '\n\n$n 件の投稿を含めて送信します。' : '\n\n投稿は含めずアカウントのみ通報します。'}'
-            '\n\nよろしいですか?',
+            '${ctx.l10n.reportConfirmTarget(widget.targetAccount.acct)}'
+            '\n\n${n > 0 ? ctx.l10n.reportConfirmWithPosts(n) : ctx.l10n.reportConfirmNoPosts}'
+            '\n\n${ctx.l10n.reportConfirmProceed}',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('キャンセル'),
+              child: Text(ctx.l10n.cancel),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('通報'),
+              child: Text(ctx.l10n.reportAction),
             ),
           ],
         );
@@ -207,7 +208,7 @@ class _ReportPageState extends State<ReportPage> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('通報を送信しました')),
+        SnackBar(content: Text(context.l10n.reportSent)),
       );
       // Deck ポップアップの最初のページのときは Navigator.pop が効かない
       // (nested Navigator の唯一のルート) ので onDeckBack で閉じる。
@@ -219,7 +220,7 @@ class _ReportPageState extends State<ReportPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      showErrorSnackBar(context, '通報送信に失敗しました: $e');
+      showErrorSnackBar(context, context.l10n.reportSendFailed('$e'));
     }
   }
 
@@ -233,7 +234,7 @@ class _ReportPageState extends State<ReportPage> {
         leading: widget.onDeckBack == null
             ? null
             : BackButton(onPressed: widget.onDeckBack),
-        title: const Text('通報'),
+        title: Text(context.l10n.reportAction),
         actions: [
           TextButton(
             onPressed: canSubmit ? _submit : null,
@@ -243,7 +244,7 @@ class _ReportPageState extends State<ReportPage> {
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('送信'),
+                : Text(context.l10n.send),
           ),
         ],
       ),
@@ -268,9 +269,8 @@ class _ReportPageState extends State<ReportPage> {
           const SizedBox(height: 24),
           // 注意書き。通報先 (自インスタンス管理者) を明示しておく。
           Text(
-            '通報内容は ${Uri.parse(widget.authAccount.instanceUrl).host} '
-            'のモデレーターに送信されます。'
-            '${_isRemote && _forward ? '\n相手サーバ (${widget.targetAccount.acct.split('@').last}) のモデレーターにも転送されます。' : ''}',
+            '${context.l10n.reportModeratorNotice(Uri.parse(widget.authAccount.instanceUrl).host)}'
+            '${_isRemote && _forward ? '\n${context.l10n.reportForwardNotice(widget.targetAccount.acct.split('@').last)}' : ''}',
             style: TextStyle(fontSize: 12, color: theme.hintColor),
           ),
           const SizedBox(height: 24),
@@ -324,7 +324,7 @@ class _ReportPageState extends State<ReportPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionLabel('通報の理由'),
+        _SectionLabel(context.l10n.reportReasonSection),
         RadioGroup<String>(
           groupValue: _category,
           onChanged: (v) {
@@ -338,14 +338,14 @@ class _ReportPageState extends State<ReportPage> {
           },
           child: Column(
             children: [
-              _categoryRadio('spam', 'スパム / 迷惑行為',
-                  'なりすまし、スパム、不正リンクなど'),
-              _categoryRadio('violation', 'サーバールール違反',
-                  'このサーバーのルールに違反している'),
-              _categoryRadio('legal', '法的問題',
-                  '違法コンテンツ、著作権侵害など'),
-              _categoryRadio('other', 'その他',
-                  'どれにも当てはまらない'),
+              _categoryRadio('spam', context.l10n.reportCategorySpam,
+                  context.l10n.reportCategorySpamDesc),
+              _categoryRadio('violation', context.l10n.reportCategoryViolation,
+                  context.l10n.reportCategoryViolationDesc),
+              _categoryRadio('legal', context.l10n.reportCategoryLegal,
+                  context.l10n.reportCategoryLegalDesc),
+              _categoryRadio('other', context.l10n.reportCategoryOther,
+                  context.l10n.reportCategoryOtherDesc),
             ],
           ),
         ),
@@ -378,8 +378,7 @@ class _ReportPageState extends State<ReportPage> {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
-          'このサーバーはルールを公開していません。\n'
-          'コメント欄に詳細を記入してください。',
+          context.l10n.reportNoRulesPublished,
           style: TextStyle(color: theme.hintColor),
         ),
       );
@@ -387,7 +386,7 @@ class _ReportPageState extends State<ReportPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionLabel('違反したルール (任意 / 複数選択可)'),
+        _SectionLabel(context.l10n.reportViolatedRules),
         for (final r in _rules)
           CheckboxListTile(
             value: _selectedRuleIds.contains(r.id),
@@ -419,7 +418,8 @@ class _ReportPageState extends State<ReportPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionLabel('含める投稿 (${_selectedStatusIds.length} 件)'),
+        _SectionLabel(
+            context.l10n.reportIncludedPosts(_selectedStatusIds.length)),
         if (source != null) _statusCheckTile(source, isSource: true),
         // 「他の投稿も含める」を tap で展開 → fetch
         Padding(
@@ -429,8 +429,8 @@ class _ReportPageState extends State<ReportPage> {
                 ? Icons.expand_less
                 : Icons.expand_more),
             label: Text(_moreStatusesExpanded
-                ? '他の投稿の選択を閉じる'
-                : '他の投稿も選択する'),
+                ? context.l10n.reportCollapseOtherPosts
+                : context.l10n.reportExpandOtherPosts),
             onPressed: () {
               setState(() => _moreStatusesExpanded = !_moreStatusesExpanded);
               if (_moreStatusesExpanded &&
@@ -460,13 +460,13 @@ class _ReportPageState extends State<ReportPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '投稿一覧を取得できませんでした',
+              context.l10n.reportPostsFetchFailed,
               style: TextStyle(color: theme.colorScheme.error),
             ),
             const SizedBox(height: 4),
             TextButton.icon(
               icon: const Icon(Icons.refresh),
-              label: const Text('再試行'),
+              label: Text(context.l10n.retry),
               onPressed: _loadOtherStatuses,
             ),
           ],
@@ -477,7 +477,7 @@ class _ReportPageState extends State<ReportPage> {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Text(
-          '他に通報できる投稿はありません。',
+          context.l10n.reportNoMorePosts,
           style: TextStyle(color: theme.hintColor),
         ),
       );
@@ -514,13 +514,14 @@ class _ReportPageState extends State<ReportPage> {
             : (s.spoilerText.isNotEmpty
                 ? 'CW: ${s.spoilerText}'
                 : (s.mediaAttachments.isNotEmpty
-                    ? '(${s.mediaAttachments.length} 件のメディア)'
-                    : '(本文なし)')),
+                    ? context.l10n
+                        .reportMediaOnlyCount(s.mediaAttachments.length)
+                    : context.l10n.reportNoBody)),
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
-        '${formatRelative(s.createdAt)}${isSource ? ' ・ 起点の投稿' : ''}',
+        '${formatRelative(s.createdAt)}${isSource ? ' ・ ${context.l10n.reportSourcePost}' : ''}',
         style: const TextStyle(fontSize: 11),
       ),
       controlAffinity: ListTileControlAffinity.leading,
@@ -533,15 +534,15 @@ class _ReportPageState extends State<ReportPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionLabel('追加コメント (任意)'),
+        _SectionLabel(context.l10n.reportCommentSection),
         TextField(
           controller: _commentController,
           minLines: 3,
           maxLines: 6,
           maxLength: _commentMaxChars,
-          decoration: const InputDecoration(
-            hintText: 'モデレーターに伝えたい補足情報を記入できます',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            hintText: context.l10n.reportCommentHint,
+            border: const OutlineInputBorder(),
           ),
         ),
       ],
@@ -553,8 +554,8 @@ class _ReportPageState extends State<ReportPage> {
     return SwitchListTile(
       value: _forward,
       onChanged: (v) => setState(() => _forward = v),
-      title: const Text('相手サーバへ転送'),
-      subtitle: Text('$domain のモデレーターにも通報内容を共有します'),
+      title: Text(context.l10n.reportForwardTitle),
+      subtitle: Text(context.l10n.reportForwardSubtitle(domain)),
       contentPadding: EdgeInsets.zero,
       dense: true,
     );

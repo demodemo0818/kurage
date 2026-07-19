@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/l10n.dart';
 import '../models/auth_account.dart';
 import '../providers/auth_provider.dart';
 import '../services/mastodon_api.dart' as api;
@@ -51,7 +52,7 @@ class _ScheduledPostsPageState extends ConsumerState<ScheduledPostsPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('予約投稿の読み込みに失敗しました: $e')),
+          SnackBar(content: Text(context.l10n.scheduledLoadFailed('$e'))),
         );
       }
     } finally {
@@ -68,16 +69,16 @@ class _ScheduledPostsPageState extends ConsumerState<ScheduledPostsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('予約投稿を削除'),
-        content: const Text('この予約投稿を削除しますか？'),
+        title: Text(context.l10n.scheduledDeleteTitle),
+        content: Text(context.l10n.scheduledDeleteConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('キャンセル'),
+            child: Text(context.l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('削除'),
+            child: Text(context.l10n.delete),
           ),
         ],
       ),
@@ -101,13 +102,13 @@ class _ScheduledPostsPageState extends ConsumerState<ScheduledPostsPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('予約投稿を削除しました')),
+          SnackBar(content: Text(context.l10n.scheduledDeleted)),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('削除に失敗しました: $e')),
+          SnackBar(content: Text(context.l10n.deleteFailed('$e'))),
         );
       }
     }
@@ -127,10 +128,10 @@ class _ScheduledPostsPageState extends ConsumerState<ScheduledPostsPage> {
       initialDate: currentScheduledAt.isAfter(minDate) ? currentScheduledAt : minDate,
       firstDate: minDate,
       lastDate: now.add(const Duration(days: 365)),
-      helpText: '新しい予約日を選択',
-      cancelText: 'キャンセル',
+      helpText: context.l10n.scheduledPickDateHelp,
+      cancelText: context.l10n.cancel,
       confirmText: 'OK',
-      locale: const Locale('ja', 'JP'),
+      // locale 指定なし = アプリの表示言語 (MaterialApp の locale) に追従
     );
 
     if (selectedDate == null) return;
@@ -140,18 +141,11 @@ class _ScheduledPostsPageState extends ConsumerState<ScheduledPostsPage> {
     final selectedTime = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(currentScheduledAt),
-      helpText: '新しい予約時刻を選択',
-      hourLabelText: '時',
-      minuteLabelText: '分',
-      cancelText: 'キャンセル',
+      helpText: context.l10n.scheduledPickTimeHelp,
+      hourLabelText: context.l10n.hourLabel,
+      minuteLabelText: context.l10n.minuteLabel,
+      cancelText: context.l10n.cancel,
       confirmText: 'OK',
-      builder: (BuildContext context, Widget? child) {
-        return Localizations.override(
-          context: context,
-          locale: const Locale('ja', 'JP'),
-          child: child!,
-        );
-      },
     );
 
     if (selectedTime == null) return;
@@ -167,7 +161,7 @@ class _ScheduledPostsPageState extends ConsumerState<ScheduledPostsPage> {
     if (newScheduledAt.isBefore(minDate)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('予約時刻は5分後以降を選択してください')),
+          SnackBar(content: Text(context.l10n.scheduledMinFiveMinutes)),
         );
       }
       return;
@@ -186,13 +180,13 @@ class _ScheduledPostsPageState extends ConsumerState<ScheduledPostsPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('予約時刻を変更しました')),
+          SnackBar(content: Text(context.l10n.scheduledTimeChanged)),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('時刻変更に失敗しました: $e')),
+          SnackBar(content: Text(context.l10n.scheduledTimeChangeFailed('$e'))),
         );
       }
     }
@@ -210,19 +204,20 @@ class _ScheduledPostsPageState extends ConsumerState<ScheduledPostsPage> {
     final timeStr = '${scheduledAt.hour.toString().padLeft(2, '0')}:${scheduledAt.minute.toString().padLeft(2, '0')}';
     
     if (scheduledDate == today) {
-      return '今日 $timeStr';
+      return l10n.scheduledToday(timeStr);
     }
-    
+
     final tomorrow = today.add(const Duration(days: 1));
     if (scheduledDate == tomorrow) {
-      return '明日 $timeStr';
+      return l10n.scheduledTomorrow(timeStr);
     }
-    
+
     if (scheduledAt.year == now.year) {
-      return '${scheduledAt.month}月${scheduledAt.day}日 $timeStr';
+      return l10n.scheduledDateShort(scheduledAt.month, scheduledAt.day, timeStr);
     }
-    
-    return '${scheduledAt.year}年${scheduledAt.month}月${scheduledAt.day}日 $timeStr';
+
+    return l10n.scheduledDateFull(
+        scheduledAt.year, scheduledAt.month, scheduledAt.day, timeStr);
   }
 
   @override
@@ -231,7 +226,7 @@ class _ScheduledPostsPageState extends ConsumerState<ScheduledPostsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('予約投稿管理'),
+        title: Text(context.l10n.settingsScheduledPosts),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: widget.onDeckBack ?? () => Navigator.pop(context),
@@ -239,7 +234,7 @@ class _ScheduledPostsPageState extends ConsumerState<ScheduledPostsPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: '更新',
+            tooltip: context.l10n.refresh,
             onPressed: _loadScheduledPosts,
           ),
         ],
@@ -249,15 +244,16 @@ class _ScheduledPostsPageState extends ConsumerState<ScheduledPostsPage> {
           : RefreshIndicator(
               onRefresh: _loadScheduledPosts,
               child: _scheduledPosts.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.schedule, size: 64, color: Colors.grey),
-                          SizedBox(height: 16),
+                          const Icon(Icons.schedule,
+                              size: 64, color: Colors.grey),
+                          const SizedBox(height: 16),
                           Text(
-                            '予約投稿はありません',
-                            style: TextStyle(
+                            context.l10n.scheduledEmpty,
+                            style: const TextStyle(
                               fontSize: 18,
                               color: Colors.grey,
                             ),
@@ -281,9 +277,9 @@ class _ScheduledPostsPageState extends ConsumerState<ScheduledPostsPage> {
                               ),
                               title: Text(account.displayName),
                               subtitle: Text('@${account.username}@${account.host}'),
-                              trailing: const Text(
-                                '予約投稿なし',
-                                style: TextStyle(color: Colors.grey),
+                              trailing: Text(
+                                context.l10n.scheduledNoneShort,
+                                style: const TextStyle(color: Colors.grey),
                               ),
                             ),
                           );
@@ -299,7 +295,7 @@ class _ScheduledPostsPageState extends ConsumerState<ScheduledPostsPage> {
                             title: Text(account.displayName),
                             subtitle: Text('@${account.username}@${account.host}'),
                             trailing: Text(
-                              '${posts.length}件',
+                              context.l10n.countItems(posts.length),
                               style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                             children: posts.map((post) {
@@ -310,7 +306,7 @@ class _ScheduledPostsPageState extends ConsumerState<ScheduledPostsPage> {
                                 title: Text(
                                   content.isNotEmpty
                                       ? (content.length > 50 ? '${content.substring(0, 50)}...' : content)
-                                      : '(メディアのみ)',
+                                      : context.l10n.scheduledMediaOnly,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -318,13 +314,17 @@ class _ScheduledPostsPageState extends ConsumerState<ScheduledPostsPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      '予約時刻: ${_formatScheduledTime(scheduledAt)}',
+                                      context.l10n.scheduledTimeLabel(
+                                          _formatScheduledTime(scheduledAt)),
                                       style: const TextStyle(fontWeight: FontWeight.w500),
                                     ),
                                     if (post['params']['media_ids'] != null && 
                                         (post['params']['media_ids'] as List).isNotEmpty)
                                       Text(
-                                        'メディア: ${(post['params']['media_ids'] as List).length}件',
+                                        context.l10n.scheduledMediaCount(
+                                            (post['params']['media_ids']
+                                                    as List)
+                                                .length),
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: Colors.grey.shade600,
@@ -344,19 +344,23 @@ class _ScheduledPostsPageState extends ConsumerState<ScheduledPostsPage> {
                                     }
                                   },
                                   itemBuilder: (context) => [
-                                    const PopupMenuItem(
+                                    PopupMenuItem(
                                       value: 'edit',
                                       child: ListTile(
-                                        leading: Icon(Icons.edit),
-                                        title: Text('時刻変更'),
+                                        leading: const Icon(Icons.edit),
+                                        title: Text(
+                                            context.l10n.scheduledChangeTime),
                                         dense: true,
                                       ),
                                     ),
-                                    const PopupMenuItem(
+                                    PopupMenuItem(
                                       value: 'delete',
                                       child: ListTile(
-                                        leading: Icon(Icons.delete, color: Colors.red),
-                                        title: Text('削除', style: TextStyle(color: Colors.red)),
+                                        leading: const Icon(Icons.delete,
+                                            color: Colors.red),
+                                        title: Text(context.l10n.delete,
+                                            style: const TextStyle(
+                                                color: Colors.red)),
                                         dense: true,
                                       ),
                                     ),

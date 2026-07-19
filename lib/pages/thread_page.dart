@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
+import '../l10n/l10n.dart';
 import '../models/status_context.dart';
 import '../models/status.dart';
 import '../providers/auth_provider.dart';
@@ -67,7 +68,7 @@ class ThreadPage extends ConsumerWidget {
       appBar: AppBar(
         leading:
             onDeckBack == null ? null : BackButton(onPressed: onDeckBack),
-        title: const Text('返信ツリー'),
+        title: Text(context.l10n.threadTitle),
       ),
       body: FutureBuilder<StatusContext>(
         future: _fetchStatusContextFromCorrectAccount(auth, threadRootStatusId, sourceAccountId, originalStatus, overrideInstanceUrl),
@@ -83,16 +84,16 @@ class ThreadPage extends ConsumerWidget {
                 children: [
                   const Icon(Icons.error, size: 64, color: Colors.red),
                   const SizedBox(height: 16),
-                  Text('エラー: ${snapshot.error}'),
+                  Text(context.l10n.genericError('${snapshot.error}')),
                   const SizedBox(height: 8),
-                  Text('アカウント: ${acct.displayName}'),
-                  Text('インスタンス: ${acct.instanceUrl}'),
-                  Text('ステータスID: $threadRootStatusId'),
+                  Text(context.l10n.threadAccountLabel(acct.displayName)),
+                  Text(context.l10n.threadInstanceLabel(acct.instanceUrl)),
+                  Text(context.l10n.threadStatusIdLabel(threadRootStatusId)),
                 ],
               ),
             );
           } else if (!snapshot.hasData) {
-            return const Center(child: Text('データが見つかりません'));
+            return Center(child: Text(context.l10n.threadNoData));
           }
 
           final contextData = snapshot.data!;
@@ -252,7 +253,7 @@ class _ThreadListViewState extends ConsumerState<_ThreadListView> {
       if (resp.statusCode == 200) {
         return Status.fromJson(jsonDecode(resp.body) as Map<String, dynamic>);
       }
-      throw Exception('投稿元サーバから取得失敗: ${resp.statusCode}');
+      throw Exception(l10n.threadRemoteFetchFailed('${resp.statusCode}'));
     }
 
     // まず指定されたアカウントで試行（存在する場合）
@@ -345,7 +346,7 @@ class _ThreadListViewState extends ConsumerState<_ThreadListView> {
               children: [
                 // 簡易的に「先祖・子孫かどうか」をわかりやすく色やラベルで付けたい場合は、ここに条件分岐を入れて装飾できます
                 if (index == _ancestors.length)
-                  Text('🟢 現在の投稿',
+                  Text(context.l10n.threadCurrentPost,
                       style: TextStyle(
                           color: Colors.blue.shade700, fontSize: 12)),
 
@@ -510,7 +511,7 @@ Future<StatusContext> _fetchStatusContextFromCorrectAccount(
   
   // すべて失敗した場合
   debugPrint('💥 All resolution attempts failed for status $statusId');
-  throw Exception('ステータス $statusId がどのアカウントでも見つかりません');
+  throw Exception(l10n.threadStatusNotFound(statusId));
 }
 
 /// URLからステータスIDを抽出

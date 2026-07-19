@@ -811,5 +811,248 @@
   "keywordHint": "キーワード",
   "filterWholeWord": "完全一致",
   "filterNoKeywords": "キーワードがありません。「追加」から登録してください。",
-  "filterExpirationPickerTitle": "失効までの期間"
+  "filterExpirationPickerTitle": "失効までの期間",
+
+  "deleteFailed": "削除に失敗しました: {error}",
+  "@deleteFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "countItems": "{count}件",
+  "@countItems": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "scheduledLoadFailed": "予約投稿の読み込みに失敗しました: {error}",
+  "@scheduledLoadFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "scheduledDeleteTitle": "予約投稿を削除",
+  "scheduledDeleteConfirm": "この予約投稿を削除しますか？",
+  "scheduledDeleted": "予約投稿を削除しました",
+  "scheduledPickDateHelp": "新しい予約日を選択",
+  "scheduledPickTimeHelp": "新しい予約時刻を選択",
+  "hourLabel": "時",
+  "minuteLabel": "分",
+  "scheduledMinFiveMinutes": "予約時刻は5分後以降を選択してください",
+  "scheduledTimeChanged": "予約時刻を変更しました",
+  "scheduledTimeChangeFailed": "時刻変更に失敗しました: {error}",
+  "@scheduledTimeChangeFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "scheduledToday": "今日 {time}",
+  "@scheduledToday": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "scheduledTomorrow": "明日 {time}",
+  "@scheduledTomorrow": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "scheduledDateShort": "{month}月{day}日 {time}",
+  "@scheduledDateShort": {
+    "placeholders": {
+      "month": {"type": "int"},
+      "day": {"type": "int"},
+      "time": {"type": "String"}
+    }
+  },
+  "scheduledDateFull": "{year}年{month}月{day}日 {time}",
+  "@scheduledDateFull": {
+    "placeholders": {
+      "year": {"type": "int"},
+      "month": {"type": "int"},
+      "day": {"type": "int"},
+      "time": {"type": "String"}
+    }
+  },
+  "scheduledEmpty": "予約投稿はありません",
+  "scheduledNoneShort": "予約投稿なし",
+  "scheduledMediaOnly": "(メディアのみ)",
+  "scheduledTimeLabel": "予約時刻: {time}",
+  "@scheduledTimeLabel": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "scheduledMediaCount": "メディア: {count}件",
+  "@scheduledMediaCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "scheduledChangeTime": "時刻変更",
+
+  "threadTitle": "返信ツリー",
+  "threadAccountLabel": "アカウント: {name}",
+  "@threadAccountLabel": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "threadInstanceLabel": "インスタンス: {url}",
+  "@threadInstanceLabel": {
+    "placeholders": {
+      "url": {"type": "String"}
+    }
+  },
+  "threadStatusIdLabel": "ステータスID: {id}",
+  "@threadStatusIdLabel": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+  "threadNoData": "データが見つかりません",
+  "threadRemoteFetchFailed": "投稿元サーバから取得失敗: {code}",
+  "@threadRemoteFetchFailed": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "threadCurrentPost": "🟢 現在の投稿",
+  "threadStatusNotFound": "ステータス {id} がどのアカウントでも見つかりません",
+  "@threadStatusNotFound": {
+    "placeholders": {
+      "id": {"type": "String"}
+    }
+  },
+
+  "profileAdvancedSaveFailed": "詳細設定の保存に失敗しました: {error}",
+  "@profileAdvancedSaveFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "profileUpdated": "プロフィールを更新しました",
+  "profileUpdateFailed": "プロフィールの更新に失敗しました: {error}",
+  "@profileUpdateFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "profileEditTitle": "プロフィール編集",
+  "displayNameLabel": "表示名",
+  "bioLabel": "自己紹介",
+  "profileFieldsSection": "プロフィール補足",
+  "profileFieldsMax": "最大{count}つまで設定できます",
+  "@profileFieldsMax": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "profileLockedTitle": "非公開アカウント",
+  "profileLockedSubtitle": "フォローリクエストを承認制にする",
+  "profileBotTitle": "Botアカウント",
+  "profileBotSubtitle": "このアカウントが自動化されていることを示す",
+  "profileTapToChange": "タップして変更",
+  "profileAdvancedSection": "詳細設定 (Mastodon 4.6)",
+  "profileAvatarAltLabel": "アバターの代替テキスト",
+  "profileImageAltHelper": "視覚障碍のある人向けの画像説明",
+  "profileHeaderAltLabel": "ヘッダーの代替テキスト",
+  "profileShowMediaTab": "メディアタブを表示",
+  "profileMediaTabIncludeReplies": "メディアタブに返信を含める",
+  "profileShowFeaturedTab": "ピックアップ（注目の投稿）タブを表示",
+  "profileHideFollows": "フォロー / フォロワーを隠す",
+  "profileDiscoverable": "ディレクトリで見つけやすくする",
+  "profileDiscoverableSubtitle": "プロフィールディレクトリや提案に表示されることを許可",
+  "profileIndexable": "検索エンジンのインデックスを許可",
+  "profileAttributionSection": "帰属を許可するドメイン",
+  "profileAttributionHelp": "これらのドメインの記事で、あなたが著者として帰属表示されることを許可します。",
+  "profileAttributionAddLabel": "ドメインを追加 (例: example.com)",
+  "profileFieldLabelN": "ラベル {n}",
+  "@profileFieldLabelN": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "profileFieldValueN": "内容 {n}",
+  "@profileFieldValueN": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+
+  "reportSendTitle": "通報を送信",
+  "reportConfirmTarget": "@{acct} を通報します。",
+  "@reportConfirmTarget": {
+    "placeholders": {
+      "acct": {"type": "String"}
+    }
+  },
+  "reportConfirmWithPosts": "{count} 件の投稿を含めて送信します。",
+  "@reportConfirmWithPosts": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "reportConfirmNoPosts": "投稿は含めずアカウントのみ通報します。",
+  "reportConfirmProceed": "よろしいですか?",
+  "reportAction": "通報",
+  "reportSent": "通報を送信しました",
+  "reportSendFailed": "通報送信に失敗しました: {error}",
+  "@reportSendFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "reportModeratorNotice": "通報内容は {host} のモデレーターに送信されます。",
+  "@reportModeratorNotice": {
+    "placeholders": {
+      "host": {"type": "String"}
+    }
+  },
+  "reportForwardNotice": "相手サーバ ({domain}) のモデレーターにも転送されます。",
+  "@reportForwardNotice": {
+    "placeholders": {
+      "domain": {"type": "String"}
+    }
+  },
+  "reportReasonSection": "通報の理由",
+  "reportCategorySpam": "スパム / 迷惑行為",
+  "reportCategorySpamDesc": "なりすまし、スパム、不正リンクなど",
+  "reportCategoryViolation": "サーバールール違反",
+  "reportCategoryViolationDesc": "このサーバーのルールに違反している",
+  "reportCategoryLegal": "法的問題",
+  "reportCategoryLegalDesc": "違法コンテンツ、著作権侵害など",
+  "reportCategoryOther": "その他",
+  "reportCategoryOtherDesc": "どれにも当てはまらない",
+  "reportNoRulesPublished": "このサーバーはルールを公開していません。\nコメント欄に詳細を記入してください。",
+  "reportViolatedRules": "違反したルール (任意 / 複数選択可)",
+  "reportIncludedPosts": "含める投稿 ({count} 件)",
+  "@reportIncludedPosts": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "reportCollapseOtherPosts": "他の投稿の選択を閉じる",
+  "reportExpandOtherPosts": "他の投稿も選択する",
+  "reportPostsFetchFailed": "投稿一覧を取得できませんでした",
+  "reportNoMorePosts": "他に通報できる投稿はありません。",
+  "reportMediaOnlyCount": "({count} 件のメディア)",
+  "@reportMediaOnlyCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "reportNoBody": "(本文なし)",
+  "reportSourcePost": "起点の投稿",
+  "reportCommentSection": "追加コメント (任意)",
+  "reportCommentHint": "モデレーターに伝えたい補足情報を記入できます",
+  "reportForwardTitle": "相手サーバへ転送",
+  "reportForwardSubtitle": "{domain} のモデレーターにも通報内容を共有します",
+  "@reportForwardSubtitle": {
+    "placeholders": {
+      "domain": {"type": "String"}
+    }
+  }
 }

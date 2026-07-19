@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import '../l10n/l10n.dart';
 import '../models/auth_account.dart';
 import '../models/account.dart';
 import '../models/profile.dart';
@@ -256,7 +257,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
     } catch (e) {
       // 422 (バリデーション) 等。本文をそのまま見せて再試行できるようにする。
       if (mounted) {
-        showErrorSnackBar(context, '詳細設定の保存に失敗しました: $e');
+        showErrorSnackBar(context, context.l10n.profileAdvancedSaveFailed('$e'));
       }
       return false;
     }
@@ -313,13 +314,13 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('プロフィールを更新しました')),
+          SnackBar(content: Text(context.l10n.profileUpdated)),
         );
         Navigator.pop(context, true); // 更新成功を返す
       }
     } catch (e) {
       if (mounted) {
-        showErrorSnackBar(context, 'プロフィールの更新に失敗しました: $e');
+        showErrorSnackBar(context, context.l10n.profileUpdateFailed('$e'));
       }
     } finally {
       if (mounted) {
@@ -334,7 +335,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('プロフィール編集'),
+        title: Text(context.l10n.profileEditTitle),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _saveProfile,
@@ -348,7 +349,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                     ),
                   )
                 : Text(
-                    '保存',
+                    context.l10n.save,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.bold,
@@ -374,9 +375,9 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
             // 表示名
             TextField(
               controller: _displayNameController,
-              decoration: const InputDecoration(
-                labelText: '表示名',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.l10n.displayNameLabel,
+                border: const OutlineInputBorder(),
               ),
               maxLength: _maxDisplayName,
             ),
@@ -385,9 +386,9 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
             // 自己紹介
             TextField(
               controller: _noteController,
-              decoration: const InputDecoration(
-                labelText: '自己紹介',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.l10n.bioLabel,
+                border: const OutlineInputBorder(),
                 alignLabelWithHint: true,
               ),
               maxLines: 5,
@@ -396,13 +397,14 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
             const SizedBox(height: 24),
             
             // プロフィール補足
-            const Text(
-              'プロフィール補足',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              context.l10n.profileFieldsSection,
+              style:
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              '最大$_maxFieldsつまで設定できます',
+              context.l10n.profileFieldsMax(_maxFields),
               style: const TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 16),
@@ -413,15 +415,16 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
             const SizedBox(height: 24),
             
             // アカウント設定
-            const Text(
-              'アカウント設定',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              context.l10n.settingsAccountSettings,
+              style:
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             
             SwitchListTile(
-              title: const Text('非公開アカウント'),
-              subtitle: const Text('フォローリクエストを承認制にする'),
+              title: Text(context.l10n.profileLockedTitle),
+              subtitle: Text(context.l10n.profileLockedSubtitle),
               value: _isLocked,
               onChanged: (value) {
                 setState(() {
@@ -431,8 +434,8 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
             ),
             
             SwitchListTile(
-              title: const Text('Botアカウント'),
-              subtitle: const Text('このアカウントが自動化されていることを示す'),
+              title: Text(context.l10n.profileBotTitle),
+              subtitle: Text(context.l10n.profileBotSubtitle),
               value: _isBot,
               onChanged: (value) {
                 setState(() {
@@ -488,12 +491,12 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                 ),
               ),
             ),
-            const Positioned(
+            Positioned(
               bottom: 8,
               right: 8,
               child: Text(
-                'タップして変更',
-                style: TextStyle(
+                context.l10n.profileTapToChange,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 12,
                   backgroundColor: Colors.black54,
@@ -566,29 +569,29 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
       const SizedBox(height: 24),
       const Divider(),
       const SizedBox(height: 8),
-      const Text(
-        '詳細設定 (Mastodon 4.6)',
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      Text(
+        context.l10n.profileAdvancedSection,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
       ),
       const SizedBox(height: 16),
 
       // 画像の代替テキスト
       TextField(
         controller: _avatarDescController,
-        decoration: const InputDecoration(
-          labelText: 'アバターの代替テキスト',
-          helperText: '視覚障碍のある人向けの画像説明',
-          border: OutlineInputBorder(),
+        decoration: InputDecoration(
+          labelText: context.l10n.profileAvatarAltLabel,
+          helperText: context.l10n.profileImageAltHelper,
+          border: const OutlineInputBorder(),
         ),
         maxLines: 2,
       ),
       const SizedBox(height: 12),
       TextField(
         controller: _headerDescController,
-        decoration: const InputDecoration(
-          labelText: 'ヘッダーの代替テキスト',
-          helperText: '視覚障碍のある人向けの画像説明',
-          border: OutlineInputBorder(),
+        decoration: InputDecoration(
+          labelText: context.l10n.profileHeaderAltLabel,
+          helperText: context.l10n.profileImageAltHelper,
+          border: const OutlineInputBorder(),
         ),
         maxLines: 2,
       ),
@@ -596,47 +599,47 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
 
       // タブ表示など
       SwitchListTile(
-        title: const Text('メディアタブを表示'),
+        title: Text(context.l10n.profileShowMediaTab),
         value: _showMedia,
         onChanged: (v) => setState(() => _showMedia = v),
       ),
       SwitchListTile(
-        title: const Text('メディアタブに返信を含める'),
+        title: Text(context.l10n.profileMediaTabIncludeReplies),
         value: _showMediaReplies,
         onChanged: (v) => setState(() => _showMediaReplies = v),
       ),
       SwitchListTile(
-        title: const Text('ピックアップ（注目の投稿）タブを表示'),
+        title: Text(context.l10n.profileShowFeaturedTab),
         value: _showFeatured,
         onChanged: (v) => setState(() => _showFeatured = v),
       ),
       SwitchListTile(
-        title: const Text('フォロー / フォロワーを隠す'),
+        title: Text(context.l10n.profileHideFollows),
         value: _hideCollections,
         onChanged: (v) => setState(() => _hideCollections = v),
       ),
       SwitchListTile(
-        title: const Text('ディレクトリで見つけやすくする'),
-        subtitle: const Text('プロフィールディレクトリや提案に表示されることを許可'),
+        title: Text(context.l10n.profileDiscoverable),
+        subtitle: Text(context.l10n.profileDiscoverableSubtitle),
         value: _discoverable,
         onChanged: (v) => setState(() => _discoverable = v),
       ),
       SwitchListTile(
-        title: const Text('検索エンジンのインデックスを許可'),
+        title: Text(context.l10n.profileIndexable),
         value: _indexable,
         onChanged: (v) => setState(() => _indexable = v),
       ),
       const SizedBox(height: 16),
 
       // 帰属ドメイン (attribution_domains)
-      const Text(
-        '帰属を許可するドメイン',
-        style: TextStyle(fontWeight: FontWeight.bold),
+      Text(
+        context.l10n.profileAttributionSection,
+        style: const TextStyle(fontWeight: FontWeight.bold),
       ),
       const SizedBox(height: 4),
-      const Text(
-        'これらのドメインの記事で、あなたが著者として帰属表示されることを許可します。',
-        style: TextStyle(color: Colors.grey, fontSize: 12),
+      Text(
+        context.l10n.profileAttributionHelp,
+        style: const TextStyle(color: Colors.grey, fontSize: 12),
       ),
       const SizedBox(height: 8),
       if (_attributionDomains.isNotEmpty)
@@ -657,9 +660,9 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
           Expanded(
             child: TextField(
               controller: _attribDomainController,
-              decoration: const InputDecoration(
-                labelText: 'ドメインを追加 (例: example.com)',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.l10n.profileAttributionAddLabel,
+                border: const OutlineInputBorder(),
               ),
               onSubmitted: (_) => _addAttributionDomain(),
             ),
@@ -667,7 +670,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
           const SizedBox(width: 8),
           IconButton.filledTonal(
             icon: const Icon(Icons.add),
-            tooltip: '追加',
+            tooltip: context.l10n.add,
             onPressed: _addAttributionDomain,
           ),
         ],
@@ -706,7 +709,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                 TextField(
                   controller: _fieldControllers[i]['name'],
                   decoration: InputDecoration(
-                    labelText: 'ラベル ${i + 1}',
+                    labelText: context.l10n.profileFieldLabelN(i + 1),
                     border: const OutlineInputBorder(),
                   ),
                   maxLength: _fieldNameLimit,
@@ -715,7 +718,7 @@ class _ProfileEditPageState extends ConsumerState<ProfileEditPage> {
                 TextField(
                   controller: _fieldControllers[i]['value'],
                   decoration: InputDecoration(
-                    labelText: '内容 ${i + 1}',
+                    labelText: context.l10n.profileFieldValueN(i + 1),
                     border: const OutlineInputBorder(),
                   ),
                   maxLength: _fieldValueLimit,
