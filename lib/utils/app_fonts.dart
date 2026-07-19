@@ -15,13 +15,40 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../l10n/l10n.dart';
+
+/// 書体の見た目分類 (設定画面のラベルに括弧書きで添える)。
+enum FontCategory { gothic, mincho, roundGothic, udGothic }
+
+extension FontCategoryLabel on FontCategory {
+  String localized(BuildContext context) {
+    switch (this) {
+      case FontCategory.gothic:
+        return context.l10n.appearanceFontCategoryGothic;
+      case FontCategory.mincho:
+        return context.l10n.appearanceFontCategoryMincho;
+      case FontCategory.roundGothic:
+        return context.l10n.appearanceFontCategoryRoundGothic;
+      case FontCategory.udGothic:
+        return context.l10n.appearanceFontCategoryUdGothic;
+    }
+  }
+}
+
 /// 選択可能な 1 書体。
 class AppFont {
   /// 永続化キー兼 google_fonts のファミリ名 (Settings.fontFamily に保存)。
   final String key;
 
-  /// 設定画面の表示ラベル。
-  final String label;
+  /// 書体名 (固有名詞なので翻訳しない)。
+  final String familyName;
+
+  /// 見た目分類 (設定画面のラベルで翻訳して括弧書きに使う)。
+  final FontCategory category;
+
+  /// 設定画面の表示ラベル (例: "Noto Sans JP (Gothic)")。
+  String label(BuildContext context) =>
+      context.l10n.appearanceFontLabel(familyName, category.localized(context));
 
   /// この書体が日本語 (CJK) 字形を内包するか。true なら選択時に Noto Sans JP
   /// フォールバックを足さなくても漢字が JP 字形で出る (= 余計な DL を避けられる)。
@@ -33,7 +60,8 @@ class AppFont {
 
   const AppFont({
     required this.key,
-    required this.label,
+    required this.familyName,
+    required this.category,
     required this.coversJapanese,
     required String? Function() ensure,
   }) : _ensure = ensure;
@@ -48,7 +76,8 @@ class AppFont {
 final List<AppFont> kAppFonts = [
   AppFont(
     key: 'Noto Sans JP',
-    label: 'Noto Sans JP（ゴシック）',
+    familyName: 'Noto Sans JP',
+    category: FontCategory.gothic,
     coversJapanese: true,
     ensure: () {
       final f = GoogleFonts.notoSansJp().fontFamily;
@@ -58,7 +87,8 @@ final List<AppFont> kAppFonts = [
   ),
   AppFont(
     key: 'Noto Serif JP',
-    label: 'Noto Serif JP（明朝）',
+    familyName: 'Noto Serif JP',
+    category: FontCategory.mincho,
     coversJapanese: true,
     ensure: () {
       final f = GoogleFonts.notoSerifJp().fontFamily;
@@ -68,7 +98,8 @@ final List<AppFont> kAppFonts = [
   ),
   AppFont(
     key: 'M PLUS Rounded 1c',
-    label: 'M PLUS Rounded 1c（丸ゴシック）',
+    familyName: 'M PLUS Rounded 1c',
+    category: FontCategory.roundGothic,
     coversJapanese: true,
     ensure: () {
       final f = GoogleFonts.mPlusRounded1c().fontFamily;
@@ -78,7 +109,8 @@ final List<AppFont> kAppFonts = [
   ),
   AppFont(
     key: 'Zen Kaku Gothic New',
-    label: 'Zen Kaku Gothic New（ゴシック）',
+    familyName: 'Zen Kaku Gothic New',
+    category: FontCategory.gothic,
     coversJapanese: true,
     ensure: () {
       final f = GoogleFonts.zenKakuGothicNew().fontFamily;
@@ -88,7 +120,8 @@ final List<AppFont> kAppFonts = [
   ),
   AppFont(
     key: 'Zen Maru Gothic',
-    label: 'Zen Maru Gothic（丸ゴシック）',
+    familyName: 'Zen Maru Gothic',
+    category: FontCategory.roundGothic,
     coversJapanese: true,
     ensure: () {
       final f = GoogleFonts.zenMaruGothic().fontFamily;
@@ -98,7 +131,8 @@ final List<AppFont> kAppFonts = [
   ),
   AppFont(
     key: 'BIZ UDPGothic',
-    label: 'BIZ UDPGothic（UD ゴシック）',
+    familyName: 'BIZ UDPGothic',
+    category: FontCategory.udGothic,
     coversJapanese: true,
     ensure: () {
       final f = GoogleFonts.bizUDPGothic().fontFamily;
@@ -108,7 +142,8 @@ final List<AppFont> kAppFonts = [
   ),
   AppFont(
     key: 'Kosugi Maru',
-    label: 'Kosugi Maru（丸ゴシック）',
+    familyName: 'Kosugi Maru',
+    category: FontCategory.roundGothic,
     coversJapanese: true,
     ensure: () {
       // Kosugi Maru は w400 単一ウェイト。太字は engine の faux bold に任せる。

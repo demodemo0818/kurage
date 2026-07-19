@@ -31,7 +31,7 @@ Future<String?> saveImageToDesktop(
 }) async {
   if (askLocation) {
     const group = XTypeGroup(
-      label: '画像',
+      label: 'Image',
       extensions: <String>['jpg', 'jpeg', 'png'],
     );
     final location = await getSaveLocation(

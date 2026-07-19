@@ -12,9 +12,9 @@ Future<void> downloadBytes(
   required String fileName,
   required String mimeType,
 }) async {
-  throw UnsupportedError('downloadBytes は Web 専用');
+  throw UnsupportedError('downloadBytes is Web-only');
 }
 
 void openInNewTab(String url) {
-  throw UnsupportedError('openInNewTab は Web 専用');
+  throw UnsupportedError('openInNewTab is Web-only');
 }

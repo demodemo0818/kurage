@@ -138,6 +138,7 @@
   "appLockConfirmPin": "確認のためもう一度入力",
   "appLockPinSetupTitle": "PIN の設定",
   "appLockPinSixDigits": "6 桁の数字",
+  "appLockBiometricReason": "アプリのロックを解除",
 
   "linkAttributionUnverifiedTooltip": "リンク先サイトがこの投稿者の帰属を承認していません（なりすましの可能性があります）",
   "linkAttributionUnverified": "帰属未確認",
@@ -1199,6 +1200,9 @@
       "error": {"type": "String"}
     }
   },
+  "backupInvalidFormat": "バックアップ形式ではありません",
+  "backupJsonParseFailed": "JSON として読み取れませんでした",
+  "backupNotKurageFile": "Kurage のバックアップファイルではありません",
   "appSettingsImportConfirmTitle": "バックアップを復元",
   "appSettingsImportConfirmBody": "このファイルには以下が含まれます:\n・アカウント {accounts} 件\n・カラム {columns} 件\n・設定 {settings}\n\nインポートすると現在のアカウント・カラム・設定は上書きされます。続行しますか？",
   "@appSettingsImportConfirmBody": {
@@ -1223,6 +1227,17 @@
   "appearanceFontTitle": "フォント",
   "appearanceFontDeviceDefault": "端末デフォルト",
   "appearanceFontDeviceDefaultSubtitle": "OS のフォント（ダウンロードなし）",
+  "appearanceFontLabel": "{family}（{category}）",
+  "@appearanceFontLabel": {
+    "placeholders": {
+      "family": {"type": "String"},
+      "category": {"type": "String"}
+    }
+  },
+  "appearanceFontCategoryGothic": "ゴシック",
+  "appearanceFontCategoryMincho": "明朝",
+  "appearanceFontCategoryRoundGothic": "丸ゴシック",
+  "appearanceFontCategoryUdGothic": "UD ゴシック",
   "appearanceFontDownloadNote": "フォントを変更すると初回はダウンロードが発生し、その分キャッシュ（端末ストレージ）が増えます。日本語フォントは字数が多く、1 書体あたり数 MB〜十数 MB になることがあります。2 回目以降はキャッシュから読み込みます。",
   "appearanceThemeModeTitle": "テーマモード",
   "appearanceThemeModeLight": "ライト",

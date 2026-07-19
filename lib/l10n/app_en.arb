@@ -64,6 +64,7 @@
   "appLockConfirmPin": "Enter it again to confirm",
   "appLockPinSetupTitle": "Set up PIN",
   "appLockPinSixDigits": "6-digit number",
+  "appLockBiometricReason": "Unlock the app",
 
   "linkAttributionUnverifiedTooltip": "The linked site hasn't verified this author's attribution (possible impersonation)",
   "linkAttributionUnverified": "Unverified attribution",
@@ -632,6 +633,9 @@
   "appSettingsExportFailed": "Export failed: {error}",
   "appSettingsFileOpenFailed": "Couldn't open the file: {error}",
   "appSettingsImportParseFailed": "Couldn't import the backup: {error}",
+  "backupInvalidFormat": "Not a valid backup format",
+  "backupJsonParseFailed": "Couldn't be read as JSON",
+  "backupNotKurageFile": "Not a Kurage backup file",
   "appSettingsImportConfirmTitle": "Restore backup",
   "appSettingsImportConfirmBody": "This file contains:\n• {accounts, plural, =1{1 account} other{{accounts} accounts}}\n• {columns, plural, =1{1 column} other{{columns} columns}}\n• Settings: {settings}\n\nImporting will overwrite your current accounts, columns and settings. Continue?",
   "appSettingsImportHasSettingsYes": "included",
@@ -644,6 +648,17 @@
   "appearanceFontTitle": "Font",
   "appearanceFontDeviceDefault": "Device default",
   "appearanceFontDeviceDefaultSubtitle": "The OS font (no download)",
+  "appearanceFontLabel": "{family} ({category})",
+  "@appearanceFontLabel": {
+    "placeholders": {
+      "family": {"type": "String"},
+      "category": {"type": "String"}
+    }
+  },
+  "appearanceFontCategoryGothic": "Gothic",
+  "appearanceFontCategoryMincho": "Mincho",
+  "appearanceFontCategoryRoundGothic": "Rounded Gothic",
+  "appearanceFontCategoryUdGothic": "UD Gothic",
   "appearanceFontDownloadNote": "Changing the font downloads it the first time, which uses cache space (device storage). Japanese fonts contain many glyphs and can take from a few MB up to over ten MB per typeface. After the first time it loads from the cache.",
   "appearanceThemeModeTitle": "Theme mode",
   "appearanceThemeModeLight": "Light",

@@ -7,6 +7,6 @@ import 'sse_client.dart';
 
 Future<SseConnection> connectSse(String url) {
   throw UnsupportedError(
-    'SSE はこのプラットフォームではサポートされていません',
+    'SSE is not supported on this platform',
   );
 }

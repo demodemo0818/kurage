@@ -4,5 +4,5 @@
 // のどちらかが必ず使われるので、このスタブが実際に呼ばれることはない。
 
 Future<bool> saveBackupFile(String suggestedName, String contents) async {
-  throw UnsupportedError('このプラットフォームではバックアップの保存に未対応です');
+  throw UnsupportedError('Backup saving is not supported on this platform');
 }

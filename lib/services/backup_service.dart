@@ -15,6 +15,7 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/l10n.dart';
 import '../models/auth_account.dart';
 import '../providers/auth_provider.dart';
 import '../providers/column_provider.dart';
@@ -69,17 +70,17 @@ BackupContent parseBackupJson(String jsonStr) {
   try {
     final decoded = jsonDecode(jsonStr);
     if (decoded is! Map<String, dynamic>) {
-      throw const FormatException('バックアップ形式ではありません');
+      throw FormatException(l10n.backupInvalidFormat);
     }
     root = decoded;
   } on FormatException {
     rethrow;
   } catch (_) {
-    throw const FormatException('JSON として読み取れませんでした');
+    throw FormatException(l10n.backupJsonParseFailed);
   }
 
   if (root['type'] != kBackupType) {
-    throw const FormatException('Kurage のバックアップファイルではありません');
+    throw FormatException(l10n.backupNotKurageFile);
   }
 
   final settings = (root['settings'] as Map?)?.cast<String, dynamic>();

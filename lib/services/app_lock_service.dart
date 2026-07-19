@@ -9,6 +9,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/l10n.dart';
+
 /// アプリロック機能の PIN ハッシュ管理 + 生体認証ラッパー。
 ///
 /// - PIN は SHA-256 + ランダムソルトでハッシュ化して
@@ -119,7 +121,7 @@ class AppLockService {
       // 死ぬ端末対策)。useErrorDialogs は代替なしで廃止 (失敗時は下の catch →
       // PIN フォールバックに任せる)。
       return await _localAuth.authenticate(
-        localizedReason: 'アプリのロックを解除',
+        localizedReason: l10n.appLockBiometricReason,
         biometricOnly: true,
         persistAcrossBackgrounding: true,
       );

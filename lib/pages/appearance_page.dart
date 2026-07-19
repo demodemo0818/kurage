@@ -30,7 +30,7 @@ class AppearanceSettingsPage extends ConsumerWidget {
   /// フォント設定の現在値ラベル。null = 端末デフォルト。
   String _fontLabel(BuildContext context, String? key) {
     if (key == null) return context.l10n.appearanceFontDeviceDefault;
-    return appFontByKey(key)?.label ?? key;
+    return appFontByKey(key)?.label(context) ?? key;
   }
 
   Future<void> _showFontPicker(
@@ -58,7 +58,7 @@ class AppearanceSettingsPage extends ConsumerWidget {
           ),
           for (final font in kAppFonts)
             RadioListTile<String>(
-              title: Text(font.label),
+              title: Text(font.label(context)),
               value: font.key,
               // ignore: deprecated_member_use
               groupValue: current ?? deviceDefault,
