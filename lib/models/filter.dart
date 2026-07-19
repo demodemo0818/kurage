@@ -1,5 +1,8 @@
 // lib/models/filter.dart
 
+import 'package:flutter/widgets.dart';
+
+import '../l10n/l10n.dart';
 import 'json_utils.dart';
 
 /// Mastodon Filters v2 のフィルタ。
@@ -127,17 +130,18 @@ class FilterResult {
   }
 }
 
-/// フィルタコンテキストの全候補と日本語ラベル。UI で multi-select するときに使う。
-const Map<String, String> kFilterContextLabels = {
-  'home': 'ホーム / リスト',
-  'notifications': '通知',
-  'public': '公開タイムライン',
-  'thread': '会話 (スレッド)',
-  'account': 'プロフィール',
-};
+/// フィルタコンテキストの全候補とラベル。UI で multi-select するときに使う。
+/// `context.l10n` を参照するため const にはできない。
+Map<String, String> kFilterContextLabels(BuildContext context) => {
+      'home': context.l10n.filterCtxHome,
+      'notifications': context.l10n.filterCtxNotifications,
+      'public': context.l10n.filterCtxPublic,
+      'thread': context.l10n.filterCtxThread,
+      'account': context.l10n.filterCtxAccount,
+    };
 
-/// フィルタアクションの全候補と日本語ラベル。
-const Map<String, String> kFilterActionLabels = {
-  'warn': '警告表示 (タップで内容を見られる)',
-  'hide': '完全に非表示',
-};
+/// フィルタアクションの全候補とラベル。
+Map<String, String> kFilterActionLabels(BuildContext context) => {
+      'warn': context.l10n.filterActionWarn,
+      'hide': context.l10n.filterActionHide,
+    };

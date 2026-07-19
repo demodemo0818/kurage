@@ -22,6 +22,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:http/http.dart' as http;
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/l10n.dart';
 import '../models/auth_account.dart';
 
 // FlutterAppAuth のインスタンス (Android / iOS / macOS でのみメソッドを呼ぶ。
@@ -80,7 +81,7 @@ Future<AuthAccount> login({
     },
   );
   if (appResp.statusCode != 200) {
-    throw Exception('アプリ登録に失敗: ${appResp.statusCode}');
+    throw Exception(l10n.authAppRegistrationFailed(appResp.statusCode));
   }
   final appJson = jsonDecode(appResp.body);
   final clientId = appJson['client_id'] as String;
@@ -101,7 +102,7 @@ Future<AuthAccount> login({
     ),
   );
   if (result.accessToken == null) {
-    throw Exception('OAuth 認可またはトークン交換に失敗しました');
+    throw Exception(l10n.authOAuthExchangeFailed);
   }
   final accessToken = result.accessToken!;
 
@@ -135,7 +136,7 @@ Future<AuthAccount> _loginDesktop({
       },
     );
     if (appResp.statusCode != 200) {
-      throw Exception('アプリ登録に失敗: ${appResp.statusCode}');
+      throw Exception(l10n.authAppRegistrationFailed(appResp.statusCode));
     }
     final appJson = jsonDecode(appResp.body) as Map<String, dynamic>;
     final clientId = appJson['client_id'] as String;
@@ -157,13 +158,13 @@ Future<AuthAccount> _loginDesktop({
       mode: LaunchMode.externalApplication,
     );
     if (!launched) {
-      throw Exception('認証用ブラウザを開けませんでした');
+      throw Exception(l10n.authBrowserOpenFailed);
     }
 
     // 4) コールバック (code) を待つ。放置対策に 5 分でタイムアウト。
     final code = await _waitForAuthCode(server, state).timeout(
       const Duration(minutes: 5),
-      onTimeout: () => throw Exception('認証がタイムアウトしました (5 分)'),
+      onTimeout: () => throw Exception(l10n.authTimeout5Min),
     );
 
     // 5) authorization_code → access_token
@@ -179,7 +180,7 @@ Future<AuthAccount> _loginDesktop({
       },
     );
     if (tokenResp.statusCode != 200) {
-      throw Exception('トークン交換に失敗: ${tokenResp.statusCode}');
+      throw Exception(l10n.authTokenExchangeFailed(tokenResp.statusCode));
     }
     final accessToken =
         (jsonDecode(tokenResp.body) as Map<String, dynamic>)['access_token']
@@ -218,10 +219,10 @@ Future<String> _waitForAuthCode(HttpServer server, String expectedState) {
 
     if (completer.isCompleted) return;
     if (error != null) {
-      completer.completeError(Exception('認証が拒否されました: $error'));
+      completer.completeError(Exception(l10n.authDenied(error)));
     } else if (state != expectedState) {
       // 別タブの古い認可など。CSRF 対策で破棄。
-      completer.completeError(Exception('state 不一致 (CSRF 検証に失敗しました)'));
+      completer.completeError(Exception(l10n.authStateMismatch));
     } else {
       completer.complete(code);
     }
@@ -233,8 +234,8 @@ Future<String> _waitForAuthCode(HttpServer server, String expectedState) {
 /// ブラウザに表示する認証完了ページ (日本語)。
 String _callbackHtml({String? error}) {
   final body = error == null
-      ? '<h2>認証が完了しました</h2><p>このタブを閉じて Kurage に戻ってください。</p>'
-      : '<h2>認証に失敗しました</h2><p>($error)<br>Kurage に戻ってやり直してください。</p>';
+      ? '<h2>${l10n.authCallbackSuccessTitle}</h2><p>${l10n.authCallbackSuccessBody}</p>'
+      : '<h2>${l10n.authCallbackFailTitle}</h2><p>${l10n.authCallbackFailBody(error)}</p>';
   return '<!doctype html><html lang="ja"><head><meta charset="utf-8">'
       '<meta name="viewport" content="width=device-width, initial-scale=1">'
       '<title>Kurage</title></head>'
@@ -256,7 +257,7 @@ Future<AuthAccount> _fetchUserAccount(String instanceUrl, String accessToken) as
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (userResp.statusCode != 200) {
-    throw Exception('アカウント情報取得に失敗: ${userResp.statusCode}');
+    throw Exception(l10n.authAccountInfoFailed(userResp.statusCode));
   }
   final userJson = jsonDecode(userResp.body) as Map<String, dynamic>;
 

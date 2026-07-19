@@ -213,7 +213,7 @@ class _FilterEditPageState extends State<FilterEditPage> {
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 8),
-          ...kFilterContextLabels.entries.map((entry) {
+          ...kFilterContextLabels(context).entries.map((entry) {
             return CheckboxListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
@@ -246,7 +246,7 @@ class _FilterEditPageState extends State<FilterEditPage> {
             },
             child: Column(
               children: [
-                for (final entry in kFilterActionLabels.entries)
+                for (final entry in kFilterActionLabels(context).entries)
                   RadioListTile<String>(
                     dense: true,
                     contentPadding: EdgeInsets.zero,

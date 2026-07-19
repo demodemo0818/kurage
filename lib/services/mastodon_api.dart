@@ -12,6 +12,7 @@ import 'package:flutter/foundation.dart';
 
 import 'sse_client.dart';
 
+import '../l10n/l10n.dart';
 import '../models/status.dart';
 import '../models/account.dart';
 import '../models/notification_item.dart';
@@ -109,7 +110,7 @@ const _kCachePrefixes = ['tl:', 'acct:'];
 /// 3. それ以外は 200 文字までトリミング
 String _summarizeErrorBody(String body) {
   final trimmed = body.trim();
-  if (trimmed.isEmpty) return '(本文なし)';
+  if (trimmed.isEmpty) return l10n.reportNoBody;
 
   try {
     final decoded = jsonDecode(trimmed);
@@ -123,7 +124,7 @@ String _summarizeErrorBody(String body) {
   }
 
   if (trimmed.startsWith('<')) {
-    return '(HTML レスポンス、${body.length} bytes)';
+    return l10n.apiHtmlResponse(body.length);
   }
 
   if (trimmed.length > 200) {
@@ -310,7 +311,7 @@ Future<void> toggleFavourite({
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (resp.statusCode < 200 || resp.statusCode >= 300) {
-    throw Exception('お気に入り操作失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiFavouriteActionFailed(resp.statusCode));
   }
 }
 
@@ -330,7 +331,7 @@ Future<void> toggleReblog({
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (resp.statusCode < 200 || resp.statusCode >= 300) {
-    throw Exception('ブースト操作失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiReblogActionFailed(resp.statusCode));
   }
 }
 
@@ -368,11 +369,10 @@ Future<void> togglePin({
     // ピンの文脈で一番起きやすいのは上限超過 (5 件) なので、それ風のメッセージ
     // をデフォルトにする。サーバが返した本文は呼び出し側の SnackBar には乗せ
     // ないが、デバッグ時に拾えるよう例外には含めておく。
-    throw PinStatusLimitException(
-        'ピン留めできません (上限 5 件 / 投稿の公開範囲に注意): ${resp.body}');
+    throw PinStatusLimitException(l10n.apiPinLimitError(resp.body));
   }
   if (resp.statusCode < 200 || resp.statusCode >= 300) {
-    throw Exception('ピン留め操作失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiPinActionFailed(resp.statusCode));
   }
 }
 
@@ -392,7 +392,7 @@ Future<void> toggleBookmark({
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (resp.statusCode < 200 || resp.statusCode >= 300) {
-    throw Exception('ブックマーク操作失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiBookmarkActionFailed(resp.statusCode));
   }
 }
 
@@ -444,7 +444,7 @@ Future<InstanceConfig> fetchInstanceConfig({
     _instanceConfigCache[instanceUrl] = cfg;
     return cfg;
   } else {
-    throw Exception('インスタンス情報取得失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiInstanceInfoFailed(resp.statusCode));
   }
 }
 
@@ -558,7 +558,7 @@ Future<String> uploadMedia({
       detail = resp.body;
     }
     if (detail.length > 300) detail = '${detail.substring(0, 300)}…';
-    throw Exception('メディアアップロード失敗: ${resp.statusCode} $detail');
+    throw Exception(l10n.apiMediaUploadFailed(resp.statusCode, detail));
   }
 }
 
@@ -584,7 +584,7 @@ Future<void> updateMediaDescription({
   );
 
   if (resp.statusCode != 200) {
-    throw Exception('ALT文の更新失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiAltUpdateFailed(resp.statusCode));
   }
 }
 
@@ -670,10 +670,11 @@ Future<Status> postStatus({
         );
       }
       
-      throw Exception('投稿成功だがレスポンス解析失敗: $e');
+      throw Exception(l10n.apiPostParseFailed('$e'));
     }
   } else {
-    throw Exception('投稿失敗: ${resp.statusCode} ${_summarizeErrorBody(resp.body)}');
+    throw Exception(l10n.apiPostFailed(
+        resp.statusCode, _summarizeErrorBody(resp.body)));
   }
 }
 
@@ -761,9 +762,10 @@ Future<Status> editStatus({
   // 404 / 405 は「このサーバは PUT /statuses/:id に対応していない」(古い
   // Mastodon や派生実装) サインなので、判別しやすい例外メッセージにする。
   if (resp.statusCode == 404 || resp.statusCode == 405) {
-    throw Exception('このサーバは投稿の編集に対応していません (HTTP ${resp.statusCode})');
+    throw Exception(l10n.apiEditUnsupported(resp.statusCode));
   }
-  throw Exception('編集失敗: ${resp.statusCode} ${_summarizeErrorBody(resp.body)}');
+  throw Exception(
+      l10n.apiEditFailed(resp.statusCode, _summarizeErrorBody(resp.body)));
 }
 
 /// ブックマーク・お気に入り専用のページネーション関数
@@ -815,7 +817,8 @@ Future<Map<String, dynamic>> fetchBookmarksOrFavouritesWithPagination({
         'nextUrl': nextUrl,
       };
     }
-    throw Exception('$timelineType取得エラー: ${resp.statusCode}');
+    throw Exception(
+        l10n.apiTimelineTypeFailed(timelineType, resp.statusCode));
   } catch (e) {
     rethrow;
   }
@@ -880,7 +883,7 @@ Future<List<Status>> fetchTimelineForAccount({
 
       return statuses;
     }
-    throw Exception('タイムライン取得エラー: ${resp.statusCode}');
+    throw Exception(l10n.apiTimelineFailed(resp.statusCode));
   } catch (_) {
     final cached = _cacheBox.get(cacheKey);
     if (cached != null) {
@@ -915,9 +918,9 @@ Future<List<MastodonList>> fetchLists({
           .map((j) => MastodonList.fromJson(j as Map<String, dynamic>))
           .toList();
     }
-    throw Exception('リスト取得エラー: ${resp.statusCode}');
+    throw Exception(l10n.apiListsFailed(resp.statusCode));
   } catch (e) {
-    throw Exception('リスト取得エラー: $e');
+    throw Exception(l10n.apiListsFailedError('$e'));
   }
 }
 
@@ -946,7 +949,7 @@ Future<MastodonList> createList({
       jsonDecode(resp.body) as Map<String, dynamic>,
     );
   }
-  throw Exception('リスト作成エラー: ${resp.statusCode}');
+  throw Exception(l10n.apiListCreateFailed(resp.statusCode));
 }
 
 /// リスト名 / 返信ポリシーを更新
@@ -972,7 +975,7 @@ Future<MastodonList> updateList({
       jsonDecode(resp.body) as Map<String, dynamic>,
     );
   }
-  throw Exception('リスト更新エラー: ${resp.statusCode}');
+  throw Exception(l10n.apiListUpdateFailed(resp.statusCode));
 }
 
 /// リストを削除
@@ -987,7 +990,7 @@ Future<void> deleteList({
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (resp.statusCode != 200) {
-    throw Exception('リスト削除エラー: ${resp.statusCode}');
+    throw Exception(l10n.apiListDeleteFailed(resp.statusCode));
   }
 }
 
@@ -1015,7 +1018,7 @@ Future<List<Account>> fetchListAccounts({
   if (resp.statusCode == 200) {
     return compute(_decodeAccountListIsolate, resp.body);
   }
-  throw Exception('リストメンバー取得エラー: ${resp.statusCode}');
+  throw Exception(l10n.apiListMembersFailed(resp.statusCode));
 }
 
 /// 指定アカウントを 1 つ以上のリストに追加。
@@ -1046,7 +1049,7 @@ Future<void> addAccountsToList({
     body: body,
   );
   if (resp.statusCode != 200) {
-    throw Exception('リスト追加エラー: ${resp.statusCode} ${resp.body}');
+    throw Exception(l10n.apiListAddMemberFailed(resp.statusCode, resp.body));
   }
 }
 
@@ -1067,7 +1070,7 @@ Future<void> removeAccountsFromList({
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (resp.statusCode != 200) {
-    throw Exception('リスト除外エラー: ${resp.statusCode}');
+    throw Exception(l10n.apiListRemoveMemberFailed(resp.statusCode));
   }
 }
 
@@ -1090,7 +1093,7 @@ Future<List<MastodonList>> fetchListsContainingAccount({
         .map((j) => MastodonList.fromJson(j as Map<String, dynamic>))
         .toList();
   }
-  throw Exception('所属リスト取得エラー: ${resp.statusCode}');
+  throw Exception(l10n.apiListMembershipFailed(resp.statusCode));
 }
 
 /// ユーザー投稿一覧取得（キャッシュ対応）
@@ -1136,7 +1139,7 @@ Future<List<Status>> fetchAccountStatuses({
       statuses.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return statuses;
     }
-    throw Exception('ユーザー投稿取得失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiUserStatusesFailed(resp.statusCode));
   } catch (_) {
     final cached = _cacheBox.get(cacheKey);
     if (cached != null) {
@@ -1160,7 +1163,7 @@ Future<Account> fetchAccount({
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (resp.statusCode != 200) {
-    throw Exception('アカウント情報取得失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiAccountInfoFailed(resp.statusCode));
   }
   return Account.fromJson(jsonDecode(resp.body) as Map<String, dynamic>);
 }
@@ -1183,7 +1186,7 @@ Future<List<Account>> fetchAccountsByIds({
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (resp.statusCode != 200) {
-    throw Exception('アカウント一括取得失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiAccountsBulkFailed(resp.statusCode));
   }
   return (jsonDecode(resp.body) as List<dynamic>)
       .whereType<Map<String, dynamic>>()
@@ -1215,7 +1218,7 @@ Future<Account> lookupAccount({
     },
   );
   if (resp.statusCode != 200) {
-    throw Exception('アカウント lookup 失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiAccountLookupFailed(resp.statusCode));
   }
   return Account.fromJson(jsonDecode(resp.body) as Map<String, dynamic>);
 }
@@ -1236,7 +1239,7 @@ Future<List<Status>> fetchPinnedStatuses({
     },
   );
   if (resp.statusCode != 200) {
-    throw Exception('固定投稿取得失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiPinnedStatusesFailed(resp.statusCode));
   }
   // pinned は最大 5 件と小さいので isolate 越境コストとの比較は微妙だが、
   // プロフィールページ表示の他の重い処理と並走するので逃がしておく。
@@ -1267,7 +1270,7 @@ Future<List<Account>> fetchAccountFollowing({
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (resp.statusCode != 200) {
-    throw Exception('フォロー一覧取得失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiFollowingListFailed(resp.statusCode));
   }
   return compute(_decodeAccountListIsolate, resp.body);
 }
@@ -1292,7 +1295,7 @@ Future<List<Account>> fetchAccountFollowers({
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (resp.statusCode != 200) {
-    throw Exception('フォロワー一覧取得失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiFollowersListFailed(resp.statusCode));
   }
   return compute(_decodeAccountListIsolate, resp.body);
 }
@@ -1368,9 +1371,9 @@ Future<Relationship> removeFromFollowers({
   }
   if (resp.statusCode == 404 || resp.statusCode == 405) {
     throw RemoveFromFollowersNotSupportedException(
-        'このサーバーは「フォロワーから外す」に対応していません (Mastodon 4.0+ が必要)');
+        l10n.apiRemoveFollowerUnsupported);
   }
-  throw Exception('フォロワー除外失敗: ${resp.statusCode} ${resp.body}');
+  throw Exception(l10n.apiRemoveFollowerFailed(resp.statusCode, resp.body));
 }
 
 /// 通知一覧取得（ページング対応）
@@ -1402,7 +1405,7 @@ Future<List<NotificationItem>> fetchNotifications({
     // 表示中は UI スレッドで 50〜100ms 食う。background isolate に逃がす。
     return compute(NotificationItem.listFromJson, res.body);
   }
-  throw Exception('通知取得失敗: ${res.statusCode}');
+  throw Exception(l10n.apiNotificationsFailed(res.statusCode));
 }
 
 /// サーバ管理者からのお知らせ一覧を取得 (`GET /api/v1/announcements`)。
@@ -1427,7 +1430,7 @@ Future<List<Announcement>> fetchAnnouncements({
   // 404 を返す。空リストで扱えば一覧側で「お知らせはありません」表示に
   // なるだけなので、エラーにせず空配列で吸収する。
   if (res.statusCode == 404) return [];
-  throw Exception('お知らせ取得失敗: ${res.statusCode}');
+  throw Exception(l10n.apiAnnouncementsFailed(res.statusCode));
 }
 
 /// お知らせを既読化 (`POST /api/v1/announcements/:id/dismiss`)。
@@ -1443,7 +1446,7 @@ Future<void> dismissAnnouncement({
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (res.statusCode != 200) {
-    throw Exception('お知らせ既読化失敗: ${res.statusCode}');
+    throw Exception(l10n.apiAnnouncementReadFailed(res.statusCode));
   }
 }
 
@@ -1464,7 +1467,7 @@ Future<void> addAnnouncementReaction({
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (res.statusCode != 200) {
-    throw Exception('リアクション追加失敗: ${res.statusCode}');
+    throw Exception(l10n.apiReactionAddFailed(res.statusCode));
   }
 }
 
@@ -1483,7 +1486,7 @@ Future<void> removeAnnouncementReaction({
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (res.statusCode != 200) {
-    throw Exception('リアクション削除失敗: ${res.statusCode}');
+    throw Exception(l10n.apiReactionRemoveFailed(res.statusCode));
   }
 }
 
@@ -1603,11 +1606,11 @@ Future<Relationship> fetchRelationship({
   if (res.statusCode == 200) {
     final List<dynamic> arr = jsonDecode(res.body) as List<dynamic>;
     if (arr.isEmpty) {
-      throw Exception('Relationship 配列が空です');
+      throw Exception(l10n.apiRelationshipEmpty);
     }
     return Relationship.fromJson(arr.first as Map<String, dynamic>);
   }
-  throw Exception('Relationship取得失敗: ${res.statusCode}');
+  throw Exception(l10n.apiRelationshipFailed(res.statusCode));
 }
 
 /// フォロー／アンフォロー
@@ -1628,7 +1631,7 @@ Future<Relationship> followAccount({
       jsonDecode(res.body) as Map<String, dynamic>,
     );
   }
-  throw Exception('フォローに失敗: ${res.statusCode}');
+  throw Exception(l10n.apiFollowFailed(res.statusCode));
 }
 
 /// アカウントに対する自分専用メモ (private note) を更新する。
@@ -1654,7 +1657,7 @@ Future<Relationship> updateAccountNote({
       jsonDecode(res.body) as Map<String, dynamic>,
     );
   }
-  throw Exception('メモの保存に失敗: ${res.statusCode}');
+  throw Exception(l10n.apiNoteSaveFailed(res.statusCode));
 }
 
 Future<Relationship> unfollowAccount({
@@ -1671,7 +1674,7 @@ Future<Relationship> unfollowAccount({
       jsonDecode(res.body) as Map<String, dynamic>,
     );
   }
-  throw Exception('アンフォローに失敗: ${res.statusCode}');
+  throw Exception(l10n.apiUnfollowFailed(res.statusCode));
 }
 
 /// 指定した statusId の返信ツリー（先祖／子孫）を取得する
@@ -1692,7 +1695,7 @@ Future<StatusContext> fetchStatusContext({
     final jsonMap = jsonDecode(resp.body) as Map<String, dynamic>;
     return StatusContext.fromJson(jsonMap);
   } else {
-    throw Exception('ステータスコンテキスト取得失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiStatusContextFailed(resp.statusCode));
   }
 }
 
@@ -2316,7 +2319,7 @@ Future<AccountPage> _fetchAccountPageWithLinkPagination({
   if (treat404AsEmpty && resp.statusCode == 404) {
     return (const <Account>[], null);
   }
-  throw Exception('一覧取得エラー ($path): ${resp.statusCode}');
+  throw Exception(l10n.apiListPathFailed(path, resp.statusCode));
 }
 
 /// ミュート中のアカウント一覧を取得 (`GET /api/v1/mutes`)。
@@ -2471,7 +2474,7 @@ Future<Poll> fetchPoll({
   if (resp.statusCode == 200) {
     return Poll.fromJson(jsonDecode(resp.body) as Map<String, dynamic>);
   } else {
-    throw Exception('投票取得失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiPollFailed(resp.statusCode));
   }
 }
 
@@ -2766,7 +2769,7 @@ Future<List<Map<String, dynamic>>> fetchScheduledStatuses({
     final List<dynamic> jsonList = jsonDecode(resp.body);
     return jsonList.cast<Map<String, dynamic>>();
   } else {
-    throw Exception('予約投稿一覧取得失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiScheduledListFailed(resp.statusCode));
   }
 }
 
@@ -2784,7 +2787,7 @@ Future<void> deleteScheduledStatus({
   );
   
   if (resp.statusCode != 200) {
-    throw Exception('予約投稿削除失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiScheduledDeleteFailed(resp.statusCode));
   }
 }
 
@@ -2813,7 +2816,7 @@ Future<Map<String, dynamic>> updateScheduledStatus({
   if (resp.statusCode == 200) {
     return jsonDecode(resp.body) as Map<String, dynamic>;
   } else {
-    throw Exception('予約投稿更新失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiScheduledUpdateFailed(resp.statusCode));
   }
 }
 
@@ -2845,7 +2848,7 @@ Future<Poll> votePoll({
   if (resp.statusCode == 200) {
     return Poll.fromJson(jsonDecode(resp.body) as Map<String, dynamic>);
   } else {
-    throw Exception('投票失敗: ${resp.statusCode}\n${resp.body}');
+    throw Exception(l10n.apiVoteFailed(resp.statusCode, resp.body));
   }
 }
 
@@ -2865,7 +2868,7 @@ Future<List<Emoji>> fetchCustomEmojis({
     final List<dynamic> jsonList = jsonDecode(resp.body);
     return jsonList.map((json) => Emoji.fromJson(json as Map<String, dynamic>)).toList();
   } else {
-    throw Exception('カスタム絵文字取得失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiCustomEmojiFailed(resp.statusCode));
   }
 }
 
@@ -2894,7 +2897,7 @@ Future<List<Conversation>> fetchConversations({
       final List<dynamic> jsonList = jsonDecode(resp.body);
       return jsonList.map((json) => Conversation.fromJson(json as Map<String, dynamic>)).toList();
     } else {
-      throw Exception('会話一覧取得失敗: ${resp.statusCode}');
+      throw Exception(l10n.apiConversationsFailed(resp.statusCode));
     }
   } catch (e) {
     rethrow;
@@ -2917,7 +2920,7 @@ Future<Conversation> markConversationRead({
   if (resp.statusCode == 200) {
     return Conversation.fromJson(jsonDecode(resp.body) as Map<String, dynamic>);
   } else {
-    throw Exception('会話既読化失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiConversationReadFailed(resp.statusCode));
   }
 }
 
@@ -2935,7 +2938,7 @@ Future<void> deleteConversation({
   );
   
   if (resp.statusCode != 200) {
-    throw Exception('会話削除失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiConversationDeleteFailed(resp.statusCode));
   }
 }
 
@@ -3023,7 +3026,7 @@ Future<Account> updateProfile({
   if (resp.statusCode == 200) {
     return Account.fromJson(jsonDecode(resp.body) as Map<String, dynamic>);
   } else {
-    throw Exception('プロフィール更新失敗: ${resp.statusCode} - ${resp.body}');
+    throw Exception(l10n.apiProfileUpdateFailed(resp.statusCode, resp.body));
   }
 }
 
@@ -3034,7 +3037,7 @@ class ProfileApiNotSupportedException implements Exception {
   ProfileApiNotSupportedException([this.statusCode = 404]);
   @override
   String toString() => 'ProfileApiNotSupportedException($statusCode): '
-      'このサーバは /api/v1/profile (4.6+) に未対応です';
+      '${l10n.apiProfileV46Unsupported}';
 }
 
 /// Mastodon 4.6+ の `GET /api/v1/profile`。自分のプロフィールを *raw text*
@@ -3054,7 +3057,7 @@ Future<Profile> fetchProfile({
     throw ProfileApiNotSupportedException(404);
   }
   if (resp.statusCode != 200) {
-    throw Exception('プロフィール取得 (4.6) 失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiProfileV46FetchFailed(resp.statusCode));
   }
   return Profile.fromJson(jsonDecode(resp.body) as Map<String, dynamic>);
 }
@@ -3106,7 +3109,7 @@ Future<Profile> updateProfileMeta({
   }
   if (resp.statusCode != 200) {
     throw Exception(
-        'プロフィール更新 (4.6) 失敗: ${resp.statusCode} - ${resp.body}');
+        l10n.apiProfileV46UpdateFailed(resp.statusCode, resp.body));
   }
   return Profile.fromJson(jsonDecode(resp.body) as Map<String, dynamic>);
 }
@@ -3124,7 +3127,7 @@ Future<void> deleteStatus({
   );
   
   if (resp.statusCode != 200) {
-    throw Exception('投稿削除失敗: ${resp.statusCode} - ${resp.body}');
+    throw Exception(l10n.apiStatusDeleteFailed(resp.statusCode, resp.body));
   }
 }
 
@@ -3143,7 +3146,7 @@ Future<Map<String, dynamic>> getStatusSource({
   if (resp.statusCode == 200) {
     return jsonDecode(resp.body) as Map<String, dynamic>;
   } else {
-    throw Exception('投稿ソース取得失敗: ${resp.statusCode} - ${resp.body}');
+    throw Exception(l10n.apiStatusSourceFailed(resp.statusCode, resp.body));
   }
 }
 
@@ -3175,7 +3178,7 @@ Future<List<StatusEdit>> fetchStatusHistory({
   if (resp.statusCode == 404 || resp.statusCode == 405) {
     return <StatusEdit>[];
   }
-  throw Exception('編集履歴の取得失敗: ${resp.statusCode}\n${resp.body}');
+  throw Exception(l10n.apiEditHistoryFailed(resp.statusCode, resp.body));
 }
 
 /// インスタンスのルール一覧を取得する。
@@ -3272,7 +3275,7 @@ Future<void> submitReport({
     body: parts.join('&'),
   );
   if (resp.statusCode < 200 || resp.statusCode >= 300) {
-    throw Exception('通報の送信失敗: ${resp.statusCode} ${resp.body}');
+    throw Exception(l10n.apiReportSendFailed(resp.statusCode, resp.body));
   }
 }
 
@@ -3402,21 +3405,23 @@ Future<Translation> translateStatus({
       return Translation.fromJson(jsonDecode(resp.body) as Map<String, dynamic>);
     } else if (resp.statusCode == 403) {
       // 同じ言語の場合やその他の理由で翻訳が許可されない
-      throw TranslationNotAllowedException('翻訳が許可されていません: ${resp.body}');
+      throw TranslationNotAllowedException(
+          l10n.apiTranslateNotAllowed(resp.body));
     } else if (resp.statusCode == 404) {
       // 翻訳機能が有効でない、または投稿が見つからない
-      throw TranslationNotSupportedException('翻訳機能が利用できません');
+      throw TranslationNotSupportedException(l10n.apiTranslateUnsupported);
     } else if (resp.statusCode == 503) {
       // 翻訳サービスが利用できない
-      throw TranslationServiceUnavailableException('翻訳サービスが一時的に利用できません');
+      throw TranslationServiceUnavailableException(
+          l10n.apiTranslateServiceUnavailable);
     } else {
-      throw Exception('翻訳失敗: ${resp.statusCode} - ${resp.body}');
+      throw Exception(l10n.apiTranslateFailed(resp.statusCode, resp.body));
     }
   } catch (e) {
     if (e is TranslationException) {
       rethrow;
     }
-    throw TranslationException('翻訳中にエラーが発生しました: $e');
+    throw TranslationException(l10n.apiTranslateError('$e'));
   }
 }
 
@@ -3547,7 +3552,8 @@ class TranslationServiceUnavailableException extends TranslationException {
 /// フィルタ機能未対応サーバを示す例外
 class FiltersNotSupportedException implements Exception {
   final String message;
-  FiltersNotSupportedException([this.message = 'このサーバはフィルタ機能 (v2) に未対応です']);
+  FiltersNotSupportedException([String? message])
+      : message = message ?? l10n.apiFiltersUnsupported;
   @override
   String toString() => message;
 }
@@ -3572,7 +3578,7 @@ Future<List<MastodonFilter>> fetchFilters({
         .toList();
   }
   if (resp.statusCode == 404) return const [];
-  throw Exception('フィルタ取得エラー: ${resp.statusCode}');
+  throw Exception(l10n.apiFiltersFetchFailed(resp.statusCode));
 }
 
 /// `GET /api/v2/filters/:id` — 単一フィルタの詳細
@@ -3592,7 +3598,7 @@ Future<MastodonFilter> fetchFilter({
     );
   }
   if (resp.statusCode == 404) throw FiltersNotSupportedException();
-  throw Exception('フィルタ取得エラー: ${resp.statusCode}');
+  throw Exception(l10n.apiFiltersFetchFailed(resp.statusCode));
 }
 
 /// `POST /api/v2/filters` — フィルタを新規作成。
@@ -3636,7 +3642,7 @@ Future<MastodonFilter> createFilter({
     );
   }
   if (resp.statusCode == 404) throw FiltersNotSupportedException();
-  throw Exception('フィルタ作成エラー: ${resp.statusCode} ${resp.body}');
+  throw Exception(l10n.apiFilterCreateFailed(resp.statusCode, resp.body));
 }
 
 /// `PUT /api/v2/filters/:id` — フィルタ本体 (title / context / filter_action /
@@ -3688,7 +3694,7 @@ Future<MastodonFilter> updateFilter({
     );
   }
   if (resp.statusCode == 404) throw FiltersNotSupportedException();
-  throw Exception('フィルタ更新エラー: ${resp.statusCode} ${resp.body}');
+  throw Exception(l10n.apiFilterUpdateFailed(resp.statusCode, resp.body));
 }
 
 /// `DELETE /api/v2/filters/:id` — フィルタを削除
@@ -3703,7 +3709,7 @@ Future<void> deleteFilter({
   );
   if (resp.statusCode == 200 || resp.statusCode == 204) return;
   if (resp.statusCode == 404) throw FiltersNotSupportedException();
-  throw Exception('フィルタ削除エラー: ${resp.statusCode}');
+  throw Exception(l10n.apiFilterDeleteFailed(resp.statusCode));
 }
 
 /// `POST /api/v2/filters/:id/keywords` — 既存フィルタに新規キーワードを追加。
@@ -3730,7 +3736,7 @@ Future<FilterKeyword> addFilterKeyword({
     );
   }
   if (resp.statusCode == 404) throw FiltersNotSupportedException();
-  throw Exception('キーワード追加エラー: ${resp.statusCode}');
+  throw Exception(l10n.apiFilterKeywordAddFailed(resp.statusCode));
 }
 
 // ---------------------------------------------------------------------------
@@ -3752,8 +3758,8 @@ Future<FilterKeyword> addFilterKeyword({
 /// する。エラーメッセージは UI に出ない (黙ってフォールバック方針)。
 class NotificationsV2NotSupportedException implements Exception {
   final String message;
-  NotificationsV2NotSupportedException(
-      [this.message = 'このサーバは /api/v2/notifications (4.3+) に未対応です']);
+  NotificationsV2NotSupportedException([String? message])
+      : message = message ?? l10n.apiNotificationsV2Unsupported;
   @override
   String toString() => message;
 }
@@ -3765,7 +3771,7 @@ class NotificationsAuthException implements Exception {
   final int statusCode;
   NotificationsAuthException(this.statusCode);
   @override
-  String toString() => '通知取得の認証エラー (HTTP $statusCode)';
+  String toString() => l10n.apiNotificationsAuthError(statusCode);
 }
 
 /// `GET /api/v2/notifications` — サーバ側で集約済みの通知グループ一覧。
@@ -3834,7 +3840,7 @@ Future<List<NotificationGroup>> fetchNotificationGroups({
     throw NotificationsAuthException(resp.statusCode);
   }
   if (resp.statusCode != 200) {
-    throw Exception('通知 (v2) 取得エラー: ${resp.statusCode}');
+    throw Exception(l10n.apiNotificationsV2Failed(resp.statusCode));
   }
 
   final decoded = jsonDecode(resp.body);
@@ -3916,7 +3922,7 @@ Collection _collectionFromBody(String responseBody) {
     if (inner is Map<String, dynamic>) return Collection.fromJson(inner);
     return Collection.fromJson(decoded);
   }
-  throw Exception('コレクション応答が不正です');
+  throw Exception(l10n.apiCollectionInvalidResponse);
 }
 
 /// コレクションを作成 (`POST /api/v1/collections`)。
@@ -3950,7 +3956,7 @@ Future<Collection> createCollection({
     body: jsonEncode(body),
   );
   if (resp.statusCode != 200) {
-    throw Exception('コレクション作成失敗: ${resp.statusCode} - ${resp.body}');
+    throw Exception(l10n.apiCollectionCreateFailed(resp.statusCode, resp.body));
   }
   return _collectionFromBody(resp.body);
 }
@@ -3972,7 +3978,7 @@ Future<({Collection collection, List<Account> accounts})> fetchCollection({
     },
   );
   if (resp.statusCode != 200) {
-    throw Exception('コレクション取得失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiCollectionFetchFailed(resp.statusCode));
   }
   final decoded = jsonDecode(resp.body);
   if (decoded is Map<String, dynamic>) {
@@ -3987,7 +3993,7 @@ Future<({Collection collection, List<Account> accounts})> fetchCollection({
     // bare Collection (ラッパー無し) のサーバにも一応対応。
     return (collection: Collection.fromJson(decoded), accounts: accounts);
   }
-  throw Exception('コレクション応答が不正です');
+  throw Exception(l10n.apiCollectionInvalidResponse);
 }
 
 /// コレクションのメタ情報を更新 (`PATCH /api/v1/collections/:id`)。全 opt。
@@ -4022,7 +4028,7 @@ Future<Collection> updateCollection({
     body: jsonEncode(body),
   );
   if (resp.statusCode != 200) {
-    throw Exception('コレクション更新失敗: ${resp.statusCode} - ${resp.body}');
+    throw Exception(l10n.apiCollectionUpdateFailed(resp.statusCode, resp.body));
   }
   return _collectionFromBody(resp.body);
 }
@@ -4039,7 +4045,7 @@ Future<void> deleteCollection({
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (resp.statusCode < 200 || resp.statusCode >= 300) {
-    throw Exception('コレクション削除失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiCollectionDeleteFailed(resp.statusCode));
   }
 }
 
@@ -4066,7 +4072,8 @@ Future<void> addCollectionItem({
     body: jsonEncode({'account_id': accountId}),
   );
   if (resp.statusCode < 200 || resp.statusCode >= 300) {
-    throw Exception('コレクションへの追加失敗: ${resp.statusCode} - ${resp.body}');
+    throw Exception(
+        l10n.apiCollectionAddItemFailed(resp.statusCode, resp.body));
   }
 }
 
@@ -4085,7 +4092,7 @@ Future<void> removeCollectionItem({
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (resp.statusCode < 200 || resp.statusCode >= 300) {
-    throw Exception('コレクションからの削除失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiCollectionRemoveItemFailed(resp.statusCode));
   }
 }
 
@@ -4104,7 +4111,7 @@ Future<void> revokeCollectionItem({
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (resp.statusCode < 200 || resp.statusCode >= 300) {
-    throw Exception('コレクション掲載の取り消し失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiCollectionUnfeatureFailed(resp.statusCode));
   }
 }
 
@@ -4127,7 +4134,7 @@ Future<void> acceptCollectionItem({
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (resp.statusCode < 200 || resp.statusCode >= 300) {
-    throw Exception('コレクション掲載の承認失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiCollectionApproveFailed(resp.statusCode));
   }
 }
 
@@ -4152,7 +4159,7 @@ Future<List<Collection>> fetchAccountCollections({
   // と同義に扱い、空状態として見せる (エラー画面にしない)。
   if (resp.statusCode == 404) return const [];
   if (resp.statusCode != 200) {
-    throw Exception('アカウントのコレクション取得失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiAccountCollectionsFailed(resp.statusCode));
   }
   return _collectionsFromBody(resp.body);
 }
@@ -4175,7 +4182,7 @@ Future<List<Collection>> fetchAccountInCollections({
   // 掲載 0 件 / 未対応サーバ / 旧パスは 404 になりうる → 空として扱う。
   if (resp.statusCode == 404) return const [];
   if (resp.statusCode != 200) {
-    throw Exception('掲載コレクション取得失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiFeaturedCollectionsFailed(resp.statusCode));
   }
   return _collectionsFromBody(resp.body);
 }
@@ -4201,7 +4208,7 @@ Future<List<AnnualReport>> fetchAnnualReports({
   );
   if (resp.statusCode == 404) return const [];
   if (resp.statusCode != 200) {
-    throw Exception('年間まとめ一覧取得失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiWrappedListFailed(resp.statusCode));
   }
   return AnnualReport.listFromResponse(jsonDecode(resp.body));
 }
@@ -4220,7 +4227,7 @@ Future<AnnualReport?> fetchAnnualReport({
   );
   if (resp.statusCode == 404) return null;
   if (resp.statusCode != 200) {
-    throw Exception('年間まとめ取得失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiWrappedFailed(resp.statusCode));
   }
   final reports = AnnualReport.listFromResponse(jsonDecode(resp.body));
   if (reports.isEmpty) return null;
@@ -4247,7 +4254,7 @@ Future<String> fetchAnnualReportState({
   );
   if (resp.statusCode == 404) return 'ineligible';
   if (resp.statusCode != 200) {
-    throw Exception('年間まとめ状態取得失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiWrappedStatusFailed(resp.statusCode));
   }
   final decoded = jsonDecode(resp.body);
   if (decoded is Map<String, dynamic>) {
@@ -4272,7 +4279,7 @@ Future<void> generateAnnualReport({
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (resp.statusCode < 200 || resp.statusCode >= 300) {
-    throw Exception('年間まとめ生成失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiWrappedGenerateFailed(resp.statusCode));
   }
 }
 
@@ -4289,7 +4296,7 @@ Future<void> markAnnualReportRead({
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (resp.statusCode < 200 || resp.statusCode >= 300) {
-    throw Exception('年間まとめ既読化失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiWrappedReadFailed(resp.statusCode));
   }
 }
 
@@ -4349,7 +4356,7 @@ Future<UserPreferences> fetchPreferences({
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (resp.statusCode != 200) {
-    throw Exception('ユーザー設定取得失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiUserPrefsFailed(resp.statusCode));
   }
   final prefs = UserPreferences.fromJson(
     jsonDecode(resp.body) as Map<String, dynamic>,
@@ -4374,7 +4381,7 @@ Future<void> updateDefaultPostVisibility({
     body: {'source[privacy]': visibility},
   );
   if (resp.statusCode != 200) {
-    throw Exception('デフォルト公開範囲の変更失敗: ${resp.statusCode}');
+    throw Exception(l10n.apiDefaultVisibilityFailed(resp.statusCode));
   }
 
   final cacheKey = _preferencesCacheKey(instanceUrl, accessToken);

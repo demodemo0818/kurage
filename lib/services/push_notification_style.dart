@@ -8,6 +8,8 @@
 
 import 'dart:ui' show Color;
 
+import '../l10n/l10n.dart';
+
 /// アプリのテーマ紫 (既存の通知アクセント色)。
 const Color _kThemePurple = Color(0xFF6750A4);
 
@@ -27,33 +29,34 @@ class PushChannel {
 
 /// Android 設定に並ぶプッシュ通知チャンネル一覧。種別ごとに音・ミュートを
 /// ユーザーが個別制御できるよう分割している。
-const List<PushChannel> allPushChannels = [
-  PushChannel(
-    id: 'notif_mention',
-    name: 'メンション・返信',
-    description: 'メンション、返信、引用の通知',
-  ),
-  PushChannel(
-    id: 'notif_boost',
-    name: 'ブースト',
-    description: '投稿がブーストされた通知',
-  ),
-  PushChannel(
-    id: 'notif_favourite',
-    name: 'お気に入り・リアクション',
-    description: '投稿がお気に入り登録・絵文字リアクションされた通知',
-  ),
-  PushChannel(
-    id: 'notif_follow',
-    name: 'フォロー',
-    description: 'フォロー、フォローリクエストの通知',
-  ),
-  PushChannel(
-    id: 'notif_other',
-    name: 'その他',
-    description: 'アンケート結果、投稿通知、編集などその他の通知',
-  ),
-];
+/// `l10n` (現在の表示言語) を参照するため const にはできない。
+List<PushChannel> get allPushChannels => [
+      PushChannel(
+        id: 'notif_mention',
+        name: l10n.pushChannelMentionName,
+        description: l10n.pushChannelMentionDesc,
+      ),
+      PushChannel(
+        id: 'notif_boost',
+        name: l10n.pushChannelBoostName,
+        description: l10n.pushChannelBoostDesc,
+      ),
+      PushChannel(
+        id: 'notif_favourite',
+        name: l10n.pushChannelFavouriteName,
+        description: l10n.pushChannelFavouriteDesc,
+      ),
+      PushChannel(
+        id: 'notif_follow',
+        name: l10n.pushChannelFollowName,
+        description: l10n.pushChannelFollowDesc,
+      ),
+      PushChannel(
+        id: 'notif_other',
+        name: l10n.pushChannelOtherName,
+        description: l10n.pushChannelOtherDesc,
+      ),
+    ];
 
 /// 1 通知の見た目。[pushStyleForType] が種別文字列から決定する。
 class PushNotificationStyle {

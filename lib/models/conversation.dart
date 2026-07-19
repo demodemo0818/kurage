@@ -1,5 +1,6 @@
 // lib/models/conversation.dart
 
+import '../l10n/l10n.dart';
 import 'account.dart';
 import 'json_utils.dart';
 import 'status.dart';
@@ -57,7 +58,7 @@ class Conversation {
 
   /// 会話相手の表示名を取得（複数人の場合はカンマ区切り）
   String get participantNames {
-    if (accounts.isEmpty) return '不明';
+    if (accounts.isEmpty) return l10n.conversationParticipantsUnknown;
     return accounts.map((account) => account.displayName.isNotEmpty 
         ? account.displayName 
         : account.username).join(', ');

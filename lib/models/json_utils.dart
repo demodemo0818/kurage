@@ -7,6 +7,8 @@
 // 1 件の投稿でタイムライン全体のパースを巻き込んで失敗させる。
 // モデルの fromJson は原則ここの関数を経由する。
 
+import '../l10n/l10n.dart';
+
 /// JSON 値を文字列の ID として取り出す (nullable 版)。
 /// `num` の場合は `toString()` に正規化する。
 String? asIdStringOrNull(Object? v) {
@@ -23,7 +25,7 @@ String? asIdStringOrNull(Object? v) {
 String asIdString(Object? v) {
   final id = asIdStringOrNull(v);
   if (id == null) {
-    throw FormatException('ID フィールドがパースできません: $v');
+    throw FormatException(l10n.jsonIdFieldParseFailed('$v'));
   }
   return id;
 }

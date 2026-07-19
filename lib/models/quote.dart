@@ -1,5 +1,6 @@
 // lib/models/quote.dart
 
+import '../l10n/l10n.dart';
 import 'status.dart';
 
 /// 引用 (Mastodon 4.4+ 公式仕様)
@@ -69,13 +70,13 @@ enum QuoteState {
   /// ユーザー向け表示文言 (accepted の時は呼ばれない想定)
   String get displayLabel {
     return switch (this) {
-      pending => '承認待ち',
-      rejected => '引用が拒否されました',
-      revoked => '引用が取り消されました',
-      deleted => '引用元は削除されました',
-      unauthorized => 'この投稿を閲覧する権限がありません',
+      pending => l10n.quoteStatePending,
+      rejected => l10n.quoteStateRejected,
+      revoked => l10n.quoteStateRevoked,
+      deleted => l10n.quoteStateDeleted,
+      unauthorized => l10n.quoteStateUnauthorized,
       accepted => '', // 実体表示するので不要
-      unknown => '引用元を表示できません',
+      unknown => l10n.quoteStateUnknown,
     };
   }
 }

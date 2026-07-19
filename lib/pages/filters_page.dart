@@ -345,10 +345,10 @@ class _FiltersPageState extends ConsumerState<FiltersPage> {
     final parts = <String>[];
     parts.add(context.l10n.filterKeywordsCount(f.keywords.length));
     final ctxLabels = f.context
-        .map((c) => kFilterContextLabels[c] ?? c)
+        .map((c) => kFilterContextLabels(context)[c] ?? c)
         .join(', ');
     if (ctxLabels.isNotEmpty) parts.add(ctxLabels);
-    parts.add(kFilterActionLabels[f.filterAction] ?? f.filterAction);
+    parts.add(kFilterActionLabels(context)[f.filterAction] ?? f.filterAction);
     if (f.isExpired) parts.add(context.l10n.filterExpired);
     return parts.join(' / ');
   }

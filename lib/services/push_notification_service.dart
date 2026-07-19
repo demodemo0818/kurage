@@ -11,6 +11,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../firebase_options.dart';
+import '../l10n/l10n.dart';
 import '../models/auth_account.dart';
 import '../services/mastodon_api.dart';
 import '../services/push_notification_style.dart';
@@ -70,7 +71,7 @@ Future<void> _showFromData(
   // notification_type (favourite/reblog/follow 等) から種別絵文字・チャンネル・
   // アクセント色を決める。未知の種別は「その他」+ 絵文字なしに落ちる。
   final style = pushStyleForType(data['notification_type']);
-  final rawTitle = data['title'] ?? '新しい通知';
+  final rawTitle = data['title'] ?? l10n.pushNewNotificationTitle;
   final title =
       style.emoji == null ? rawTitle : '${style.emoji} $rawTitle';
   final body = data['body'] ?? '';
@@ -192,7 +193,7 @@ Future<Uint8List> _circleCropAvatar(Uint8List bytes) async {
     try {
       final png = await rendered.toByteData(format: ui.ImageByteFormat.png);
       if (png == null) {
-        throw StateError('PNG エンコードに失敗しました');
+        throw StateError(l10n.pushPngEncodeFailed);
       }
       return png.buffer.asUint8List();
     } finally {
@@ -416,29 +417,33 @@ class PushNotificationService {
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
       final enabled = await androidPlugin?.areNotificationsEnabled();
-      lines.add('通知権限: ${enabled == true ? '許可' : enabled == false ? '拒否 (OS の設定から許可してください)' : '不明'}');
+      lines.add(l10n.pushDiagPermission(enabled == true
+          ? l10n.pushDiagAllowed
+          : enabled == false
+              ? l10n.pushDiagDenied
+              : l10n.pushDiagUnknown));
     } catch (e) {
-      lines.add('通知権限: 確認失敗 ($e)');
+      lines.add(l10n.pushDiagPermissionCheckFailed('$e'));
     }
 
     try {
       final token = await _messaging.getToken();
       if (token == null) {
-        lines.add('FCMトークン: 取得失敗 (null)');
+        lines.add(l10n.pushDiagTokenNull);
       } else {
         // トークンは秘匿情報なので先頭 8 文字のみ表示する
         final head = token.length > 8 ? token.substring(0, 8) : token;
-        lines.add('FCMトークン: 取得OK ($head… / ${token.length}文字)');
+        lines.add(l10n.pushDiagTokenOk(head, token.length));
       }
     } catch (e) {
-      lines.add('FCMトークン: 取得失敗 ($e)');
+      lines.add(l10n.pushDiagTokenFailed('$e'));
     }
 
     // キャッシュを捨てて到達性を実測する
     _cachedRelayPubkey = null;
     _cachedRelayAuth = null;
     final keys = await _fetchRelayKeys();
-    lines.add(keys == null ? 'リレーサーバ: 到達不可' : 'リレーサーバ: OK');
+    lines.add(keys == null ? l10n.pushDiagRelayUnreachable : l10n.pushDiagRelayOk);
 
     // 専用アイコン (ic_stat_kurage) でテスト通知を実際に表示してみる。
     // アイコンリソースが端末で解決できない状態 (release の resource shrinker
@@ -459,20 +464,20 @@ class PushNotificationService {
       );
       await _localNotifications.show(
         999999,
-        'テスト通知',
-        'これはテスト通知です',
+        l10n.pushDiagTestNotifTitle,
+        l10n.pushDiagTestNotifBody,
         testDetails,
       );
-      lines.add('テスト通知 (専用アイコン): 表示OK — 通知のアイコンを確認してください');
+      lines.add(l10n.pushDiagTestShown);
     } catch (e) {
-      lines.add('テスト通知 (専用アイコン): 失敗 ($e) — アイコンリソースが端末で解決できていません');
+      lines.add(l10n.pushDiagTestFailed('$e'));
     }
 
     try {
       final prefs = await SharedPreferences.getInstance();
       final jsonStr = prefs.getString('accounts');
       if (jsonStr == null) {
-        lines.add('アカウント: 未ログイン');
+        lines.add(l10n.pushDiagNoAccounts);
         return lines;
       }
       final list = (jsonDecode(jsonStr) as List).cast<Map<String, dynamic>>();
@@ -483,10 +488,10 @@ class PushNotificationService {
             account.instanceUrl;
         final detail = await lastRegisterResult(account.id);
         lines.add(
-            '${account.username}@$host: ${ok ? '購読登録OK' : '購読登録失敗'}${detail != null ? '\n  $detail' : ''}');
+            '${account.username}@$host: ${ok ? l10n.pushDiagRegOk : l10n.pushDiagRegFailed}${detail != null ? '\n  $detail' : ''}');
       }
     } catch (e) {
-      lines.add('アカウント別登録: 失敗 ($e)');
+      lines.add(l10n.pushDiagAccountsError('$e'));
     }
     return lines;
   }
@@ -557,17 +562,18 @@ class PushNotificationService {
       try {
         fcmToken = await _messaging.getToken();
       } catch (e) {
-        await _recordRegisterResult(account.id, 'NG: FCMトークン取得失敗 ($e)');
+        await _recordRegisterResult(
+            account.id, l10n.pushRegFcmTokenFailedError('$e'));
         return false;
       }
       if (fcmToken == null) {
-        await _recordRegisterResult(account.id, 'NG: FCMトークン取得失敗 (null)');
+        await _recordRegisterResult(account.id, l10n.pushRegFcmTokenNull);
         return false;
       }
 
       final keys = await _fetchRelayKeys();
       if (keys == null) {
-        await _recordRegisterResult(account.id, 'NG: リレー鍵取得失敗');
+        await _recordRegisterResult(account.id, l10n.pushRegRelayKeyFailed);
         return false;
       }
 
@@ -602,10 +608,10 @@ class PushNotificationService {
         await _recordRegisterResult(account.id, 'OK');
         return true;
       }
-      await _recordRegisterResult(account.id, 'NG: サーバ登録失敗');
+      await _recordRegisterResult(account.id, l10n.pushRegServerFailed);
     } catch (e) {
       debugPrint('プッシュ通知の登録に失敗: $e');
-      await _recordRegisterResult(account.id, 'NG: 例外 ($e)');
+      await _recordRegisterResult(account.id, l10n.pushRegException('$e'));
     }
     return false;
   }

@@ -2065,5 +2065,704 @@
     "placeholders": {
       "provider": {"type": "String"}
     }
+  },
+
+  "apiHtmlResponse": "(HTMLレスポンス、{bytes} bytes)",
+  "@apiHtmlResponse": {
+    "placeholders": {
+      "bytes": {"type": "int"}
+    }
+  },
+  "apiFavouriteActionFailed": "お気に入り操作失敗: {status}",
+  "@apiFavouriteActionFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiReblogActionFailed": "ブースト操作失敗: {status}",
+  "@apiReblogActionFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiPinLimitError": "ピン留めできません (上限 5 件 / 投稿の公開範囲に注意): {body}",
+  "@apiPinLimitError": {
+    "placeholders": {
+      "body": {"type": "String"}
+    }
+  },
+  "apiPinActionFailed": "ピン留め操作失敗: {status}",
+  "@apiPinActionFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiBookmarkActionFailed": "ブックマーク操作失敗: {status}",
+  "@apiBookmarkActionFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiInstanceInfoFailed": "インスタンス情報取得失敗: {status}",
+  "@apiInstanceInfoFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiMediaUploadFailed": "メディアアップロード失敗: {status} {detail}",
+  "@apiMediaUploadFailed": {
+    "placeholders": {
+      "status": {"type": "int"},
+      "detail": {"type": "String"}
+    }
+  },
+  "apiAltUpdateFailed": "ALT文の更新失敗: {status}",
+  "@apiAltUpdateFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiPostParseFailed": "投稿成功だがレスポンス解析失敗: {error}",
+  "@apiPostParseFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "apiPostFailed": "投稿失敗: {status} {detail}",
+  "@apiPostFailed": {
+    "placeholders": {
+      "status": {"type": "int"},
+      "detail": {"type": "String"}
+    }
+  },
+  "apiEditUnsupported": "このサーバは投稿の編集に対応していません (HTTP {status})",
+  "@apiEditUnsupported": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiEditFailed": "編集失敗: {status} {detail}",
+  "@apiEditFailed": {
+    "placeholders": {
+      "status": {"type": "int"},
+      "detail": {"type": "String"}
+    }
+  },
+  "apiTimelineTypeFailed": "{type}取得エラー: {status}",
+  "@apiTimelineTypeFailed": {
+    "placeholders": {
+      "type": {"type": "String"},
+      "status": {"type": "int"}
+    }
+  },
+  "apiTimelineFailed": "タイムライン取得エラー: {status}",
+  "@apiTimelineFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiListsFailed": "リスト取得エラー: {status}",
+  "@apiListsFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiListsFailedError": "リスト取得エラー: {error}",
+  "@apiListsFailedError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "apiListCreateFailed": "リスト作成エラー: {status}",
+  "@apiListCreateFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiListUpdateFailed": "リスト更新エラー: {status}",
+  "@apiListUpdateFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiListDeleteFailed": "リスト削除エラー: {status}",
+  "@apiListDeleteFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiListMembersFailed": "リストメンバー取得エラー: {status}",
+  "@apiListMembersFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiListAddMemberFailed": "リスト追加エラー: {status} {body}",
+  "@apiListAddMemberFailed": {
+    "placeholders": {
+      "status": {"type": "int"},
+      "body": {"type": "String"}
+    }
+  },
+  "apiListRemoveMemberFailed": "リスト除外エラー: {status}",
+  "@apiListRemoveMemberFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiListMembershipFailed": "所属リスト取得エラー: {status}",
+  "@apiListMembershipFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiUserStatusesFailed": "ユーザー投稿取得失敗: {status}",
+  "@apiUserStatusesFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiAccountInfoFailed": "アカウント情報取得失敗: {status}",
+  "@apiAccountInfoFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiAccountsBulkFailed": "アカウント一括取得失敗: {status}",
+  "@apiAccountsBulkFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiAccountLookupFailed": "アカウント lookup 失敗: {status}",
+  "@apiAccountLookupFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiPinnedStatusesFailed": "固定投稿取得失敗: {status}",
+  "@apiPinnedStatusesFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiFollowingListFailed": "フォロー一覧取得失敗: {status}",
+  "@apiFollowingListFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiFollowersListFailed": "フォロワー一覧取得失敗: {status}",
+  "@apiFollowersListFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiRemoveFollowerUnsupported": "このサーバーは「フォロワーから外す」に対応していません (Mastodon 4.0+ が必要)",
+  "apiRemoveFollowerFailed": "フォロワー除外失敗: {status} {body}",
+  "@apiRemoveFollowerFailed": {
+    "placeholders": {
+      "status": {"type": "int"},
+      "body": {"type": "String"}
+    }
+  },
+  "apiNotificationsFailed": "通知取得失敗: {status}",
+  "@apiNotificationsFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiAnnouncementsFailed": "お知らせ取得失敗: {status}",
+  "@apiAnnouncementsFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiAnnouncementReadFailed": "お知らせ既読化失敗: {status}",
+  "@apiAnnouncementReadFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiReactionAddFailed": "リアクション追加失敗: {status}",
+  "@apiReactionAddFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiReactionRemoveFailed": "リアクション削除失敗: {status}",
+  "@apiReactionRemoveFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiRelationshipEmpty": "Relationship 配列が空です",
+  "apiRelationshipFailed": "Relationship取得失敗: {status}",
+  "@apiRelationshipFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiFollowFailed": "フォローに失敗: {status}",
+  "@apiFollowFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiNoteSaveFailed": "メモの保存に失敗: {status}",
+  "@apiNoteSaveFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiUnfollowFailed": "アンフォローに失敗: {status}",
+  "@apiUnfollowFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiStatusContextFailed": "ステータスコンテキスト取得失敗: {status}",
+  "@apiStatusContextFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiListPathFailed": "一覧取得エラー ({path}): {status}",
+  "@apiListPathFailed": {
+    "placeholders": {
+      "path": {"type": "String"},
+      "status": {"type": "int"}
+    }
+  },
+  "apiPollFailed": "投票取得失敗: {status}",
+  "@apiPollFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiScheduledListFailed": "予約投稿一覧取得失敗: {status}",
+  "@apiScheduledListFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiScheduledDeleteFailed": "予約投稿削除失敗: {status}",
+  "@apiScheduledDeleteFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiScheduledUpdateFailed": "予約投稿更新失敗: {status}",
+  "@apiScheduledUpdateFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiVoteFailed": "投票失敗: {status}\n{body}",
+  "@apiVoteFailed": {
+    "placeholders": {
+      "status": {"type": "int"},
+      "body": {"type": "String"}
+    }
+  },
+  "apiCustomEmojiFailed": "カスタム絵文字取得失敗: {status}",
+  "@apiCustomEmojiFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiConversationsFailed": "会話一覧取得失敗: {status}",
+  "@apiConversationsFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiConversationReadFailed": "会話既読化失敗: {status}",
+  "@apiConversationReadFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiConversationDeleteFailed": "会話削除失敗: {status}",
+  "@apiConversationDeleteFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiProfileUpdateFailed": "プロフィール更新失敗: {status} - {body}",
+  "@apiProfileUpdateFailed": {
+    "placeholders": {
+      "status": {"type": "int"},
+      "body": {"type": "String"}
+    }
+  },
+  "apiProfileV46Unsupported": "このサーバは /api/v1/profile (4.6+) に未対応です",
+  "apiProfileV46FetchFailed": "プロフィール取得 (4.6) 失敗: {status}",
+  "@apiProfileV46FetchFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiProfileV46UpdateFailed": "プロフィール更新 (4.6) 失敗: {status} - {body}",
+  "@apiProfileV46UpdateFailed": {
+    "placeholders": {
+      "status": {"type": "int"},
+      "body": {"type": "String"}
+    }
+  },
+  "apiStatusDeleteFailed": "投稿削除失敗: {status} - {body}",
+  "@apiStatusDeleteFailed": {
+    "placeholders": {
+      "status": {"type": "int"},
+      "body": {"type": "String"}
+    }
+  },
+  "apiStatusSourceFailed": "投稿ソース取得失敗: {status} - {body}",
+  "@apiStatusSourceFailed": {
+    "placeholders": {
+      "status": {"type": "int"},
+      "body": {"type": "String"}
+    }
+  },
+  "apiEditHistoryFailed": "編集履歴の取得失敗: {status}\n{body}",
+  "@apiEditHistoryFailed": {
+    "placeholders": {
+      "status": {"type": "int"},
+      "body": {"type": "String"}
+    }
+  },
+  "apiReportSendFailed": "通報の送信失敗: {status} {body}",
+  "@apiReportSendFailed": {
+    "placeholders": {
+      "status": {"type": "int"},
+      "body": {"type": "String"}
+    }
+  },
+  "apiTranslateNotAllowed": "翻訳が許可されていません: {body}",
+  "@apiTranslateNotAllowed": {
+    "placeholders": {
+      "body": {"type": "String"}
+    }
+  },
+  "apiTranslateUnsupported": "翻訳機能が利用できません",
+  "apiTranslateServiceUnavailable": "翻訳サービスが一時的に利用できません",
+  "apiTranslateFailed": "翻訳失敗: {status} - {body}",
+  "@apiTranslateFailed": {
+    "placeholders": {
+      "status": {"type": "int"},
+      "body": {"type": "String"}
+    }
+  },
+  "apiTranslateError": "翻訳中にエラーが発生しました: {error}",
+  "@apiTranslateError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "apiFiltersUnsupported": "このサーバはフィルタ機能 (v2) に未対応です",
+  "apiFiltersFetchFailed": "フィルタ取得エラー: {status}",
+  "@apiFiltersFetchFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiFilterCreateFailed": "フィルタ作成エラー: {status} {body}",
+  "@apiFilterCreateFailed": {
+    "placeholders": {
+      "status": {"type": "int"},
+      "body": {"type": "String"}
+    }
+  },
+  "apiFilterUpdateFailed": "フィルタ更新エラー: {status} {body}",
+  "@apiFilterUpdateFailed": {
+    "placeholders": {
+      "status": {"type": "int"},
+      "body": {"type": "String"}
+    }
+  },
+  "apiFilterDeleteFailed": "フィルタ削除エラー: {status}",
+  "@apiFilterDeleteFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiFilterKeywordAddFailed": "キーワード追加エラー: {status}",
+  "@apiFilterKeywordAddFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiNotificationsV2Unsupported": "このサーバは /api/v2/notifications (4.3+) に未対応です",
+  "apiNotificationsAuthError": "通知取得の認証エラー (HTTP {status})",
+  "@apiNotificationsAuthError": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiNotificationsV2Failed": "通知 (v2) 取得エラー: {status}",
+  "@apiNotificationsV2Failed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiCollectionInvalidResponse": "コレクション応答が不正です",
+  "apiCollectionCreateFailed": "コレクション作成失敗: {status} - {body}",
+  "@apiCollectionCreateFailed": {
+    "placeholders": {
+      "status": {"type": "int"},
+      "body": {"type": "String"}
+    }
+  },
+  "apiCollectionFetchFailed": "コレクション取得失敗: {status}",
+  "@apiCollectionFetchFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiCollectionUpdateFailed": "コレクション更新失敗: {status} - {body}",
+  "@apiCollectionUpdateFailed": {
+    "placeholders": {
+      "status": {"type": "int"},
+      "body": {"type": "String"}
+    }
+  },
+  "apiCollectionDeleteFailed": "コレクション削除失敗: {status}",
+  "@apiCollectionDeleteFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiCollectionAddItemFailed": "コレクションへの追加失敗: {status} - {body}",
+  "@apiCollectionAddItemFailed": {
+    "placeholders": {
+      "status": {"type": "int"},
+      "body": {"type": "String"}
+    }
+  },
+  "apiCollectionRemoveItemFailed": "コレクションからの削除失敗: {status}",
+  "@apiCollectionRemoveItemFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiCollectionUnfeatureFailed": "コレクション掲載の取り消し失敗: {status}",
+  "@apiCollectionUnfeatureFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiCollectionApproveFailed": "コレクション掲載の承認失敗: {status}",
+  "@apiCollectionApproveFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiAccountCollectionsFailed": "アカウントのコレクション取得失敗: {status}",
+  "@apiAccountCollectionsFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiFeaturedCollectionsFailed": "掲載コレクション取得失敗: {status}",
+  "@apiFeaturedCollectionsFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiWrappedListFailed": "年間まとめ一覧取得失敗: {status}",
+  "@apiWrappedListFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiWrappedFailed": "年間まとめ取得失敗: {status}",
+  "@apiWrappedFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiWrappedStatusFailed": "年間まとめ状態取得失敗: {status}",
+  "@apiWrappedStatusFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiWrappedGenerateFailed": "年間まとめ生成失敗: {status}",
+  "@apiWrappedGenerateFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiWrappedReadFailed": "年間まとめ既読化失敗: {status}",
+  "@apiWrappedReadFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiUserPrefsFailed": "ユーザー設定取得失敗: {status}",
+  "@apiUserPrefsFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "apiDefaultVisibilityFailed": "デフォルト公開範囲の変更失敗: {status}",
+  "@apiDefaultVisibilityFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+
+  "authAppRegistrationFailed": "アプリ登録に失敗: {status}",
+  "@authAppRegistrationFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "authOAuthExchangeFailed": "OAuth 認可またはトークン交換に失敗しました",
+  "authBrowserOpenFailed": "認証用ブラウザを開けませんでした",
+  "authTimeout5Min": "認証がタイムアウトしました (5 分)",
+  "authTokenExchangeFailed": "トークン交換に失敗: {status}",
+  "@authTokenExchangeFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "authDenied": "認証が拒否されました: {error}",
+  "@authDenied": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "authStateMismatch": "state 不一致 (CSRF 検証に失敗しました)",
+  "authCallbackSuccessTitle": "認証が完了しました",
+  "authCallbackSuccessBody": "このタブを閉じて Kurage に戻ってください。",
+  "authCallbackFailTitle": "認証に失敗しました",
+  "authCallbackFailBody": "({error})<br>Kurage に戻ってやり直してください。",
+  "@authCallbackFailBody": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "authAccountInfoFailed": "アカウント情報取得に失敗: {status}",
+  "@authAccountInfoFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "authPopupBlocked": "ポップアップがブロックされました。ブラウザのアドレスバーからこのサイトのポップアップを許可してから再度ログインしてください。",
+  "authTokenFetchFailed": "トークン取得に失敗: {status}",
+  "@authTokenFetchFailed": {
+    "placeholders": {
+      "status": {"type": "int"}
+    }
+  },
+  "authError": "認証エラー: {error}",
+  "@authError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "authInvalidParams": "認証パラメータが不正です",
+  "authStateParamMismatch": "State パラメータが一致しません",
+  "authTimeout": "認証がタイムアウトしました",
+  "authCancelled": "認証がキャンセルされました",
+  "authPlatformNotImplemented": "プラットフォーム固有の実装が見つかりません",
+
+  "pushNewNotificationTitle": "新しい通知",
+  "pushPngEncodeFailed": "PNG エンコードに失敗しました",
+  "pushDiagPermission": "通知権限: {status}",
+  "@pushDiagPermission": {
+    "placeholders": {
+      "status": {"type": "String"}
+    }
+  },
+  "pushDiagAllowed": "許可",
+  "pushDiagDenied": "拒否 (OS の設定から許可してください)",
+  "pushDiagUnknown": "不明",
+  "pushDiagPermissionCheckFailed": "通知権限: 確認失敗 ({error})",
+  "@pushDiagPermissionCheckFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "pushDiagTokenNull": "FCMトークン: 取得失敗 (null)",
+  "pushDiagTokenOk": "FCMトークン: 取得OK ({head}… / {length}文字)",
+  "@pushDiagTokenOk": {
+    "placeholders": {
+      "head": {"type": "String"},
+      "length": {"type": "int"}
+    }
+  },
+  "pushDiagTokenFailed": "FCMトークン: 取得失敗 ({error})",
+  "@pushDiagTokenFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "pushDiagRelayUnreachable": "リレーサーバ: 到達不可",
+  "pushDiagRelayOk": "リレーサーバ: OK",
+  "pushDiagTestNotifTitle": "テスト通知",
+  "pushDiagTestNotifBody": "これはテスト通知です",
+  "pushDiagTestShown": "テスト通知 (専用アイコン): 表示OK — 通知のアイコンを確認してください",
+  "pushDiagTestFailed": "テスト通知 (専用アイコン): 失敗 ({error}) — アイコンリソースが端末で解決できていません",
+  "@pushDiagTestFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "pushDiagNoAccounts": "アカウント: 未ログイン",
+  "pushDiagRegOk": "購読登録OK",
+  "pushDiagRegFailed": "購読登録失敗",
+  "pushDiagAccountsError": "アカウント別登録: 失敗 ({error})",
+  "@pushDiagAccountsError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "pushRegFcmTokenFailedError": "NG: FCMトークン取得失敗 ({error})",
+  "@pushRegFcmTokenFailedError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "pushRegFcmTokenNull": "NG: FCMトークン取得失敗 (null)",
+  "pushRegRelayKeyFailed": "NG: リレー鍵取得失敗",
+  "pushRegServerFailed": "NG: サーバ登録失敗",
+  "pushRegException": "NG: 例外 ({error})",
+  "@pushRegException": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "pushChannelMentionName": "メンション・返信",
+  "pushChannelMentionDesc": "メンション、返信、引用の通知",
+  "pushChannelBoostName": "ブースト",
+  "pushChannelBoostDesc": "投稿がブーストされた通知",
+  "pushChannelFavouriteName": "お気に入り・リアクション",
+  "pushChannelFavouriteDesc": "投稿がお気に入り登録・絵文字リアクションされた通知",
+  "pushChannelFollowName": "フォロー",
+  "pushChannelFollowDesc": "フォロー、フォローリクエストの通知",
+  "pushChannelOtherName": "その他",
+  "pushChannelOtherDesc": "アンケート結果、投稿通知、編集などその他の通知",
+
+  "filterCtxHome": "ホーム / リスト",
+  "filterCtxNotifications": "通知",
+  "filterCtxPublic": "公開タイムライン",
+  "filterCtxThread": "会話 (スレッド)",
+  "filterCtxAccount": "プロフィール",
+  "filterActionWarn": "警告表示 (タップで内容を見られる)",
+  "filterActionHide": "完全に非表示",
+  "conversationParticipantsUnknown": "不明",
+  "quoteStatePending": "承認待ち",
+  "quoteStateRejected": "引用が拒否されました",
+  "quoteStateRevoked": "引用が取り消されました",
+  "quoteStateDeleted": "引用元は削除されました",
+  "quoteStateUnauthorized": "この投稿を閲覧する権限がありません",
+  "quoteStateUnknown": "引用元を表示できません",
+  "jsonIdFieldParseFailed": "ID フィールドがパースできません: {value}",
+  "@jsonIdFieldParseFailed": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
   }
 }

@@ -8,6 +8,7 @@ import 'dart:js_interop';
 import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:web/web.dart' as web;
+import '../l10n/l10n.dart';
 import '../models/auth_account.dart';
 
 /// ユーザージェスチャ内で同期的に先行オープンしたポップアップ。
@@ -70,7 +71,7 @@ Future<AuthAccount> login({
 
   if (appResp.statusCode != 200) {
     preOpened?.close();
-    throw Exception('アプリ登録に失敗: ${appResp.statusCode}');
+    throw Exception(l10n.authAppRegistrationFailed(appResp.statusCode));
   }
 
   final appJson = jsonDecode(appResp.body);
@@ -114,14 +115,12 @@ Future<AuthAccount> login({
     // best-effort の早期検知のみ。
     try {
       if (authWindow == null || authWindow.closed) {
-        throw Exception(
-          'ポップアップがブロックされました。'
-          'ブラウザのアドレスバーからこのサイトのポップアップを許可してから'
-          '再度ログインしてください。',
-        );
+        throw Exception(l10n.authPopupBlocked);
       }
     } catch (e) {
-      if (e is Exception && e.toString().contains('ポップアップ')) rethrow;
+      if (e is Exception && e.toString().contains(l10n.authPopupBlocked)) {
+        rethrow;
+      }
       // .closed アクセス自体が SecurityError 等で死ぬ系は一旦無視して
       // 通常の待機処理に流す (= タイムアウト or 後段のエラーで拾う)。
     }
@@ -144,7 +143,7 @@ Future<AuthAccount> login({
   );
 
   if (tokenResp.statusCode != 200) {
-    throw Exception('トークン取得に失敗: ${tokenResp.statusCode}');
+    throw Exception(l10n.authTokenFetchFailed(tokenResp.statusCode));
   }
 
   final tokenJson = jsonDecode(tokenResp.body);
@@ -161,7 +160,7 @@ Future<AuthAccount> _fetchUserAccount(String instanceUrl, String accessToken) as
     headers: {'Authorization': 'Bearer $accessToken'},
   );
   if (userResp.statusCode != 200) {
-    throw Exception('アカウント情報取得に失敗: ${userResp.statusCode}');
+    throw Exception(l10n.authAccountInfoFailed(userResp.statusCode));
   }
   final userJson = jsonDecode(userResp.body) as Map<String, dynamic>;
 
@@ -209,11 +208,11 @@ Future<String> _waitForAuthCode(
       final error = data['error'] as String?;
 
       if (error != null) {
-        completer.completeError(Exception('認証エラー: $error'));
+        completer.completeError(Exception(l10n.authError(error)));
       } else if (code == null || state == null) {
-        completer.completeError(Exception('認証パラメータが不正です'));
+        completer.completeError(Exception(l10n.authInvalidParams));
       } else if (state != expectedState) {
-        completer.completeError(Exception('State パラメータが一致しません'));
+        completer.completeError(Exception(l10n.authStateParamMismatch));
       } else {
         completer.complete(code);
       }
@@ -225,7 +224,7 @@ Future<String> _waitForAuthCode(
     if (!completer.isCompleted) {
       cleanup();
       authWindow?.close();
-      completer.completeError(Exception('認証がタイムアウトしました'));
+      completer.completeError(Exception(l10n.authTimeout));
     }
   });
 
@@ -234,7 +233,7 @@ Future<String> _waitForAuthCode(
     if (authWindow == null || authWindow.closed) {
       if (!completer.isCompleted) {
         cleanup();
-        completer.completeError(Exception('認証がキャンセルされました'));
+        completer.completeError(Exception(l10n.authCancelled));
       } else {
         timer.cancel();
       }
