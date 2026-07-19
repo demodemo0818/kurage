@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/l10n.dart';
 import '../models/status.dart';
 import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
@@ -115,7 +116,7 @@ class _HashtagPageState extends ConsumerState<HashtagPage> {
       debugPrint('Error loading hashtag posts: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('投稿の読み込みに失敗しました: $e')),
+          SnackBar(content: Text(context.l10n.hashtagLoadPostsFailed('$e'))),
         );
       }
     } finally {
@@ -180,15 +181,15 @@ class _HashtagPageState extends ConsumerState<HashtagPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(_isFollowing
-              ? 'ハッシュタグをフォローしました'
-              : 'ハッシュタグのフォローを解除しました'),
+              ? context.l10n.hashtagFollowed
+              : context.l10n.hashtagUnfollowed),
         ),
       );
     } catch (e) {
       debugPrint('Error toggling hashtag follow: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('操作に失敗しました: $e')),
+        SnackBar(content: Text(context.l10n.actionFailed('$e'))),
       );
     }
   }
@@ -207,7 +208,8 @@ class _HashtagPageState extends ConsumerState<HashtagPage> {
           IconButton(
             icon: Icon(_isFollowing ? Icons.notifications_active : Icons.notifications_none),
             onPressed: _toggleFollow,
-            tooltip: _isFollowing ? 'フォロー解除' : 'フォロー',
+            tooltip:
+                _isFollowing ? context.l10n.unfollow : context.l10n.follow,
           ),
         ],
       ),
@@ -236,7 +238,7 @@ class _HashtagPageState extends ConsumerState<HashtagPage> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'まだ投稿がありません',
+                          context.l10n.noPostsYet,
                           style: TextStyle(
                             fontSize: settings.fontSize,
                             color: Colors.grey[500],
@@ -273,7 +275,7 @@ class _HashtagPageState extends ConsumerState<HashtagPage> {
         // 遷移時の default heroTag 衝突を避けるため一意タグを付与。
         heroTag: 'hashtag_compose_fab',
         onPressed: () => _composeWithHashtag(),
-        tooltip: 'このハッシュタグで投稿',
+        tooltip: context.l10n.hashtagComposeTooltip,
         child: const Icon(Icons.edit),
       ),
     );

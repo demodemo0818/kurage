@@ -98,5 +98,116 @@
   "otoLogicLicenseBody": "効果音素材: OtoLogic\nhttps://otologic.jp\n\nライセンス: Creative Commons Attribution 4.0 International (CC BY 4.0)\nhttps://creativecommons.org/licenses/by/4.0/",
   "@otoLogicLicenseBody": {
     "description": "ライセンス一覧に載せる効果音素材 (OtoLogic, CC BY 4.0) のクレジット本文"
-  }
+  },
+
+  "retry": "再試行",
+  "save": "保存",
+  "reload": "再読み込み",
+  "follow": "フォロー",
+  "unfollow": "フォロー解除",
+  "boost": "ブースト",
+  "favourite": "お気に入り",
+  "noPostsYet": "まだ投稿がありません",
+  "actionFailed": "操作に失敗しました: {error}",
+  "@actionFailed": {
+    "description": "汎用: 操作失敗の SnackBar",
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "loadMoreFailed": "続きを取得できませんでした: {error}",
+  "@loadMoreFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "showMore": "もっと見る",
+  "showLess": "折りたたむ",
+
+  "draftsTitle": "下書き一覧",
+  "draftsEmpty": "下書きはありません",
+
+  "videoLoadFailed": "動画の読み込みに失敗しました",
+
+  "appLockWrongPin": "PIN が違います",
+  "appLockBiometricsUnavailable": "この端末では生体認証が使えません",
+  "appLockEnterPin": "PIN を入力してください",
+  "appLockPinMismatch": "PIN が一致しません。最初からやり直してください",
+  "appLockEnterNewPin": "新しい PIN を入力",
+  "appLockConfirmPin": "確認のためもう一度入力",
+  "appLockPinSetupTitle": "PIN の設定",
+  "appLockPinSixDigits": "6 桁の数字",
+
+  "linkAttributionUnverifiedTooltip": "リンク先サイトがこの投稿者の帰属を承認していません（なりすましの可能性があります）",
+  "linkAttributionUnverified": "帰属未確認",
+
+  "myProfileTitle": "マイプロフィール",
+  "noLoggedInAccounts": "ログインしたアカウントがありません",
+  "selectAccountToShow": "表示するアカウントを選択してください",
+
+  "gapLoading": "投稿を読み込み中...",
+  "gapLoadPrompt": "ギャップを読み込みます",
+  "gapKeepUpper": "上側をキープ",
+  "gapKeepLower": "下側をキープ",
+  "gapLoad": "読み込む",
+
+  "hashtagLoadPostsFailed": "投稿の読み込みに失敗しました: {error}",
+  "@hashtagLoadPostsFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "hashtagFollowed": "ハッシュタグをフォローしました",
+  "hashtagUnfollowed": "ハッシュタグのフォローを解除しました",
+  "hashtagComposeTooltip": "このハッシュタグで投稿",
+
+  "editHistoryTitle": "編集履歴",
+  "editHistoryFetchFailed": "編集履歴を取得できませんでした: {error}",
+  "@editHistoryFetchFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "editHistoryUnsupported": "このサーバは編集履歴に対応していないか、履歴がありません",
+  "editHistoryOriginal": "初版",
+  "editHistoryNthEdit": "{n} 回目の編集",
+  "@editHistoryNthEdit": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "editHistoryCurrentLabel": "{label} (現在)",
+  "@editHistoryCurrentLabel": {
+    "description": "編集履歴で最新版に付ける表示。label は editHistoryOriginal / editHistoryNthEdit の値",
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+
+  "downloadFailed": "ダウンロード失敗",
+  "savedTo": "保存しました: {path}",
+  "@savedTo": {
+    "placeholders": {
+      "path": {"type": "String"}
+    }
+  },
+  "saveFailed": "保存に失敗しました: {error}",
+  "@saveFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "downloadedAs": "ダウンロードしました: {name}",
+  "@downloadedAs": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "imageOpenedInNewTab": "画像を新しいタブで開きました。ブラウザのメニューから保存できます",
+
+  "reactorsTitle": "リアクションした人",
+  "reactorsNoBoosts": "まだ誰もブーストしていません",
+  "reactorsNoFavourites": "まだ誰もお気に入りに追加していません",
+  "reactorsFetchFailed": "一覧を取得できませんでした"
 }

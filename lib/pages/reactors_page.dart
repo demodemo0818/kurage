@@ -12,6 +12,7 @@
 import '../widgets/network_image_x.dart';
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n.dart';
 import '../models/account.dart';
 import '../models/auth_account.dart';
 import '../services/mastodon_api.dart';
@@ -81,11 +82,11 @@ class ReactorsPage extends StatelessWidget {
         appBar: AppBar(
           leading:
               onDeckBack == null ? null : BackButton(onPressed: onDeckBack),
-          title: const Text('リアクションした人'),
-          bottom: const TabBar(
+          title: Text(context.l10n.reactorsTitle),
+          bottom: TabBar(
             tabs: [
-              Tab(icon: Icon(Icons.repeat), text: 'ブースト'),
-              Tab(icon: Icon(Icons.star), text: 'お気に入り'),
+              Tab(icon: const Icon(Icons.repeat), text: context.l10n.boost),
+              Tab(icon: const Icon(Icons.star), text: context.l10n.favourite),
             ],
           ),
         ),
@@ -94,7 +95,7 @@ class ReactorsPage extends StatelessWidget {
             _ReactorList(
               key: const PageStorageKey('reactors-reblog'),
               account: account,
-              emptyMessage: 'まだ誰もブーストしていません',
+              emptyMessage: context.l10n.reactorsNoBoosts,
               fetcher: ({String? maxId}) => fetchRebloggedBy(
                 instanceUrl: account.instanceUrl,
                 accessToken: account.accessToken,
@@ -105,7 +106,7 @@ class ReactorsPage extends StatelessWidget {
             _ReactorList(
               key: const PageStorageKey('reactors-fav'),
               account: account,
-              emptyMessage: 'まだ誰もお気に入りに追加していません',
+              emptyMessage: context.l10n.reactorsNoFavourites,
               fetcher: ({String? maxId}) => fetchFavouritedBy(
                 instanceUrl: account.instanceUrl,
                 accessToken: account.accessToken,
@@ -217,7 +218,7 @@ class _ReactorListState extends State<_ReactorList>
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
-      showErrorSnackBar(context, '続きを取得できませんでした: $e');
+      showErrorSnackBar(context, context.l10n.loadMoreFailed('$e'));
     }
   }
 
@@ -248,13 +249,13 @@ class _ReactorListState extends State<_ReactorList>
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 12),
-              const Text('一覧を取得できませんでした'),
+              Text(context.l10n.reactorsFetchFailed),
               const SizedBox(height: 4),
               Text(_error!, textAlign: TextAlign.center),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _loadFirst,
-                child: const Text('再試行'),
+                child: Text(context.l10n.retry),
               ),
             ],
           ),

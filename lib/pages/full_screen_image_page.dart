@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart';
+import '../l10n/l10n.dart';
 import '../providers/settings_provider.dart';
 import '../services/image_download_stub.dart'
     if (dart.library.js_interop) '../services/image_download_web.dart'
@@ -167,7 +168,7 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
       }
 
       final resp = await http.get(Uri.parse(url));
-      if (resp.statusCode != 200) throw Exception('ダウンロード失敗');
+      if (resp.statusCode != 200) throw Exception(l10n.downloadFailed);
 
       final fileName = 'mastodon_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
@@ -181,7 +182,7 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
           askLocation: settings.confirmImageSaveLocation,
         );
         if (savedPath == null) return; // 保存ダイアログをキャンセル
-        _showToast('保存しました: $savedPath');
+        _showToast(l10n.savedTo(savedPath));
       } else {
         // モバイル: Android = Pictures + media scanner、iOS 等 = サンドボックス。
         final saveDir = Platform.isAndroid
@@ -200,10 +201,10 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
               .invokeMethod('scanFile', {'path': file.path});
         }
 
-        _showToast('保存しました: $filePath');
+        _showToast(l10n.savedTo(filePath));
       }
     } catch (e) {
-      _showToast('保存に失敗しました: $e');
+      _showToast(l10n.saveFailed('$e'));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -225,10 +226,10 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
         fileName: fileName,
         mimeType: mime,
       );
-      _showToast('ダウンロードしました: $fileName');
+      _showToast(l10n.downloadedAs(fileName));
     } catch (_) {
       image_download.openInNewTab(url);
-      _showToast('画像を新しいタブで開きました。ブラウザのメニューから保存できます');
+      _showToast(l10n.imageOpenedInNewTab);
     }
   }
 
@@ -625,7 +626,7 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
           children: [
             IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
-              tooltip: '閉じる',
+              tooltip: context.l10n.close,
               onPressed: () => Navigator.pop(context),
             ),
             Expanded(
@@ -644,7 +645,7 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
                           color: Colors.white, strokeWidth: 2),
                     )
                   : const Icon(Icons.save_alt, color: Colors.white),
-              tooltip: '保存',
+              tooltip: context.l10n.save,
               onPressed: _saveCurrentImage,
             ),
           ],

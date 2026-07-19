@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n.dart';
 import '../utils/bounded_collections.dart';
 
 /// 指定した行数を超える場合に折りたたみ可能なテキストウィジェット
@@ -138,7 +139,7 @@ class _CollapsibleTextState extends State<CollapsibleText> {
                     });
                   },
                   child: Text(
-                    _isExpanded ? '折りたたむ' : 'もっと見る',
+                    _isExpanded ? context.l10n.showLess : context.l10n.showMore,
                     style: widget.defaultStyle.copyWith(
                       color: widget.buttonColor ?? Colors.blue,
                       fontWeight: FontWeight.w500,

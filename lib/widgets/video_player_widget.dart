@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 
+import '../l10n/l10n.dart';
+
 class VideoPlayerWidget extends StatefulWidget {
   final String videoUrl;
   final double? width;
@@ -73,7 +75,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '動画の読み込みに失敗しました',
+                      context.l10n.videoLoadFailed,
                       style: const TextStyle(color: Colors.white),
                     ),
                   ],
@@ -125,9 +127,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                 size: 40,
               ),
               const SizedBox(height: 8),
-              const Text(
-                '動画の読み込みに失敗しました',
-                style: TextStyle(color: Colors.white),
+              Text(
+                context.l10n.videoLoadFailed,
+                style: const TextStyle(color: Colors.white),
               ),
               if (_errorMessage != null)
                 Padding(

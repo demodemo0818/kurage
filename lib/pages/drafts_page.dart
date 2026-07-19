@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/l10n.dart';
 import '../models/draft.dart';
 
 class DraftsPage extends StatefulWidget {
@@ -57,14 +58,14 @@ class _DraftsPageState extends State<DraftsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('下書き一覧'),
+        title: Text(context.l10n.draftsTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: widget.onDeckBack ?? () => Navigator.pop(context),
         ),
       ),
       body: _drafts.isEmpty
-          ? const Center(child: Text('下書きはありません'))
+          ? Center(child: Text(context.l10n.draftsEmpty))
           : ListView.separated(
               itemCount: _drafts.length,
               separatorBuilder: (_, _) => const Divider(height: 1),

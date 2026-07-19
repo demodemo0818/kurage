@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/l10n.dart';
 import '../models/timeline_gap.dart';
 import '../providers/settings_provider.dart';
 
@@ -71,7 +72,7 @@ class GapTile extends ConsumerWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '投稿を読み込み中...',
+                      context.l10n.gapLoading,
                       style: TextStyle(
                         fontSize: settings.fontSize,
                         fontWeight: FontWeight.w500,
@@ -86,7 +87,7 @@ class GapTile extends ConsumerWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'ギャップを読み込みます',
+                      context.l10n.gapLoadPrompt,
                       style: TextStyle(
                         fontSize: settings.fontSize,
                         fontWeight: FontWeight.w500,
@@ -109,7 +110,7 @@ class GapTile extends ConsumerWidget {
                         onPressed: gap.isLoading ? null : onTapKeepTop,
                         icon:
                             const Icon(Icons.vertical_align_top, size: 16),
-                        label: const Text('上側をキープ'),
+                        label: Text(context.l10n.gapKeepUpper),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 8),
@@ -130,7 +131,7 @@ class GapTile extends ConsumerWidget {
                         onPressed: gap.isLoading ? null : onTapKeepBottom,
                         icon: const Icon(Icons.vertical_align_bottom,
                             size: 16),
-                        label: const Text('下側をキープ'),
+                        label: Text(context.l10n.gapKeepLower),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 8),
@@ -152,7 +153,7 @@ class GapTile extends ConsumerWidget {
                 OutlinedButton.icon(
                   onPressed: gap.isLoading ? null : onTap,
                   icon: const Icon(Icons.download, size: 16),
-                  label: const Text('読み込む'),
+                  label: Text(context.l10n.gapLoad),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: isDarkMode
                         ? Colors.grey.shade300

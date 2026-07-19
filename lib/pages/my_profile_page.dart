@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/l10n.dart';
 import '../providers/auth_provider.dart';
 import '../models/auth_account.dart';
 import '../widgets/user_avatar.dart';
@@ -25,17 +26,17 @@ class MyProfilePage extends ConsumerWidget {
         appBar: AppBar(
           leading:
               onDeckBack == null ? null : BackButton(onPressed: onDeckBack),
-          title: const Text('マイプロフィール'),
+          title: Text(context.l10n.myProfileTitle),
         ),
-        body: const Center(
+        body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.person_off, size: 64, color: Colors.grey),
-              SizedBox(height: 16),
+              const Icon(Icons.person_off, size: 64, color: Colors.grey),
+              const SizedBox(height: 16),
               Text(
-                'ログインしたアカウントがありません',
-                style: TextStyle(fontSize: 16),
+                context.l10n.noLoggedInAccounts,
+                style: const TextStyle(fontSize: 16),
               ),
             ],
           ),
@@ -72,13 +73,14 @@ class _AccountSelectionPage extends StatelessWidget {
       appBar: AppBar(
         leading:
             onDeckBack == null ? null : BackButton(onPressed: onDeckBack),
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('マイプロフィール'),
+            Text(context.l10n.myProfileTitle),
             Text(
-              '表示するアカウントを選択してください',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+              context.l10n.selectAccountToShow,
+              style: const TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.normal),
             ),
           ],
         ),

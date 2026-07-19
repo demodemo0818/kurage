@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../l10n/l10n.dart';
 import '../services/app_lock_service.dart';
 
 /// PIN を 2 回入力させて登録する画面。完了時 true で pop。
@@ -79,7 +80,7 @@ class _AppLockSetupPageState extends State<AppLockSetupPage> {
     if (_entered != _firstPin) {
       HapticFeedback.heavyImpact();
       setState(() {
-        _error = 'PIN が一致しません。最初からやり直してください';
+        _error = context.l10n.appLockPinMismatch;
         _entered = '';
         _firstPin = '';
         _phase = _Phase.firstEntry;
@@ -96,10 +97,10 @@ class _AppLockSetupPageState extends State<AppLockSetupPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final title = _phase == _Phase.firstEntry
-        ? '新しい PIN を入力'
-        : '確認のためもう一度入力';
+        ? context.l10n.appLockEnterNewPin
+        : context.l10n.appLockConfirmPin;
     return Scaffold(
-      appBar: AppBar(title: const Text('PIN の設定')),
+      appBar: AppBar(title: Text(context.l10n.appLockPinSetupTitle)),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -112,8 +113,8 @@ class _AppLockSetupPageState extends State<AppLockSetupPage> {
                 const SizedBox(height: 16),
                 Text(title, style: theme.textTheme.titleMedium),
                 const SizedBox(height: 4),
-                Text('6 桁の数字',
-                    style: TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(context.l10n.appLockPinSixDigits,
+                    style: const TextStyle(color: Colors.grey, fontSize: 12)),
                 const SizedBox(height: 24),
                 _buildDots(theme),
                 const SizedBox(height: 12),

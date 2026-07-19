@@ -35,5 +35,69 @@
   "composeContinue": "{mode, select, edit{Keep editing} reply{Keep writing the reply} quote{Keep writing the quote} other{Keep writing}}",
   "composeDiscardAndStartNew": "Discard and start new",
 
-  "otoLogicLicenseBody": "Sound effects: OtoLogic\nhttps://otologic.jp\n\nLicense: Creative Commons Attribution 4.0 International (CC BY 4.0)\nhttps://creativecommons.org/licenses/by/4.0/"
+  "otoLogicLicenseBody": "Sound effects: OtoLogic\nhttps://otologic.jp\n\nLicense: Creative Commons Attribution 4.0 International (CC BY 4.0)\nhttps://creativecommons.org/licenses/by/4.0/",
+
+  "retry": "Retry",
+  "save": "Save",
+  "reload": "Reload",
+  "follow": "Follow",
+  "unfollow": "Unfollow",
+  "boost": "Boost",
+  "favourite": "Favourite",
+  "noPostsYet": "No posts yet",
+  "actionFailed": "The action failed: {error}",
+  "loadMoreFailed": "Couldn't load more: {error}",
+
+  "showMore": "Show more",
+  "showLess": "Show less",
+
+  "draftsTitle": "Drafts",
+  "draftsEmpty": "No drafts",
+
+  "videoLoadFailed": "Failed to load the video",
+
+  "appLockWrongPin": "Incorrect PIN",
+  "appLockBiometricsUnavailable": "Biometric authentication isn't available on this device",
+  "appLockEnterPin": "Enter your PIN",
+  "appLockPinMismatch": "The PINs don't match. Please start over",
+  "appLockEnterNewPin": "Enter a new PIN",
+  "appLockConfirmPin": "Enter it again to confirm",
+  "appLockPinSetupTitle": "Set up PIN",
+  "appLockPinSixDigits": "6-digit number",
+
+  "linkAttributionUnverifiedTooltip": "The linked site hasn't verified this author's attribution (possible impersonation)",
+  "linkAttributionUnverified": "Unverified attribution",
+
+  "myProfileTitle": "My profile",
+  "noLoggedInAccounts": "No signed-in accounts",
+  "selectAccountToShow": "Select an account to display",
+
+  "gapLoading": "Loading posts…",
+  "gapLoadPrompt": "Load the missing posts",
+  "gapKeepUpper": "Keep top",
+  "gapKeepLower": "Keep bottom",
+  "gapLoad": "Load",
+
+  "hashtagLoadPostsFailed": "Failed to load posts: {error}",
+  "hashtagFollowed": "Followed the hashtag",
+  "hashtagUnfollowed": "Unfollowed the hashtag",
+  "hashtagComposeTooltip": "Post with this hashtag",
+
+  "editHistoryTitle": "Edit history",
+  "editHistoryFetchFailed": "Couldn't fetch the edit history: {error}",
+  "editHistoryUnsupported": "This server doesn't support edit history, or there is none",
+  "editHistoryOriginal": "Original",
+  "editHistoryNthEdit": "Edit {n}",
+  "editHistoryCurrentLabel": "{label} (current)",
+
+  "downloadFailed": "Download failed",
+  "savedTo": "Saved to {path}",
+  "saveFailed": "Failed to save: {error}",
+  "downloadedAs": "Downloaded: {name}",
+  "imageOpenedInNewTab": "Opened the image in a new tab. You can save it from your browser's menu",
+
+  "reactorsTitle": "Reactions",
+  "reactorsNoBoosts": "No one has boosted this yet",
+  "reactorsNoFavourites": "No one has favourited this yet",
+  "reactorsFetchFailed": "Couldn't load the list"
 }

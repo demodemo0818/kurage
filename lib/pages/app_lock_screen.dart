@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/l10n.dart';
 import '../providers/app_lock_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/app_lock_service.dart';
@@ -103,7 +104,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
     } else {
       HapticFeedback.heavyImpact();
       setState(() {
-        _error = 'PIN が違います';
+        _error = context.l10n.appLockWrongPin;
         _entered = '';
         _verifying = false;
       });
@@ -115,7 +116,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
     if (!canUse) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('この端末では生体認証が使えません')),
+        SnackBar(content: Text(context.l10n.appLockBiometricsUnavailable)),
       );
       return;
     }
@@ -144,7 +145,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
                   Icon(Icons.lock_outline,
                       size: 64, color: theme.colorScheme.primary),
                   const SizedBox(height: 16),
-                  Text('PIN を入力してください',
+                  Text(context.l10n.appLockEnterPin,
                       style: theme.textTheme.titleMedium),
                   const SizedBox(height: 24),
                   _buildDots(theme),

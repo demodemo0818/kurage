@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../l10n/l10n.dart';
 import '../models/preview_card.dart';
 import '../providers/settings_provider.dart';
 import 'network_image_x.dart';
@@ -264,8 +265,7 @@ class _AttributionWarning extends StatelessWidget {
   Widget build(BuildContext context) {
     const color = Color(0xFFB26A00); // amber 系 (ライト/ダーク両対応の落ち着いた橙)
     return Tooltip(
-      message: 'リンク先サイトがこの投稿者の帰属を承認していません'
-          '（なりすましの可能性があります）',
+      message: context.l10n.linkAttributionUnverifiedTooltip,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -277,7 +277,7 @@ class _AttributionWarning extends StatelessWidget {
           const SizedBox(width: 4),
           Flexible(
             child: Text(
-              '帰属未確認',
+              context.l10n.linkAttributionUnverified,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(

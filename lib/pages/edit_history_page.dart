@@ -4,6 +4,7 @@ import '../widgets/network_image_x.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/l10n.dart';
 import '../models/auth_account.dart';
 import '../models/media_attachment.dart';
 import '../models/poll.dart';
@@ -67,10 +68,10 @@ class _EditHistoryPageState extends ConsumerState<EditHistoryPage> {
         leading: widget.onDeckBack == null
             ? null
             : BackButton(onPressed: widget.onDeckBack),
-        title: const Text('編集履歴'),
+        title: Text(context.l10n.editHistoryTitle),
         actions: [
           IconButton(
-            tooltip: '再読み込み',
+            tooltip: context.l10n.reload,
             icon: const Icon(Icons.refresh),
             onPressed: () => setState(() => _future = _load()),
           ),
@@ -87,14 +88,15 @@ class _EditHistoryPageState extends ConsumerState<EditHistoryPage> {
             // を出して操作可能なメッセージを表示する。
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
-                showErrorSnackBar(context, '編集履歴を取得できませんでした: ${snap.error}');
+                showErrorSnackBar(
+                    context, context.l10n.editHistoryFetchFailed('${snap.error}'));
               }
             });
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
-                  '編集履歴を取得できませんでした。\n${snap.error}',
+                  context.l10n.editHistoryFetchFailed('\n${snap.error}'),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -103,11 +105,11 @@ class _EditHistoryPageState extends ConsumerState<EditHistoryPage> {
 
           final edits = snap.data ?? const <StatusEdit>[];
           if (edits.isEmpty) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(24),
+                padding: const EdgeInsets.all(24),
                 child: Text(
-                  'このサーバは編集履歴に対応していないか、履歴がありません',
+                  context.l10n.editHistoryUnsupported,
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -127,8 +129,8 @@ class _EditHistoryPageState extends ConsumerState<EditHistoryPage> {
               final edit = reversed[i];
               final originalIndex = edits.length - 1 - i;
               final label = originalIndex == 0
-                  ? '初版'
-                  : '$originalIndex 回目の編集';
+                  ? context.l10n.editHistoryOriginal
+                  : context.l10n.editHistoryNthEdit(originalIndex);
               return _EditEntry(
                 edit: edit,
                 label: label,
@@ -205,7 +207,7 @@ class _EditEntry extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  isLatest ? '$label (現在)' : label,
+                  isLatest ? context.l10n.editHistoryCurrentLabel(label) : label,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
