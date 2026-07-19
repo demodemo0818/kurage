@@ -7,13 +7,10 @@
 Flutter 製の Mastodon クライアントです。
 Android / Web / Windows を中心に、iOS / macOS / Linux もビルドできます。
 
-> **English**: Kurage is a Mastodon client built with Flutter. The UI is
-> currently Japanese-only; an English UI is planned (contributions welcome).
-> It runs on Android, Web and Windows; iOS / macOS / Linux are buildable but
-> less tested. To build:
-> install Flutter ≥ 3.41, copy the two Firebase config examples as described
-> in [ビルド方法](#ビルド方法), then `flutter run`. Licensed under
-> [Apache-2.0](LICENSE).
+> **English**: [README.en.md](README.en.md) — Kurage is a Mastodon client
+> built with Flutter, with a switchable English / Japanese UI. It runs on
+> Android, Web and Windows; iOS / macOS / Linux are buildable but less tested.
+> Licensed under [Apache-2.0](LICENSE).
 
 ## 特徴
 
@@ -27,6 +24,7 @@ Android / Web / Windows を中心に、iOS / macOS / Linux もビルドできま
 - **フルバックアップ / 復元** — 設定・カラム・アカウントを JSON で別端末へ移行
 - ボスキー (ワンタップでそれっぽい画面に偽装するあれ)
 - ダーク / ライトテーマ、テーマカラー・フォント・絵文字サイズの調整
+- **日本語 / 英語 UI 切替** — 既定は端末言語に追従、設定 → 外観設定で変更可能
 
 <!-- TODO: スクリーンショットを追加 (docs/screenshots/ に配置して参照) -->
 
