@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/l10n.dart';
 import '../models/auth_account.dart';
 import '../providers/auth_provider.dart';
 import '../services/auth_service.dart';
@@ -20,18 +21,27 @@ class AccountSettingsPage extends ConsumerWidget {
   /// サーバに保存されるため、Web UI など他クライアントにも反映される。
   Future<void> _showDefaultVisibilityDialog(
       BuildContext context, AuthAccount acct) async {
-    const options = [
-      (value: 'public', icon: Icons.public, label: '公開'),
-      (value: 'unlisted', icon: Icons.lock_open, label: '控えめ公開'),
-      (value: 'private', icon: Icons.lock, label: 'フォロワーのみ'),
-      (value: 'direct', icon: Icons.alternate_email, label: '特定の人'),
+    final l10n = context.l10n;
+    final options = [
+      (value: 'public', icon: Icons.public, label: l10n.visibilityPublic),
+      (
+        value: 'unlisted',
+        icon: Icons.lock_open,
+        label: l10n.visibilityQuietPublic
+      ),
+      (value: 'private', icon: Icons.lock, label: l10n.visibilityFollowers),
+      (
+        value: 'direct',
+        icon: Icons.alternate_email,
+        label: l10n.visibilitySpecificPeople
+      ),
     ];
 
     final selected = await showDialog<String>(
       context: context,
       builder: (ctx) => SimpleDialog(
         title: Text(
-          'デフォルト公開範囲\n@${acct.username}',
+          ctx.l10n.accountDefaultVisibilityTitle(acct.username),
           style: const TextStyle(fontSize: 16),
         ),
         children: [
@@ -53,12 +63,13 @@ class AccountSettingsPage extends ConsumerWidget {
                       child: LinearProgressIndicator(),
                     ),
                   if (snap.hasError)
-                    const Padding(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 4),
                       child: Text(
-                        '現在の設定を取得できませんでした',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ctx.l10n.accountCurrentSettingFetchFailed,
+                        style: const TextStyle(
+                            fontSize: 12, color: Colors.grey),
                       ),
                     ),
                   for (final opt in options)
@@ -87,11 +98,12 @@ class AccountSettingsPage extends ConsumerWidget {
       );
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('デフォルト公開範囲を変更しました')),
+        SnackBar(content: Text(l10n.accountDefaultVisibilityChanged)),
       );
     } catch (e) {
       if (!context.mounted) return;
-      showErrorSnackBar(context, 'デフォルト公開範囲の変更に失敗しました: $e');
+      showErrorSnackBar(
+          context, l10n.accountDefaultVisibilityChangeFailed('$e'));
     }
   }
 
@@ -102,18 +114,18 @@ class AccountSettingsPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('アカウント設定'),
+        title: Text(context.l10n.settingsAccountSettings),
       ),
       body: SettingsListView(
         children: [
           SettingsSection(
-            title: '登録済みのアカウント',
+            title: context.l10n.accountRegisteredSection,
             children: [
               if (auth.accounts.isEmpty)
-                const ListTile(
-                  leading: Icon(Icons.info_outline),
-                  title: Text('登録済みのアカウントがありません'),
-                  subtitle: Text('右下の「+」ボタンから追加できます'),
+                ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: Text(context.l10n.accountNoneRegistered),
+                  subtitle: Text(context.l10n.accountAddHint),
                 ),
               ...auth.accounts.map((acct) {
                 return ListTile(
@@ -129,7 +141,7 @@ class AccountSettingsPage extends ConsumerWidget {
                     children: [
                       // 色設定ボタン
                       IconButton(
-                        tooltip: 'アカウントカラー',
+                        tooltip: context.l10n.accountColorTooltip,
                         icon: Icon(
                           Icons.palette,
                           color: acct.accountColor ?? Colors.grey,
@@ -138,7 +150,7 @@ class AccountSettingsPage extends ConsumerWidget {
                           final selectedColor = await showDialog<Color>(
                             context: context,
                             builder: (ctx) => AlertDialog(
-                              title: const Text('アカウントカラーを選択'),
+                              title: Text(ctx.l10n.accountColorPickerTitle),
                               content: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -187,14 +199,14 @@ class AccountSettingsPage extends ConsumerWidget {
                                   const SizedBox(height: 16),
                                   TextButton(
                                     onPressed: () => Navigator.pop(ctx, null),
-                                    child: const Text('色をリセット'),
+                                    child: Text(ctx.l10n.accountColorReset),
                                   ),
                                 ],
                               ),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(ctx),
-                                  child: const Text('キャンセル'),
+                                  child: Text(ctx.l10n.cancel),
                                 ),
                               ],
                             ),
@@ -204,13 +216,13 @@ class AccountSettingsPage extends ConsumerWidget {
                         },
                       ),
                       IconButton(
-                        tooltip: 'デフォルト公開範囲',
+                        tooltip: context.l10n.accountDefaultVisibilityTooltip,
                         icon: const Icon(Icons.public),
                         onPressed: () =>
                             _showDefaultVisibilityDialog(context, acct),
                       ),
                       IconButton(
-                        tooltip: 'アカウントを削除',
+                        tooltip: context.l10n.accountDeleteTooltip,
                         icon: const Icon(Icons.delete_outline),
                         onPressed: () async {
                           await notifier.logout(acct.id);
@@ -229,25 +241,25 @@ class AccountSettingsPage extends ConsumerWidget {
         // main の投稿 FAB (Icons.edit) と default heroTag が衝突して、戻る時に
         // 「+ → ペン」の icon snap が走るのを避けるため Hero を無効化。
         heroTag: null,
-        tooltip: 'アカウントを追加',
+        tooltip: context.l10n.accountAdd,
         icon: const Icon(Icons.add),
-        label: const Text('アカウントを追加'),
+        label: Text(context.l10n.accountAdd),
         onPressed: () async {
           final uriController = TextEditingController(text: 'https://');
           final res = await showDialog<String>(
             context: context,
             builder: (ctx) => AlertDialog(
-              title: const Text('インスタンス URL を入力'),
+              title: Text(ctx.l10n.accountEnterInstanceUrl),
               content: TextField(
                 controller: uriController,
-                decoration: const InputDecoration(
-                  labelText: '例: https://mastodon.social',
+                decoration: InputDecoration(
+                  labelText: ctx.l10n.accountInstanceUrlExample,
                 ),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('キャンセル'),
+                  child: Text(ctx.l10n.cancel),
                 ),
                 ElevatedButton(
                   onPressed: () {
@@ -260,7 +272,7 @@ class AccountSettingsPage extends ConsumerWidget {
                     }
                     Navigator.pop(ctx, url);
                   },
-                  child: const Text('認証開始'),
+                  child: Text(ctx.l10n.accountStartAuth),
                 ),
               ],
             ),
@@ -273,14 +285,15 @@ class AccountSettingsPage extends ConsumerWidget {
               await notifier.login(res);
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('ログインに成功しました')),
+                SnackBar(content: Text(context.l10n.accountLoginSuccess)),
               );
               // 認証完了後はルートまで戻る
               Navigator.of(context).popUntil((route) => route.isFirst);
             } catch (e) {
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('ログイン失敗: $e')),
+                SnackBar(
+                    content: Text(context.l10n.accountLoginFailed('$e'))),
               );
             }
           }

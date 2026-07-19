@@ -12,6 +12,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../l10n/l10n.dart';
 import '../models/auth_account.dart';
 import '../models/filter.dart';
 import '../services/mastodon_api.dart';
@@ -82,11 +83,11 @@ class _FilterEditPageState extends State<FilterEditPage> {
   Future<void> _save() async {
     final title = _titleController.text.trim();
     if (title.isEmpty) {
-      showErrorSnackBar(context, 'タイトルを入力してください');
+      showErrorSnackBar(context, context.l10n.filterTitleRequired);
       return;
     }
     if (_selectedContexts.isEmpty) {
-      showErrorSnackBar(context, '適用先を1つ以上選択してください');
+      showErrorSnackBar(context, context.l10n.filterContextRequired);
       return;
     }
 
@@ -132,10 +133,10 @@ class _FilterEditPageState extends State<FilterEditPage> {
       Navigator.pop(context, result);
     } on FiltersNotSupportedException catch (_) {
       if (!mounted) return;
-      showErrorSnackBar(context, 'このサーバはフィルタ機能に未対応です');
+      showErrorSnackBar(context, context.l10n.filterUnsupported);
     } catch (e) {
       if (!mounted) return;
-      showErrorSnackBar(context, '保存に失敗しました: $e');
+      showErrorSnackBar(context, context.l10n.saveFailed('$e'));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -163,7 +164,9 @@ class _FilterEditPageState extends State<FilterEditPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'フィルタを編集' : 'フィルタを作成'),
+        title: Text(_isEditing
+            ? context.l10n.filterEditTitle
+            : context.l10n.filterCreate),
         actions: [
           // 色を明示しないことで AppBar の foregroundColor (ライトでは黒,
           // ダークでは白) を継承する。元の `onPrimary` 指定はダーク AppBar 上で
@@ -171,7 +174,8 @@ class _FilterEditPageState extends State<FilterEditPage> {
           // TextButton が自動で disabled 表現にしてくれる。
           TextButton(
             onPressed: _saving ? null : _save,
-            child: Text(_saving ? '保存中…' : '保存'),
+            child: Text(
+                _saving ? context.l10n.savingEllipsis : context.l10n.save),
           ),
         ],
       ),
@@ -190,9 +194,9 @@ class _FilterEditPageState extends State<FilterEditPage> {
           // タイトル
           TextField(
             controller: _titleController,
-            decoration: const InputDecoration(
-              labelText: 'タイトル',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: context.l10n.filterTitleLabel,
+              border: const OutlineInputBorder(),
             ),
             inputFormatters: [LengthLimitingTextInputFormatter(200)],
           ),
@@ -200,12 +204,12 @@ class _FilterEditPageState extends State<FilterEditPage> {
 
           // 適用先 context
           Text(
-            '適用先',
+            context.l10n.filterContextSection,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 4),
           Text(
-            'このフィルタを効かせる画面を選択 (複数可)',
+            context.l10n.filterContextHelp,
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 8),
@@ -231,7 +235,7 @@ class _FilterEditPageState extends State<FilterEditPage> {
 
           // フィルタアクション
           Text(
-            'マッチしたときの挙動',
+            context.l10n.filterActionSection,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
@@ -257,7 +261,7 @@ class _FilterEditPageState extends State<FilterEditPage> {
 
           // 失効
           Text(
-            '失効',
+            context.l10n.filterExpirationSection,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
@@ -270,19 +274,19 @@ class _FilterEditPageState extends State<FilterEditPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'キーワード',
+                context.l10n.keywords,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               TextButton.icon(
                 onPressed: _addKeywordRow,
                 icon: const Icon(Icons.add, size: 18),
-                label: const Text('追加'),
+                label: Text(context.l10n.add),
               ),
             ],
           ),
           const SizedBox(height: 4),
           Text(
-            '完全一致 ON: 単語の境界でのみマッチ (例: 「猫」は「猫田」にマッチしない)',
+            context.l10n.filterWholeWordHelp,
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 8),
@@ -295,9 +299,9 @@ class _FilterEditPageState extends State<FilterEditPage> {
                 children: [
                   Expanded(
                     child: TextField(
-                      decoration: const InputDecoration(
-                        hintText: 'キーワード',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        hintText: context.l10n.keywordHint,
+                        border: const OutlineInputBorder(),
                         isDense: true,
                       ),
                       controller: r.controller,
@@ -307,7 +311,8 @@ class _FilterEditPageState extends State<FilterEditPage> {
                   const SizedBox(width: 8),
                   Column(
                     children: [
-                      const Text('完全一致', style: TextStyle(fontSize: 11)),
+                      Text(context.l10n.filterWholeWord,
+                          style: const TextStyle(fontSize: 11)),
                       Switch(
                         value: r.wholeWord,
                         onChanged: (v) =>
@@ -328,7 +333,7 @@ class _FilterEditPageState extends State<FilterEditPage> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
-                'キーワードがありません。「追加」から登録してください。',
+                context.l10n.filterNoKeywords,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
@@ -337,15 +342,15 @@ class _FilterEditPageState extends State<FilterEditPage> {
     );
   }
 
-  static const Map<int?, String> _expirationLabels = {
-    null: '無期限',
-    30 * 60: '30 分',
-    60 * 60: '1 時間',
-    6 * 60 * 60: '6 時間',
-    12 * 60 * 60: '12 時間',
-    24 * 60 * 60: '1 日',
-    7 * 24 * 60 * 60: '1 週間',
-  };
+  static Map<int?, String> get _expirationLabels => {
+        null: l10n.muteDurationIndefinite,
+        30 * 60: l10n.durationMinutes(30),
+        60 * 60: l10n.durationHours(1),
+        6 * 60 * 60: l10n.durationHours(6),
+        12 * 60 * 60: l10n.durationHours(12),
+        24 * 60 * 60: l10n.durationDays(1),
+        7 * 24 * 60 * 60: l10n.durationWeeks(1),
+      };
 
   Widget _buildExpirationPicker() {
     // _isEditing で _expirationChanged == false のときは、現在の期限を表示するだけ。
@@ -353,14 +358,15 @@ class _FilterEditPageState extends State<FilterEditPage> {
     if (_isEditing && !_expirationChanged) {
       final exp = widget.existing!.expiresAt;
       if (exp == null) {
-        currentLabel = '無期限';
+        currentLabel = context.l10n.muteDurationIndefinite;
       } else if (exp.isBefore(DateTime.now())) {
-        currentLabel = '期限切れ';
+        currentLabel = context.l10n.filterExpired;
       } else {
         currentLabel = exp.toLocal().toString();
       }
     } else {
-      currentLabel = _expirationLabels[_expiresIn] ?? '無期限';
+      currentLabel =
+          _expirationLabels[_expiresIn] ?? context.l10n.muteDurationIndefinite;
     }
 
     return Row(
@@ -374,7 +380,7 @@ class _FilterEditPageState extends State<FilterEditPage> {
                 int? selection = _expiresIn;
                 return StatefulBuilder(builder: (ctx, setSt) {
                   return AlertDialog(
-                    title: const Text('失効までの期間'),
+                    title: Text(ctx.l10n.filterExpirationPickerTitle),
                     content: SizedBox(
                       width: double.maxFinite,
                       // 「無期限」の value が null のため T = int? を使う。
@@ -399,12 +405,12 @@ class _FilterEditPageState extends State<FilterEditPage> {
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(ctx),
-                        child: const Text('キャンセル'),
+                        child: Text(ctx.l10n.cancel),
                       ),
                       ElevatedButton(
                         onPressed: () =>
                             Navigator.pop(ctx, (ok: true, value: selection)),
-                        child: const Text('決定'),
+                        child: Text(ctx.l10n.confirmSelection),
                       ),
                     ],
                   );
@@ -418,7 +424,7 @@ class _FilterEditPageState extends State<FilterEditPage> {
               _expirationChanged = true;
             });
           },
-          child: const Text('変更'),
+          child: Text(context.l10n.change),
         ),
       ],
     );

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/l10n.dart';
 import '../providers/auth_provider.dart';
 import '../providers/column_provider.dart';
 import '../providers/settings_provider.dart';
@@ -25,13 +26,13 @@ class ColumnSettingsPage extends ConsumerStatefulWidget {
 class _ColumnSettingsPageState extends ConsumerState<ColumnSettingsPage> {
   static const _baseTimelineTypes = ['home', 'local', 'federated', 'favourites', 'bookmarks'];
   
-  static const _timelineTypeLabels = {
-    'home': 'ホーム',
-    'local': 'ローカル',
-    'federated': '連合',
-    'favourites': 'お気に入り',
-    'bookmarks': 'ブックマーク',
-  };
+  static Map<String, String> get _timelineTypeLabels => {
+        'home': l10n.timelineHome,
+        'local': l10n.timelineLocal,
+        'federated': l10n.timelineFederated,
+        'favourites': l10n.timelineFavourites,
+        'bookmarks': l10n.timelineBookmarks,
+      };
   
   static const _timelineTypeIcons = {
     'home': Icons.home,
@@ -144,7 +145,7 @@ class _ColumnSettingsPageState extends ConsumerState<ColumnSettingsPage> {
           }
         }
       }
-      return 'リスト';
+      return l10n.timelineList;
     }
     return _timelineTypeLabels[type] ?? type;
   }
@@ -166,21 +167,21 @@ class _ColumnSettingsPageState extends ConsumerState<ColumnSettingsPage> {
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('カラム名を変更'),
+        title: Text(context.l10n.columnRenameTitle),
         content: TextField(
           controller: controller,
           autofocus: true,
           maxLength: 30,
-          decoration: const InputDecoration(
-            hintText: '例: 趣味アカまとめ',
-            helperText: '空にするとタイムライン種別を表示します',
+          decoration: InputDecoration(
+            hintText: context.l10n.columnRenameHint,
+            helperText: context.l10n.columnRenameHelper,
           ),
           onSubmitted: (v) => Navigator.pop(context, v),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, controller.text),
@@ -324,15 +325,15 @@ class _ColumnSettingsPageState extends ConsumerState<ColumnSettingsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('カラム設定'),
+        title: Text(context.l10n.settingsColumnSettings),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: widget.onDeckBack ?? () => Navigator.pop(context),
         ),
       ),
-      body: accounts.isEmpty 
-        ? const Center(
-            child: Text('アカウントを追加してください'),
+      body: accounts.isEmpty
+        ? Center(
+            child: Text(context.l10n.columnAddAccountFirst),
           )
         : ListView(
         children: [
@@ -343,18 +344,18 @@ class _ColumnSettingsPageState extends ConsumerState<ColumnSettingsPage> {
               children: [
                 const Icon(Icons.view_week, size: 20),
                 const SizedBox(width: 8),
-                const Text('カラム幅'),
+                Text(context.l10n.columnWidthLabel),
                 const Spacer(),
                 SegmentedButton<ColumnWidthMode>(
                   showSelectedIcon: false,
-                  segments: const [
+                  segments: [
                     ButtonSegment(
                       value: ColumnWidthMode.flexible,
-                      label: Text('可変'),
+                      label: Text(context.l10n.columnWidthFlexible),
                     ),
                     ButtonSegment(
                       value: ColumnWidthMode.fixed,
-                      label: Text('固定'),
+                      label: Text(context.l10n.columnWidthFixed),
                     ),
                   ],
                   selected: {columnWidthMode},
@@ -369,8 +370,8 @@ class _ColumnSettingsPageState extends ConsumerState<ColumnSettingsPage> {
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
             child: Text(
               columnWidthMode == ColumnWidthMode.fixed
-                  ? 'デスクトップ表示のみ有効。各カラムを指定幅で左寄せ表示します。'
-                  : 'デスクトップ表示のみ有効。ウィンドウ幅に合わせて自動調整します。',
+                  ? context.l10n.columnWidthFixedHelp
+                  : context.l10n.columnWidthFlexibleHelp,
               style: TextStyle(
                 fontSize: 12,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -390,8 +391,8 @@ class _ColumnSettingsPageState extends ConsumerState<ColumnSettingsPage> {
                   children: [
                     ListTile(
                       leading: const Icon(Icons.notifications),
-                      title: const Text('通知'),
-                      subtitle: const Text('通知タブと同じ内容を表示します'),
+                      title: Text(context.l10n.timelineNotifications),
+                      subtitle: Text(context.l10n.columnNotificationsSubtitle),
                       trailing: _columnReorderButtons(columns, i),
                     ),
                     if (columnWidthMode == ColumnWidthMode.fixed)
@@ -443,7 +444,7 @@ class _ColumnSettingsPageState extends ConsumerState<ColumnSettingsPage> {
                       children: [
                         IconButton(
                           icon: const Icon(Icons.drive_file_rename_outline),
-                          tooltip: 'カラム名を変更',
+                          tooltip: context.l10n.columnRenameTitle,
                           onPressed: () => _renameColumn(columns, i),
                         ),
                         _columnReorderButtons(columns, i),
@@ -486,7 +487,7 @@ class _ColumnSettingsPageState extends ConsumerState<ColumnSettingsPage> {
                                   : (filteredAccounts.isNotEmpty
                                       ? filteredAccounts.first.id
                                       : defaultAccountId),
-                              hint: const Text('アカウントを選択'),
+                              hint: Text(context.l10n.columnSelectAccount),
                               items: filteredAccounts
                                   .map((a) => DropdownMenuItem(
                                     value: a.id,
@@ -716,8 +717,8 @@ class _ColumnSettingsPageState extends ConsumerState<ColumnSettingsPage> {
                               }
                             : null,
                         child: Text(canAdd
-                            ? '+ ソースを追加'
-                            : '+ ソースを追加 (空きなし)'),
+                            ? context.l10n.columnAddSource
+                            : context.l10n.columnAddSourceFull),
                       );
                     }),
                   ),
@@ -735,7 +736,7 @@ class _ColumnSettingsPageState extends ConsumerState<ColumnSettingsPage> {
             padding: const EdgeInsets.all(8),
             child: ElevatedButton.icon(
               icon: const Icon(Icons.add),
-              label: const Text('カラムを追加'),
+              label: Text(context.l10n.columnAdd),
               onPressed: () {
                 final newCols = List<Map<String, dynamic>>.from(columns)
                   ..add({
@@ -758,7 +759,7 @@ class _ColumnSettingsPageState extends ConsumerState<ColumnSettingsPage> {
             padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
             child: OutlinedButton.icon(
               icon: const Icon(Icons.notifications),
-              label: const Text('通知カラムを追加'),
+              label: Text(context.l10n.columnAddNotifications),
               onPressed: columns.any(isNotificationColumn)
                   ? null
                   : () {

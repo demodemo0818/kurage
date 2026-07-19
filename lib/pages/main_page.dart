@@ -3,6 +3,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/l10n.dart';
 import '../providers/announcements_provider.dart';
 import '../providers/column_provider.dart';
 import '../providers/deck_column_settings_provider.dart';
@@ -59,14 +60,14 @@ class _MainPageState extends ConsumerState<MainPage>
     'notifications': Icons.notifications,
   };
 
-  static const _timelineTypeLabels = {
-    'home': 'ホーム',
-    'local': 'ローカル',
-    'federated': '連合',
-    'favourites': 'お気に入り',
-    'bookmarks': 'ブックマーク',
-    'notifications': '通知',
-  };
+  static Map<String, String> get _timelineTypeLabels => {
+        'home': l10n.timelineHome,
+        'local': l10n.timelineLocal,
+        'federated': l10n.timelineFederated,
+        'favourites': l10n.timelineFavourites,
+        'bookmarks': l10n.timelineBookmarks,
+        'notifications': l10n.timelineNotifications,
+      };
 
   Widget _buildAppBarTitle(List<dynamic> columns) {
     if (columns.isEmpty || _tabController == null) {
@@ -156,7 +157,7 @@ class _MainPageState extends ConsumerState<MainPage>
   String _getTimelineTypeLabel(String type) {
     if (type.startsWith('list_')) {
       final listId = type.substring(5);
-      return _listNames[listId] ?? 'リスト';
+      return _listNames[listId] ?? l10n.timelineList;
     }
     return _timelineTypeLabels[type] ?? type;
   }
@@ -296,16 +297,16 @@ class _MainPageState extends ConsumerState<MainPage>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('カラムを削除'),
-        content: const Text('このカラムを削除しますか?'),
+        title: Text(ctx.l10n.columnDeleteTitle),
+        content: Text(ctx.l10n.columnDeleteConfirmMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('削除'),
+            child: Text(ctx.l10n.delete),
           ),
         ],
       ),
@@ -523,12 +524,11 @@ class _MainPageState extends ConsumerState<MainPage>
     if (authState.accounts.isEmpty) {
       return _buildOnboardingScreen(
         context,
-        appBarTitle: 'ようこそ',
+        appBarTitle: context.l10n.welcomeTitle,
         icon: Icons.account_circle_outlined,
-        title: 'アカウントを追加',
-        description:
-            'まずは Mastodon インスタンスのアカウントを追加してください。\nアカウント設定からインスタンス URL を入力してログインできます。',
-        buttonLabel: 'アカウント設定を開く',
+        title: context.l10n.welcomeAddAccountTitle,
+        description: context.l10n.welcomeAddAccountMessage,
+        buttonLabel: context.l10n.welcomeOpenAccountSettings,
         onPressed: () {
           Navigator.push(
             context,
@@ -542,12 +542,11 @@ class _MainPageState extends ConsumerState<MainPage>
     if (columns.isEmpty) {
       return _buildOnboardingScreen(
         context,
-        appBarTitle: 'カラムを設定',
+        appBarTitle: context.l10n.welcomeColumnsTitle,
         icon: Icons.view_column_outlined,
-        title: 'カラムを追加',
-        description:
-            'タイムラインに表示するカラムを設定してください。\nホーム / ローカル / 連合 / リスト 等を自由に組み合わせられます。',
-        buttonLabel: 'カラム設定を開く',
+        title: context.l10n.welcomeAddColumnTitle,
+        description: context.l10n.welcomeAddColumnMessage,
+        buttonLabel: context.l10n.welcomeOpenColumnSettings,
         onPressed: () {
           Navigator.push(
             context,
@@ -637,7 +636,7 @@ class _MainPageState extends ConsumerState<MainPage>
           Consumer(builder: (context, ref, _) {
             final unread = ref.watch(unreadAnnouncementCountProvider);
             return IconButton(
-              tooltip: 'サーバーからのお知らせ',
+              tooltip: context.l10n.announcementsTooltip,
               icon: Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -687,8 +686,8 @@ class _MainPageState extends ConsumerState<MainPage>
                   ? Theme.of(context).colorScheme.primary
                   : null,
             ),
-            tooltip:
-                'ストリーミング: ${streamingEnabled ? "ON" : "OFF"}',
+            tooltip: context.l10n
+                .streamingTooltip(streamingEnabled ? 'ON' : 'OFF'),
             onPressed: () {
               final next = !streamingEnabled;
               ref
@@ -714,8 +713,8 @@ class _MainPageState extends ConsumerState<MainPage>
                         Expanded(
                           child: Text(
                             next
-                                ? 'ストリーミングに接続しました'
-                                : 'ストリーミングを切断しました',
+                                ? context.l10n.streamingConnected
+                                : context.l10n.streamingDisconnected,
                             style: TextStyle(color: fg),
                           ),
                         ),

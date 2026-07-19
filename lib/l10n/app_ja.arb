@@ -719,5 +719,97 @@
     "placeholders": {
       "id": {"type": "String"}
     }
-  }
+  },
+
+  "add": "追加",
+  "change": "変更",
+  "confirmSelection": "決定",
+  "savingEllipsis": "保存中…",
+  "keywords": "キーワード",
+  "durationWeeks": "{count}週間",
+  "@durationWeeks": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "columnDeleteTitle": "カラムを削除",
+  "columnDeleteConfirmMessage": "このカラムを削除しますか?",
+  "welcomeTitle": "ようこそ",
+  "welcomeAddAccountTitle": "アカウントを追加",
+  "welcomeAddAccountMessage": "まずは Mastodon インスタンスのアカウントを追加してください。\nアカウント設定からインスタンス URL を入力してログインできます。",
+  "welcomeOpenAccountSettings": "アカウント設定を開く",
+  "welcomeColumnsTitle": "カラムを設定",
+  "welcomeAddColumnTitle": "カラムを追加",
+  "welcomeAddColumnMessage": "タイムラインに表示するカラムを設定してください。\nホーム / ローカル / 連合 / リスト 等を自由に組み合わせられます。",
+  "welcomeOpenColumnSettings": "カラム設定を開く",
+  "streamingConnected": "ストリーミングに接続しました",
+  "streamingDisconnected": "ストリーミングを切断しました",
+
+  "visibilityQuietPublic": "控えめ公開",
+  "visibilityFollowers": "フォロワーのみ",
+  "visibilitySpecificPeople": "特定の人",
+  "accountDefaultVisibilityTitle": "デフォルト公開範囲\n@{username}",
+  "@accountDefaultVisibilityTitle": {
+    "placeholders": {
+      "username": {"type": "String"}
+    }
+  },
+  "accountCurrentSettingFetchFailed": "現在の設定を取得できませんでした",
+  "accountDefaultVisibilityChanged": "デフォルト公開範囲を変更しました",
+  "accountDefaultVisibilityChangeFailed": "デフォルト公開範囲の変更に失敗しました: {error}",
+  "@accountDefaultVisibilityChangeFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "accountRegisteredSection": "登録済みのアカウント",
+  "accountNoneRegistered": "登録済みのアカウントがありません",
+  "accountAddHint": "右下の「+」ボタンから追加できます",
+  "accountColorTooltip": "アカウントカラー",
+  "accountColorPickerTitle": "アカウントカラーを選択",
+  "accountColorReset": "色をリセット",
+  "accountDefaultVisibilityTooltip": "デフォルト公開範囲",
+  "accountDeleteTooltip": "アカウントを削除",
+  "accountAdd": "アカウントを追加",
+  "accountEnterInstanceUrl": "インスタンス URL を入力",
+  "accountInstanceUrlExample": "例: https://mastodon.social",
+  "accountStartAuth": "認証開始",
+  "accountLoginSuccess": "ログインに成功しました",
+  "accountLoginFailed": "ログイン失敗: {error}",
+  "@accountLoginFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "columnRenameTitle": "カラム名を変更",
+  "columnRenameHint": "例: 趣味アカまとめ",
+  "columnRenameHelper": "空にするとタイムライン種別を表示します",
+  "columnAddAccountFirst": "アカウントを追加してください",
+  "columnWidthLabel": "カラム幅",
+  "columnWidthFlexible": "可変",
+  "columnWidthFixed": "固定",
+  "columnWidthFixedHelp": "デスクトップ表示のみ有効。各カラムを指定幅で左寄せ表示します。",
+  "columnWidthFlexibleHelp": "デスクトップ表示のみ有効。ウィンドウ幅に合わせて自動調整します。",
+  "columnNotificationsSubtitle": "通知タブと同じ内容を表示します",
+  "columnSelectAccount": "アカウントを選択",
+  "columnAddSource": "+ ソースを追加",
+  "columnAddSourceFull": "+ ソースを追加 (空きなし)",
+  "columnAdd": "カラムを追加",
+  "columnAddNotifications": "通知カラムを追加",
+
+  "filterTitleRequired": "タイトルを入力してください",
+  "filterContextRequired": "適用先を1つ以上選択してください",
+  "filterEditTitle": "フィルタを編集",
+  "filterTitleLabel": "タイトル",
+  "filterContextSection": "適用先",
+  "filterContextHelp": "このフィルタを効かせる画面を選択 (複数可)",
+  "filterActionSection": "マッチしたときの挙動",
+  "filterExpirationSection": "失効",
+  "filterWholeWordHelp": "完全一致 ON: 単語の境界でのみマッチ (例: 「猫」は「猫田」にマッチしない)",
+  "keywordHint": "キーワード",
+  "filterWholeWord": "完全一致",
+  "filterNoKeywords": "キーワードがありません。「追加」から登録してください。",
+  "filterExpirationPickerTitle": "失効までの期間"
 }
