@@ -12,6 +12,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n.dart';
 import '../models/account.dart';
 import '../models/auth_account.dart';
 import '../models/collection.dart';
@@ -137,17 +138,17 @@ class _CollectionDetailPageState extends State<CollectionDetailPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('コレクションを削除'),
-        content: Text('「${collection.name}」を削除します。この操作は取り消せません。'),
+        title: Text(ctx.l10n.collectionDeleteTitle),
+        content: Text(ctx.l10n.collectionDeleteMessage(collection.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('削除'),
+            child: Text(ctx.l10n.delete),
           ),
         ],
       ),
@@ -163,7 +164,7 @@ class _CollectionDetailPageState extends State<CollectionDetailPage> {
       Navigator.pop(context, true); // 一覧側に削除を通知
     } catch (e) {
       if (!mounted) return;
-      showErrorSnackBar(context, 'コレクションを削除できませんでした: $e');
+      showErrorSnackBar(context, context.l10n.collectionDeleteFailed('$e'));
     }
   }
 
@@ -182,7 +183,8 @@ class _CollectionDetailPageState extends State<CollectionDetailPage> {
       _removeItemLocally(item.id);
     } catch (e) {
       if (!mounted) return;
-      showErrorSnackBar(context, 'メンバーを削除できませんでした: $e');
+      showErrorSnackBar(
+          context, context.l10n.collectionMemberRemoveFailed('$e'));
     } finally {
       if (mounted) setState(() => _busyItemIds.remove(item.id));
     }
@@ -204,7 +206,7 @@ class _CollectionDetailPageState extends State<CollectionDetailPage> {
       _load();
     } catch (e) {
       if (!mounted) return;
-      showErrorSnackBar(context, '承認できませんでした: $e');
+      showErrorSnackBar(context, context.l10n.collectionApproveFailed('$e'));
     } finally {
       if (mounted) setState(() => _busyItemIds.remove(item.id));
     }
@@ -225,7 +227,7 @@ class _CollectionDetailPageState extends State<CollectionDetailPage> {
       _removeItemLocally(item.id);
     } catch (e) {
       if (!mounted) return;
-      showErrorSnackBar(context, '掲載を取り消せませんでした: $e');
+      showErrorSnackBar(context, context.l10n.collectionUnlistFailed('$e'));
     } finally {
       if (mounted) setState(() => _busyItemIds.remove(item.id));
     }
@@ -278,7 +280,7 @@ class _CollectionDetailPageState extends State<CollectionDetailPage> {
             : BackButton(onPressed: widget.onDeckBack),
         title: Text(collection?.name.isNotEmpty == true
             ? collection!.name
-            : 'コレクション'),
+            : context.l10n.collectionFallbackTitle),
         actions: [
           if (_isOwner)
             PopupMenuButton<String>(
@@ -286,20 +288,21 @@ class _CollectionDetailPageState extends State<CollectionDetailPage> {
                 if (value == 'edit') _editCollection();
                 if (value == 'delete') _deleteCollection();
               },
-              itemBuilder: (context) => const [
+              itemBuilder: (context) => [
                 PopupMenuItem(
                   value: 'edit',
                   child: ListTile(
-                    leading: Icon(Icons.edit),
-                    title: Text('編集'),
+                    leading: const Icon(Icons.edit),
+                    title: Text(context.l10n.edit),
                     dense: true,
                   ),
                 ),
                 PopupMenuItem(
                   value: 'delete',
                   child: ListTile(
-                    leading: Icon(Icons.delete, color: Colors.red),
-                    title: Text('削除', style: TextStyle(color: Colors.red)),
+                    leading: const Icon(Icons.delete, color: Colors.red),
+                    title: Text(context.l10n.delete,
+                        style: const TextStyle(color: Colors.red)),
                     dense: true,
                   ),
                 ),
@@ -324,11 +327,12 @@ class _CollectionDetailPageState extends State<CollectionDetailPage> {
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 12),
-              const Text('コレクションを取得できませんでした'),
+              Text(context.l10n.collectionFetchFailed),
               const SizedBox(height: 4),
               Text(_error!, textAlign: TextAlign.center),
               const SizedBox(height: 16),
-              ElevatedButton(onPressed: _load, child: const Text('再試行')),
+              ElevatedButton(
+                  onPressed: _load, child: Text(context.l10n.retry)),
             ],
           ),
         ),
@@ -371,7 +375,8 @@ class _CollectionDetailPageState extends State<CollectionDetailPage> {
             children: [
               Chip(
                 avatar: const Icon(Icons.people_outline, size: 18),
-                label: Text('${collection.itemCount} 人'),
+                label: Text(
+                    context.l10n.collectionMemberCount(collection.itemCount)),
                 visualDensity: VisualDensity.compact,
               ),
               if (collection.tag != null)
@@ -381,9 +386,9 @@ class _CollectionDetailPageState extends State<CollectionDetailPage> {
                   visualDensity: VisualDensity.compact,
                 ),
               if (collection.sensitive)
-                const Chip(
-                  avatar: Icon(Icons.warning_amber, size: 18),
-                  label: Text('閲覧注意'),
+                Chip(
+                  avatar: const Icon(Icons.warning_amber, size: 18),
+                  label: Text(context.l10n.sensitive),
                   visualDensity: VisualDensity.compact,
                 ),
             ],
@@ -398,7 +403,7 @@ class _CollectionDetailPageState extends State<CollectionDetailPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('あなたはこのコレクションに追加されています。掲載を承認しますか？'),
+                    Text(context.l10n.collectionYouAreListed),
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -409,14 +414,14 @@ class _CollectionDetailPageState extends State<CollectionDetailPage> {
                               : () => _revokeMembership(myItem),
                           style:
                               TextButton.styleFrom(foregroundColor: Colors.red),
-                          child: const Text('掲載しない'),
+                          child: Text(context.l10n.collectionDoNotList),
                         ),
                         const SizedBox(width: 8),
                         FilledButton(
                           onPressed: _busyItemIds.contains(myItem.id)
                               ? null
                               : () => _acceptMembership(myItem),
-                          child: const Text('承認する'),
+                          child: Text(context.l10n.collectionApprove),
                         ),
                       ],
                     ),
@@ -429,7 +434,7 @@ class _CollectionDetailPageState extends State<CollectionDetailPage> {
             const SizedBox(height: 24),
             Center(
               child: Text(
-                'メンバーがいません',
+                context.l10n.listMembersEmpty,
                 style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
               ),
             ),
@@ -455,7 +460,7 @@ class _CollectionDetailPageState extends State<CollectionDetailPage> {
       trailing = IconButton(
         icon: const Icon(Icons.remove_circle_outline),
         color: Colors.red,
-        tooltip: 'メンバーから削除',
+        tooltip: context.l10n.collectionRemoveMemberTooltip,
         onPressed: () => _removeMember(item),
       );
     } else if (isMe && item.isPending) {
@@ -465,13 +470,13 @@ class _CollectionDetailPageState extends State<CollectionDetailPage> {
           IconButton(
             icon: const Icon(Icons.check_circle_outline),
             color: Colors.green,
-            tooltip: '承認',
+            tooltip: context.l10n.approve,
             onPressed: () => _acceptMembership(item),
           ),
           IconButton(
             icon: const Icon(Icons.cancel_outlined),
             color: Colors.red,
-            tooltip: '掲載しない',
+            tooltip: context.l10n.collectionDoNotList,
             onPressed: () => _revokeMembership(item),
           ),
         ],
@@ -482,7 +487,7 @@ class _CollectionDetailPageState extends State<CollectionDetailPage> {
         ? Padding(
             padding: const EdgeInsets.only(top: 2),
             child: Text(
-              '承認待ち',
+              context.l10n.collectionPendingApproval,
               style: TextStyle(
                 fontSize: 11,
                 color: Theme.of(context).colorScheme.tertiary,
@@ -495,7 +500,7 @@ class _CollectionDetailPageState extends State<CollectionDetailPage> {
       // アカウント解決に失敗した場合の最小表示。
       return ListTile(
         leading: const CircleAvatar(child: Icon(Icons.person_outline)),
-        title: Text('アカウント (${item.accountId})'),
+        title: Text(context.l10n.collectionAccountFallback(item.accountId)),
         subtitle: pendingBadge,
         trailing: trailing,
       );

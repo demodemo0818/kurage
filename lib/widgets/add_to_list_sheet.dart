@@ -5,6 +5,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n.dart';
 import '../models/account.dart';
 import '../models/auth_account.dart';
 import '../models/mastodon_list.dart';
@@ -137,7 +138,7 @@ class _AddToListSheetState extends State<_AddToListSheet> {
       if (!mounted) return;
       // 422 以外の失敗 (ネットワーク等) もボトムシート背後に SnackBar を
       // 沈めないよう、ダイアログで明示する。
-      await _showErrorDialog('リストの更新に失敗しました: $e');
+      await _showErrorDialog(context.l10n.listUpdateFailed('$e'));
     } finally {
       if (mounted) {
         setState(() => _busyIds.remove(list.id));
@@ -153,20 +154,17 @@ class _AddToListSheetState extends State<_AddToListSheet> {
     final shouldFollow = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('フォローが必要です'),
-        content: Text(
-          '「${list.title}」に追加するには、まず @${widget.target.acct} を'
-          'フォローする必要があります。\n\n'
-          'フォローしてからリストに追加しますか？',
-        ),
+        title: Text(ctx.l10n.listFollowRequiredTitle),
+        content: Text(ctx.l10n
+            .listFollowRequiredMessage(list.title, widget.target.acct)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('フォローして追加'),
+            child: Text(ctx.l10n.listFollowAndAdd),
           ),
         ],
       ),
@@ -182,10 +180,7 @@ class _AddToListSheetState extends State<_AddToListSheet> {
       if (!mounted) return;
       if (!rel.following) {
         // 鍵アカウント — フォローリクエスト送信済みだが、まだ承認されていない。
-        await _showErrorDialog(
-          'このアカウントは承認制 (鍵アカウント) です。フォローリクエストを'
-          '送信しました。承認されたらリストに追加できます。',
-        );
+        await _showErrorDialog(context.l10n.listFollowRequestSent);
         return;
       }
       await addAccountsToList(
@@ -198,7 +193,7 @@ class _AddToListSheetState extends State<_AddToListSheet> {
       setState(() => _membership.add(list.id));
     } catch (e) {
       if (!mounted) return;
-      await _showErrorDialog('フォローまたはリスト追加に失敗しました: $e');
+      await _showErrorDialog(context.l10n.listFollowOrAddFailed('$e'));
     }
   }
 
@@ -214,7 +209,7 @@ class _AddToListSheetState extends State<_AddToListSheet> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('閉じる'),
+            child: Text(ctx.l10n.close),
           ),
         ],
       ),
@@ -226,12 +221,12 @@ class _AddToListSheetState extends State<_AddToListSheet> {
     final title = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('新しいリストを作成'),
+        title: Text(ctx.l10n.listCreateNewTitle),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'リスト名',
+          decoration: InputDecoration(
+            hintText: ctx.l10n.listNameHint,
           ),
           textInputAction: TextInputAction.done,
           onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
@@ -239,11 +234,11 @@ class _AddToListSheetState extends State<_AddToListSheet> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('作成'),
+            child: Text(ctx.l10n.create),
           ),
         ],
       ),
@@ -268,7 +263,7 @@ class _AddToListSheetState extends State<_AddToListSheet> {
       await _toggleMembership(newList);
     } catch (e) {
       if (!mounted) return;
-      await _showErrorDialog('リスト作成に失敗しました: $e');
+      await _showErrorDialog(context.l10n.listCreateFailed('$e'));
     }
   }
 
@@ -296,7 +291,7 @@ class _AddToListSheetState extends State<_AddToListSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'リストに追加',
+                      context.l10n.listAddToList,
                       style: theme.textTheme.titleLarge,
                     ),
                     const SizedBox(height: 4),
@@ -316,7 +311,7 @@ class _AddToListSheetState extends State<_AddToListSheet> {
               ListTile(
                 leading: Icon(Icons.add, color: theme.colorScheme.primary),
                 title: Text(
-                  '新しいリストを作成',
+                  context.l10n.listCreateNewTitle,
                   style: TextStyle(color: theme.colorScheme.primary),
                 ),
                 onTap: _createNewList,
@@ -347,7 +342,7 @@ class _AddToListSheetState extends State<_AddToListSheet> {
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 12),
               Text(
-                'リストを取得できませんでした',
+                context.l10n.listsFetchFailed,
                 style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: 4),
@@ -355,7 +350,7 @@ class _AddToListSheetState extends State<_AddToListSheet> {
               const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: _load,
-                child: const Text('再試行'),
+                child: Text(context.l10n.retry),
               ),
             ],
           ),
@@ -372,10 +367,10 @@ class _AddToListSheetState extends State<_AddToListSheet> {
               Icon(Icons.list,
                   size: 48, color: theme.colorScheme.onSurfaceVariant),
               const SizedBox(height: 12),
-              const Text('リストがまだありません'),
+              Text(context.l10n.listsEmpty),
               const SizedBox(height: 4),
               Text(
-                '「新しいリストを作成」から作れます',
+                context.l10n.listsEmptyHintSheet,
                 style: theme.textTheme.bodySmall,
               ),
             ],

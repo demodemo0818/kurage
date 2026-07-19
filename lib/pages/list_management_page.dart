@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/l10n.dart';
 import '../models/auth_account.dart';
 import '../models/mastodon_list.dart';
 import '../providers/auth_provider.dart';
@@ -102,22 +103,22 @@ class _ListManagementPageState extends ConsumerState<ListManagementPage> {
     final title = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('新しいリストを作成'),
+        title: Text(ctx.l10n.listCreateNewTitle),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(hintText: 'リスト名'),
+          decoration: InputDecoration(hintText: ctx.l10n.listNameHint),
           textInputAction: TextInputAction.done,
           onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('作成'),
+            child: Text(ctx.l10n.create),
           ),
         ],
       ),
@@ -136,7 +137,7 @@ class _ListManagementPageState extends ConsumerState<ListManagementPage> {
       setState(() => _lists = [..._lists, newList]);
     } catch (e) {
       if (!mounted) return;
-      showErrorSnackBar(context, 'リスト作成に失敗しました: $e');
+      showErrorSnackBar(context, context.l10n.listCreateFailed('$e'));
     }
   }
 
@@ -148,7 +149,7 @@ class _ListManagementPageState extends ConsumerState<ListManagementPage> {
     final newTitle = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('リスト名を変更'),
+        title: Text(ctx.l10n.listRenameTitle),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -158,11 +159,11 @@ class _ListManagementPageState extends ConsumerState<ListManagementPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('保存'),
+            child: Text(ctx.l10n.save),
           ),
         ],
       ),
@@ -185,7 +186,7 @@ class _ListManagementPageState extends ConsumerState<ListManagementPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      showErrorSnackBar(context, 'リスト名の変更に失敗しました: $e');
+      showErrorSnackBar(context, context.l10n.listRenameFailed('$e'));
     }
   }
 
@@ -196,19 +197,17 @@ class _ListManagementPageState extends ConsumerState<ListManagementPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('リストを削除'),
-        content: Text(
-          '「${list.title}」を削除します。\n\nこのリストを参照しているカラムからは表示されなくなります。',
-        ),
+        title: Text(ctx.l10n.listDeleteTitle),
+        content: Text(ctx.l10n.listDeleteMessage(list.title)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('削除'),
+            child: Text(ctx.l10n.delete),
           ),
         ],
       ),
@@ -227,7 +226,7 @@ class _ListManagementPageState extends ConsumerState<ListManagementPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      showErrorSnackBar(context, 'リストの削除に失敗しました: $e');
+      showErrorSnackBar(context, context.l10n.listDeleteFailed('$e'));
     }
   }
 
@@ -247,7 +246,7 @@ class _ListManagementPageState extends ConsumerState<ListManagementPage> {
     final accounts = ref.watch(authProvider).accounts;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('リスト管理')),
+      appBar: AppBar(title: Text(context.l10n.settingsListManagement)),
       body: Column(
         children: [
           if (accounts.length > 1) _buildAccountSelector(accounts),
@@ -263,7 +262,7 @@ class _ListManagementPageState extends ConsumerState<ListManagementPage> {
               heroTag: null,
               onPressed: _createList,
               icon: const Icon(Icons.add),
-              label: const Text('リストを作成'),
+              label: Text(context.l10n.listCreate),
             ),
     );
   }
@@ -303,10 +302,10 @@ class _ListManagementPageState extends ConsumerState<ListManagementPage> {
 
   Widget _buildBody() {
     if (_selectedAccount == null) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text('アカウントが登録されていません'),
+          padding: const EdgeInsets.all(24),
+          child: Text(context.l10n.noAccountsRegistered),
         ),
       );
     }
@@ -322,13 +321,13 @@ class _ListManagementPageState extends ConsumerState<ListManagementPage> {
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 12),
-              Text('リストを取得できませんでした'),
+              Text(context.l10n.listsFetchFailed),
               const SizedBox(height: 4),
               Text(_error!, textAlign: TextAlign.center),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _loadLists,
-                child: const Text('再試行'),
+                child: Text(context.l10n.retry),
               ),
             ],
           ),
@@ -348,11 +347,11 @@ class _ListManagementPageState extends ConsumerState<ListManagementPage> {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               const SizedBox(height: 12),
-              const Text('リストがまだありません'),
+              Text(context.l10n.listsEmpty),
               const SizedBox(height: 4),
-              const Text(
-                '右下の「+」ボタンから作成できます',
-                style: TextStyle(fontSize: 12),
+              Text(
+                context.l10n.plusButtonCreateHint,
+                style: const TextStyle(fontSize: 12),
               ),
             ],
           ),
@@ -381,22 +380,23 @@ class _ListManagementPageState extends ConsumerState<ListManagementPage> {
                     break;
                 }
               },
-              itemBuilder: (_) => const [
+              itemBuilder: (_) => [
                 PopupMenuItem(
                   value: 'rename',
                   child: ListTile(
-                    leading: Icon(Icons.edit_outlined),
-                    title: Text('名前を変更'),
+                    leading: const Icon(Icons.edit_outlined),
+                    title: Text(context.l10n.listRename),
                     dense: true,
                   ),
                 ),
                 PopupMenuItem(
                   value: 'delete',
                   child: ListTile(
-                    leading: Icon(Icons.delete_outline, color: Colors.red),
+                    leading:
+                        const Icon(Icons.delete_outline, color: Colors.red),
                     title: Text(
-                      '削除',
-                      style: TextStyle(color: Colors.red),
+                      context.l10n.delete,
+                      style: const TextStyle(color: Colors.red),
                     ),
                     dense: true,
                   ),

@@ -473,7 +473,7 @@
   "filterCreate": "フィルタを作成",
   "filtersFetchFailed": "フィルタを取得できませんでした",
   "filtersEmpty": "フィルタがまだありません",
-  "filtersEmptyHint": "右下の「+」ボタンから作成できます",
+  "plusButtonCreateHint": "右下の「+」ボタンから作成できます",
   "filterKeywordsCount": "{count} キーワード",
   "@filterKeywordsCount": {
     "placeholders": {
@@ -569,6 +569,155 @@
   "@searchNoHashtagsFound": {
     "placeholders": {
       "query": {"type": "String"}
+    }
+  },
+
+  "create": "作成",
+  "approve": "承認",
+  "sensitive": "閲覧注意",
+
+  "listUpdateFailed": "リストの更新に失敗しました: {error}",
+  "@listUpdateFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "listFollowRequiredTitle": "フォローが必要です",
+  "listFollowRequiredMessage": "「{listTitle}」に追加するには、まず @{acct} をフォローする必要があります。\n\nフォローしてからリストに追加しますか？",
+  "@listFollowRequiredMessage": {
+    "placeholders": {
+      "listTitle": {"type": "String"},
+      "acct": {"type": "String"}
+    }
+  },
+  "listFollowAndAdd": "フォローして追加",
+  "listFollowRequestSent": "このアカウントは承認制 (鍵アカウント) です。フォローリクエストを送信しました。承認されたらリストに追加できます。",
+  "listFollowOrAddFailed": "フォローまたはリスト追加に失敗しました: {error}",
+  "@listFollowOrAddFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "listCreateNewTitle": "新しいリストを作成",
+  "listNameHint": "リスト名",
+  "listCreateFailed": "リスト作成に失敗しました: {error}",
+  "@listCreateFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "listAddToList": "リストに追加",
+  "listsFetchFailed": "リストを取得できませんでした",
+  "listsEmpty": "リストがまだありません",
+  "listsEmptyHintSheet": "「新しいリストを作成」から作れます",
+  "listCreate": "リストを作成",
+  "listRenameTitle": "リスト名を変更",
+  "listRenameFailed": "リスト名の変更に失敗しました: {error}",
+  "@listRenameFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "listRename": "名前を変更",
+  "listDeleteTitle": "リストを削除",
+  "listDeleteMessage": "「{title}」を削除します。\n\nこのリストを参照しているカラムからは表示されなくなります。",
+  "@listDeleteMessage": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "listDeleteFailed": "リストの削除に失敗しました: {error}",
+  "@listDeleteFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "tabMutes": "ミュート",
+  "tabBlocks": "ブロック",
+  "tabDomains": "ドメイン",
+  "unmuteTitle": "ミュート解除",
+  "unblockTitle": "ブロック解除",
+  "unmuteConfirm": "@{acct} のミュートを解除しますか？",
+  "@unmuteConfirm": {
+    "placeholders": {
+      "acct": {"type": "String"}
+    }
+  },
+  "unblockConfirm": "@{acct} のブロックを解除しますか？",
+  "@unblockConfirm": {
+    "placeholders": {
+      "acct": {"type": "String"}
+    }
+  },
+  "unmuted": "ミュートを解除しました",
+  "unblocked": "ブロックを解除しました",
+  "liftFailed": "解除できませんでした: {error}",
+  "@liftFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "noMutedUsers": "ミュートしているユーザーはいません",
+  "noBlockedUsers": "ブロックしているユーザーはいません",
+  "domainUnblockTitle": "ドメインブロック解除",
+  "domainUnblockConfirm": "{domain} のブロックを解除しますか？\n\nこのドメインのユーザーが再び表示されるようになります。",
+  "@domainUnblockConfirm": {
+    "placeholders": {
+      "domain": {"type": "String"}
+    }
+  },
+  "domainUnblocked": "ドメインのブロックを解除しました",
+  "noBlockedDomains": "ブロックしているドメインはありません",
+
+  "collectionFallbackTitle": "コレクション",
+  "collectionDeleteTitle": "コレクションを削除",
+  "collectionDeleteMessage": "「{name}」を削除します。この操作は取り消せません。",
+  "@collectionDeleteMessage": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "collectionDeleteFailed": "コレクションを削除できませんでした: {error}",
+  "@collectionDeleteFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "collectionMemberRemoveFailed": "メンバーを削除できませんでした: {error}",
+  "@collectionMemberRemoveFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "collectionApproveFailed": "承認できませんでした: {error}",
+  "@collectionApproveFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "collectionUnlistFailed": "掲載を取り消せませんでした: {error}",
+  "@collectionUnlistFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "collectionFetchFailed": "コレクションを取得できませんでした",
+  "collectionMemberCount": "{count} 人",
+  "@collectionMemberCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "collectionYouAreListed": "あなたはこのコレクションに追加されています。掲載を承認しますか？",
+  "collectionDoNotList": "掲載しない",
+  "collectionApprove": "承認する",
+  "collectionRemoveMemberTooltip": "メンバーから削除",
+  "collectionPendingApproval": "承認待ち",
+  "collectionAccountFallback": "アカウント ({id})",
+  "@collectionAccountFallback": {
+    "placeholders": {
+      "id": {"type": "String"}
     }
   }
 }

@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/l10n.dart';
 import '../models/account.dart';
 import '../models/auth_account.dart';
 import '../providers/auth_provider.dart';
@@ -47,7 +48,7 @@ Future<bool> _confirmDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false),
-          child: const Text('キャンセル'),
+          child: Text(ctx.l10n.cancel),
         ),
         ElevatedButton(
           onPressed: () => Navigator.pop(ctx, true),
@@ -116,7 +117,7 @@ class _BlockedMutedPageState extends ConsumerState<BlockedMutedPage> {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('ミュート・ブロック'),
+          title: Text(context.l10n.settingsBlockedMuted),
           actions: [
             // 複数アカウントのときだけ「どのアカウントの一覧か」を選べる
             // (search_page と同じ見た目)。
@@ -176,19 +177,21 @@ class _BlockedMutedPageState extends ConsumerState<BlockedMutedPage> {
                 ),
               ),
           ],
-          bottom: const TabBar(
+          bottom: TabBar(
             tabs: [
-              Tab(icon: Icon(Icons.volume_off), text: 'ミュート'),
-              Tab(icon: Icon(Icons.block), text: 'ブロック'),
-              Tab(icon: Icon(Icons.dns), text: 'ドメイン'),
+              Tab(
+                  icon: const Icon(Icons.volume_off),
+                  text: context.l10n.tabMutes),
+              Tab(icon: const Icon(Icons.block), text: context.l10n.tabBlocks),
+              Tab(icon: const Icon(Icons.dns), text: context.l10n.tabDomains),
             ],
           ),
         ),
         body: account == null
-            ? const Center(
+            ? Center(
                 child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Text('ログインしているアカウントがありません'),
+                  padding: const EdgeInsets.all(24),
+                  child: Text(context.l10n.noLoggedInAccounts),
                 ),
               )
             : TabBarView(
@@ -328,7 +331,7 @@ class _AccountModerationListState extends State<_AccountModerationList>
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
-      showErrorSnackBar(context, '続きを取得できませんでした: $e');
+      showErrorSnackBar(context, context.l10n.loadMoreFailed('$e'));
     }
   }
 
@@ -345,9 +348,12 @@ class _AccountModerationListState extends State<_AccountModerationList>
   Future<void> _unmoderate(Account a) async {
     final confirmed = await _confirmDialog(
       context,
-      title: _isMute ? 'ミュート解除' : 'ブロック解除',
-      content: '@${a.acct} の${_isMute ? 'ミュート' : 'ブロック'}を解除しますか？',
-      confirmLabel: '解除',
+      title: _isMute ? context.l10n.unmuteTitle : context.l10n.unblockTitle,
+      content: _isMute
+          ? context.l10n.unmuteConfirm(a.acct)
+          : context.l10n.unblockConfirm(a.acct),
+      confirmLabel:
+          _isMute ? context.l10n.unmuteTitle : context.l10n.unblockTitle,
       destructive: !_isMute,
     );
     if (!confirmed || !mounted) return;
@@ -376,13 +382,14 @@ class _AccountModerationListState extends State<_AccountModerationList>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_isMute ? 'ミュートを解除しました' : 'ブロックを解除しました'),
+          content:
+              Text(_isMute ? context.l10n.unmuted : context.l10n.unblocked),
         ),
       );
     } catch (e) {
       if (!mounted) return;
       setState(() => _busyIds.remove(a.id));
-      showErrorSnackBar(context, '解除できませんでした: $e');
+      showErrorSnackBar(context, context.l10n.liftFailed('$e'));
     }
   }
 
@@ -402,21 +409,22 @@ class _AccountModerationListState extends State<_AccountModerationList>
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 12),
-              const Text('一覧を取得できませんでした'),
+              Text(context.l10n.reactorsFetchFailed),
               const SizedBox(height: 4),
               Text(_error!, textAlign: TextAlign.center),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _loadFirst,
-                child: const Text('再試行'),
+                child: Text(context.l10n.retry),
               ),
             ],
           ),
         ),
       );
     }
-    final emptyMessage =
-        _isMute ? 'ミュートしているユーザーはいません' : 'ブロックしているユーザーはいません';
+    final emptyMessage = _isMute
+        ? context.l10n.noMutedUsers
+        : context.l10n.noBlockedUsers;
     if (_items.isEmpty) {
       return RefreshIndicator(
         onRefresh: _loadFirst,
@@ -472,7 +480,9 @@ class _AccountModerationListState extends State<_AccountModerationList>
                 : IconButton(
                     icon: Icon(_isMute ? Icons.volume_up : Icons.block),
                     color: _isMute ? null : Colors.red,
-                    tooltip: _isMute ? 'ミュート解除' : 'ブロック解除',
+                    tooltip: _isMute
+                        ? context.l10n.unmuteTitle
+                        : context.l10n.unblockTitle,
                     onPressed: () => _unmoderate(a),
                   ),
             onTap: () => _openProfile(a),
@@ -526,10 +536,9 @@ class _DomainBlockListState extends State<_DomainBlockList>
   Future<void> _unblock(String domain) async {
     final confirmed = await _confirmDialog(
       context,
-      title: 'ドメインブロック解除',
-      content: '$domain のブロックを解除しますか？\n\n'
-          'このドメインのユーザーが再び表示されるようになります。',
-      confirmLabel: '解除',
+      title: context.l10n.domainUnblockTitle,
+      content: context.l10n.domainUnblockConfirm(domain),
+      confirmLabel: context.l10n.unblockTitle,
       destructive: true,
     );
     if (!confirmed || !mounted) return;
@@ -548,12 +557,12 @@ class _DomainBlockListState extends State<_DomainBlockList>
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ドメインのブロックを解除しました')),
+        SnackBar(content: Text(context.l10n.domainUnblocked)),
       );
     } catch (e) {
       if (!mounted) return;
       setState(() => _busy.remove(domain));
-      showErrorSnackBar(context, '解除できませんでした: $e');
+      showErrorSnackBar(context, context.l10n.liftFailed('$e'));
     }
   }
 
@@ -572,11 +581,11 @@ class _DomainBlockListState extends State<_DomainBlockList>
           children: [
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.6,
-              child: const Center(
+              child: Center(
                 child: Padding(
-                  padding: EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(24),
                   child: Text(
-                    'ブロックしているドメインはありません',
+                    context.l10n.noBlockedDomains,
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -610,7 +619,7 @@ class _DomainBlockListState extends State<_DomainBlockList>
                 : IconButton(
                     icon: const Icon(Icons.block),
                     color: Colors.red,
-                    tooltip: 'ブロック解除',
+                    tooltip: context.l10n.unblockTitle,
                     onPressed: () => _unblock(domain),
                   ),
           );

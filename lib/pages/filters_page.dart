@@ -273,7 +273,7 @@ class _FiltersPageState extends ConsumerState<FiltersPage> {
               Text(context.l10n.filtersEmpty),
               const SizedBox(height: 4),
               Text(
-                context.l10n.filtersEmptyHint,
+                context.l10n.plusButtonCreateHint,
                 style: const TextStyle(fontSize: 12),
               ),
             ],
