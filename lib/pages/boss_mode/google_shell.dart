@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models/auth_account.dart';
 import '../../models/status.dart';
 import '../../providers/auth_provider.dart';
@@ -48,12 +49,12 @@ class _GoogleShellState extends ConsumerState<GoogleShell> {
   // 'home' / 'local' / 'public'(=連合)。
   String _timelineType = 'home';
 
-  // 表示中タブの選択肢 (value, ラベル)。
-  static const List<(String, String)> _timelineTabs = [
-    ('home', 'ホーム'),
-    ('local', 'ローカル'),
-    ('public', '連合'),
-  ];
+  // 表示中タブの選択肢 (value, ラベル)。ラベルは表示言語依存なので getter。
+  static List<(String, String)> get _timelineTabs => [
+        ('home', l10n.timelineHome),
+        ('local', l10n.timelineLocal),
+        ('public', l10n.timelineFederated),
+      ];
 
   // 楽観更新の上書き (id → 状態)。サーバ反映前の即時反転に使う。
   final Map<String, bool> _favOverride = {};
@@ -241,7 +242,7 @@ class _GoogleShellState extends ConsumerState<GoogleShell> {
     if (text.isEmpty || _posting) return;
     final acct = _account;
     if (acct == null) {
-      _toast('アカウントがありません');
+      _toast(l10n.bossNoAccounts);
       return;
     }
     setState(() => _posting = true);
@@ -266,7 +267,7 @@ class _GoogleShellState extends ConsumerState<GoogleShell> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _posting = false);
-      _toast('投稿に失敗しました');
+      _toast(l10n.bossPostFailed);
     }
   }
 
@@ -461,7 +462,7 @@ class _GoogleShellState extends ConsumerState<GoogleShell> {
           ),
           const SizedBox(width: 6),
           IconButton(
-            tooltip: '更新',
+            tooltip: context.l10n.refresh,
             onPressed: _refreshing ? null : _manualRefresh,
             icon: _refreshing
                 ? const SizedBox(
@@ -496,7 +497,7 @@ class _GoogleShellState extends ConsumerState<GoogleShell> {
     // PopupMenuButton はこの widget (= GoogleShell のローカル白 Theme 配下) の
     // Theme を showMenu に渡すため、メニューも自動で白テーマになる。
     return PopupMenuButton<String>(
-      tooltip: 'アカウント',
+      tooltip: l10n.account,
       offset: const Offset(0, 44),
       initialValue: current.id,
       onSelected: _switchAccount,
@@ -556,10 +557,10 @@ class _GoogleShellState extends ConsumerState<GoogleShell> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_account == null) {
-      return const Center(
+      return Center(
         child: Text(
-          'ログインしていません',
-          style: TextStyle(color: Color(0xFF5F6368)),
+          l10n.bossNotLoggedIn,
+          style: const TextStyle(color: Color(0xFF5F6368)),
         ),
       );
     }
@@ -568,15 +569,15 @@ class _GoogleShellState extends ConsumerState<GoogleShell> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('検索結果を取得できませんでした',
-                style: TextStyle(color: Color(0xFF5F6368))),
+            Text(l10n.bossSearchFailed,
+                style: const TextStyle(color: Color(0xFF5F6368))),
             const SizedBox(height: 12),
             TextButton(
               onPressed: () {
                 setState(() => _loading = true);
                 _fetchInitial();
               },
-              child: const Text('再試行'),
+              child: Text(l10n.retry),
             ),
           ],
         ),
@@ -595,7 +596,7 @@ class _GoogleShellState extends ConsumerState<GoogleShell> {
             return Padding(
               padding: const EdgeInsets.only(bottom: 4),
               child: Text(
-                '約 ${_items.length} 件の結果',
+                l10n.bossAboutNResults(_items.length),
                 style: const TextStyle(color: Color(0xFF70757A), fontSize: 13),
               ),
             );

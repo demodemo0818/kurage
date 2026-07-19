@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/l10n.dart';
 import '../providers/conversations_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
@@ -89,26 +90,26 @@ class _DmPageState extends ConsumerState<DmPage> {
             children: [
               const Icon(Icons.error, size: 64, color: Colors.red),
               const SizedBox(height: 16),
-              Text('エラー: $error'),
+              Text(context.l10n.genericError('$error')),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
                   _refreshConversations();
                 },
-                child: const Text('再試行'),
+                child: Text(context.l10n.retry),
               ),
             ],
           ),
         ),
         data: (conversations) {
           if (conversations.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.mail, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text('DMはありません'),
+                  const Icon(Icons.mail, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  Text(context.l10n.dmEmpty),
                 ],
               ),
             );
@@ -181,9 +182,9 @@ class _DmPageState extends ConsumerState<DmPage> {
               ),
             )
           else
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text('メッセージがありません'),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(context.l10n.dmNoMessages),
             ),
           // 会話のアクションボタン
           if (conversation.unread)
@@ -204,7 +205,7 @@ class _DmPageState extends ConsumerState<DmPage> {
             TextButton.icon(
               onPressed: () => ref.read(conversationsProvider.notifier).markAsRead(conversation.id),
               icon: const Icon(Icons.mark_email_read, size: 16),
-              label: const Text('既読'),
+              label: Text(context.l10n.read),
               style: TextButton.styleFrom(
                 foregroundColor: Colors.blue,
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -213,7 +214,7 @@ class _DmPageState extends ConsumerState<DmPage> {
           TextButton.icon(
             onPressed: () => _showConversationOptions(conversation),
             icon: const Icon(Icons.more_horiz, size: 16),
-            label: const Text('その他'),
+            label: Text(context.l10n.more),
             style: TextButton.styleFrom(
               foregroundColor: Colors.grey,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -357,7 +358,7 @@ class _DmPageState extends ConsumerState<DmPage> {
           if (conversation.unread)
             ListTile(
               leading: const Icon(Icons.mark_email_read),
-              title: const Text('既読にする'),
+              title: Text(context.l10n.markAsRead),
               onTap: () {
                 Navigator.pop(context);
                 ref.read(conversationsProvider.notifier).markAsRead(conversation.id);
@@ -365,7 +366,8 @@ class _DmPageState extends ConsumerState<DmPage> {
             ),
           ListTile(
             leading: const Icon(Icons.delete, color: Colors.red),
-            title: const Text('削除', style: TextStyle(color: Colors.red)),
+            title: Text(context.l10n.delete,
+                style: const TextStyle(color: Colors.red)),
             onTap: () {
               Navigator.pop(context);
               _confirmDeleteConversation(conversation);
@@ -380,12 +382,12 @@ class _DmPageState extends ConsumerState<DmPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('会話を削除'),
-        content: const Text('この会話を削除しますか？この操作は取り消せません。'),
+        title: Text(context.l10n.dmDeleteConversationTitle),
+        content: Text(context.l10n.dmDeleteConversationMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             onPressed: () {
@@ -393,7 +395,7 @@ class _DmPageState extends ConsumerState<DmPage> {
               ref.read(conversationsProvider.notifier).removeConversation(conversation.id);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('削除'),
+            child: Text(context.l10n.delete),
           ),
         ],
       ),

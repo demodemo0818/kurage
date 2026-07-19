@@ -1,6 +1,7 @@
 // lib/widgets/live_mode_settings_dialog.dart
 
 import 'package:flutter/material.dart';
+import '../l10n/l10n.dart';
 import '../models/live_mode.dart';
 
 class LiveModeSettingsDialog extends StatefulWidget {
@@ -79,7 +80,7 @@ class _LiveModeSettingsDialogState extends State<LiveModeSettingsDialog> {
                 : Colors.red,
           ),
           const SizedBox(width: 8),
-          const Text('実況モード設定'),
+          Text(context.l10n.liveModeTitle),
         ],
       ),
       content: SizedBox(
@@ -92,8 +93,8 @@ class _LiveModeSettingsDialogState extends State<LiveModeSettingsDialog> {
             children: [
               // 実況モードの有効/無効
               SwitchListTile(
-                title: const Text('実況モードを有効にする'),
-                subtitle: const Text('投稿時に自動でハッシュタグを追加'),
+                title: Text(context.l10n.liveModeEnable),
+                subtitle: Text(context.l10n.liveModeEnableSubtitle),
                 value: _isEnabled,
                 onChanged: (value) {
                   setState(() {
@@ -107,22 +108,22 @@ class _LiveModeSettingsDialogState extends State<LiveModeSettingsDialog> {
               // ハッシュタグ挿入位置（コンパクト版）
               Row(
                 children: [
-                  const Text(
-                    '挿入位置: ',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  Text(
+                    context.l10n.liveModeInsertPositionLabel,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   Expanded(
                     child: DropdownButton<bool>(
                       value: _insertAtEnd,
                       isExpanded: true,
-                      items: const [
+                      items: [
                         DropdownMenuItem(
                           value: true,
-                          child: Text('末尾に追加'),
+                          child: Text(context.l10n.liveModeAppendToEnd),
                         ),
                         DropdownMenuItem(
                           value: false,
-                          child: Text('先頭に追加'),
+                          child: Text(context.l10n.liveModePrependToStart),
                         ),
                       ],
                       onChanged: _isEnabled ? (value) {
@@ -138,9 +139,9 @@ class _LiveModeSettingsDialogState extends State<LiveModeSettingsDialog> {
               const SizedBox(height: 12),
               
               // ハッシュタグ管理
-              const Text(
-                'ハッシュタグ',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              Text(
+                context.l10n.hashtags,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               
@@ -151,12 +152,13 @@ class _LiveModeSettingsDialogState extends State<LiveModeSettingsDialog> {
                     child: TextField(
                       controller: _newHashtagController,
                       enabled: _isEnabled,
-                      decoration: const InputDecoration(
-                        hintText: 'ハッシュタグを入力（#なしで）',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        hintText: context.l10n.liveModeHashtagHint,
+                        border: const OutlineInputBorder(),
                         prefixText: '#',
                         isDense: true,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
                       ),
                       onSubmitted: _isEnabled ? (_) => _addHashtag() : null,
                     ),
@@ -192,7 +194,7 @@ class _LiveModeSettingsDialogState extends State<LiveModeSettingsDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '追加されるハッシュタグ:',
+                          context.l10n.liveModeAddedHashtags,
                           style: TextStyle(
                             fontSize: 12, 
                             color: Theme.of(context).brightness == Brightness.dark
@@ -241,7 +243,7 @@ class _LiveModeSettingsDialogState extends State<LiveModeSettingsDialog> {
               else if (_isEnabled)
                 Center(
                   child: Text(
-                    'ハッシュタグが設定されていません',
+                    context.l10n.liveModeNoHashtags,
                     style: TextStyle(
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Colors.grey.shade400
@@ -267,15 +269,16 @@ class _LiveModeSettingsDialogState extends State<LiveModeSettingsDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'プレビュー:',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      Text(
+                        context.l10n.liveModePreviewLabel,
+                        style: const TextStyle(
+                            fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _insertAtEnd 
-                            ? '投稿内容${LiveModeSettings(hashtags: _hashtags).hashtagString}'
-                            : '${LiveModeSettings(hashtags: _hashtags).hashtagString.trim()} 投稿内容',
+                        _insertAtEnd
+                            ? '${context.l10n.liveModePostPlaceholder}${LiveModeSettings(hashtags: _hashtags).hashtagString}'
+                            : '${LiveModeSettings(hashtags: _hashtags).hashtagString.trim()} ${context.l10n.liveModePostPlaceholder}',
                         style: const TextStyle(fontSize: 11),
                       ),
                     ],
@@ -289,11 +292,11 @@ class _LiveModeSettingsDialogState extends State<LiveModeSettingsDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('キャンセル'),
+          child: Text(context.l10n.cancel),
         ),
         ElevatedButton(
           onPressed: _saveSettings,
-          child: const Text('保存'),
+          child: Text(context.l10n.save),
         ),
       ],
     );

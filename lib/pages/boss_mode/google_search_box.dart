@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 
+import '../../l10n/l10n.dart';
+
 /// Google 検索窓そっくりの pill 型入力欄。
 ///
 /// 偽装モードでは「検索」ではなく **投稿(toot)** に使う。Enter または右端の
@@ -33,12 +35,12 @@ class GoogleSearchBox extends StatelessWidget {
   final String? replyingToLabel;
   final VoidCallback? onCancelReply;
 
-  static const List<(String, IconData, String)> _visibilities = [
-    ('public', Icons.public, '公開'),
-    ('unlisted', Icons.lock_open, '未収載'),
-    ('private', Icons.lock, 'フォロワー限定'),
-    ('direct', Icons.alternate_email, 'ダイレクト'),
-  ];
+  static List<(String, IconData, String)> get _visibilities => [
+        ('public', Icons.public, l10n.visibilityPublic),
+        ('unlisted', Icons.lock_open, l10n.visibilityUnlisted),
+        ('private', Icons.lock, l10n.visibilityPrivate),
+        ('direct', Icons.alternate_email, l10n.visibilityDirect),
+      ];
 
   static IconData _iconFor(String v) {
     for (final item in _visibilities) {
@@ -59,7 +61,7 @@ class GoogleSearchBox extends StatelessWidget {
             child: Wrap(
               children: [
                 InputChip(
-                  label: Text('返信先 $replyingToLabel'),
+                  label: Text(context.l10n.bossReplyingTo(replyingToLabel!)),
                   onDeleted: onCancelReply,
                   visualDensity: VisualDensity.compact,
                   backgroundColor: const Color(0xFFF1F3F4),
@@ -106,7 +108,7 @@ class GoogleSearchBox extends StatelessWidget {
                   ),
                 ),
                 PopupMenuButton<String>(
-                  tooltip: '公開範囲',
+                  tooltip: context.l10n.visibilityTooltip,
                   initialValue: visibility,
                   icon: Icon(_iconFor(visibility),
                       color: const Color(0xFF5F6368), size: 20),
@@ -127,7 +129,7 @@ class GoogleSearchBox extends StatelessWidget {
                   ],
                 ),
                 IconButton(
-                  tooltip: '送信',
+                  tooltip: context.l10n.send,
                   icon: const Icon(Icons.send, color: Color(0xFF4285F4), size: 20),
                   onPressed: () => onSubmit(controller.text),
                 ),

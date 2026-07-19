@@ -11,22 +11,25 @@
 
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n.dart';
+
 /// ミュートダイアログの選択結果。
 typedef MuteChoice = ({int? duration, bool hideNotifications});
 
 /// ミュート期間の選択肢 (公式 Web UI の mute modal に合わせた値)。
-/// value が null のものは「無期限」。
-const List<({String label, int? value})> _muteDurations = [
-  (label: '無期限', value: null),
-  (label: '5分', value: 300),
-  (label: '30分', value: 1800),
-  (label: '1時間', value: 3600),
-  (label: '6時間', value: 21600),
-  (label: '12時間', value: 43200),
-  (label: '1日', value: 86400),
-  (label: '3日', value: 259200),
-  (label: '7日', value: 604800),
-];
+/// value が null のものは「無期限」。ラベルは表示言語に依存するため
+/// 呼び出し時に組み立てる。
+List<({String label, int? value})> _muteDurations(AppLocalizations l10n) => [
+      (label: l10n.muteDurationIndefinite, value: null),
+      (label: l10n.durationMinutes(5), value: 300),
+      (label: l10n.durationMinutes(30), value: 1800),
+      (label: l10n.durationHours(1), value: 3600),
+      (label: l10n.durationHours(6), value: 21600),
+      (label: l10n.durationHours(12), value: 43200),
+      (label: l10n.durationDays(1), value: 86400),
+      (label: l10n.durationDays(3), value: 259200),
+      (label: l10n.durationDays(7), value: 604800),
+    ];
 
 /// `@acct` をミュートするか確認するダイアログを表示する。
 /// 確定時は選んだ期間と通知トグルを返し、キャンセル時は null を返す。
@@ -41,17 +44,14 @@ Future<MuteChoice?> showMuteDialog(
       bool hideNotifications = true;
       return StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
-          title: const Text('ミュート'),
+          title: Text(ctx.l10n.muteTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '@$acctをミュートしますか？\n\n'
-                'ミュートすると、そのユーザーの投稿がタイムラインに表示されなくなります。',
-              ),
+              Text(ctx.l10n.muteConfirmMessage(acct)),
               const SizedBox(height: 20),
-              const Text('期間'),
+              Text(ctx.l10n.muteDurationLabel),
               const SizedBox(height: 4),
               DropdownButtonFormField<int?>(
                 initialValue: selectedDuration,
@@ -62,7 +62,7 @@ Future<MuteChoice?> showMuteDialog(
                       EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
                 items: [
-                  for (final d in _muteDurations)
+                  for (final d in _muteDurations(ctx.l10n))
                     DropdownMenuItem<int?>(
                       value: d.value,
                       child: Text(d.label),
@@ -77,14 +77,14 @@ Future<MuteChoice?> showMuteDialog(
                     setState(() => hideNotifications = v ?? true),
                 contentPadding: EdgeInsets.zero,
                 controlAffinity: ListTileControlAffinity.leading,
-                title: const Text('このユーザーからの通知も非表示にする'),
+                title: Text(ctx.l10n.muteNotificationsToo),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('キャンセル'),
+              child: Text(ctx.l10n.cancel),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(
@@ -94,7 +94,7 @@ Future<MuteChoice?> showMuteDialog(
                   hideNotifications: hideNotifications,
                 ),
               ),
-              child: const Text('ミュート'),
+              child: Text(ctx.l10n.muteTitle),
             ),
           ],
         ),

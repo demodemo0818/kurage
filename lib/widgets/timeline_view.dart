@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
+import '../l10n/l10n.dart';
 import '../models/status.dart';
 import '../models/timeline_item.dart';
 import '../models/timeline_gap.dart';
@@ -1264,7 +1265,7 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
       // - allFailed なら全画面エラーで出るので SnackBar はスキップ (二重通知回避)
       // - partialFailure (一部のみ失敗) のときは控えめに SnackBar 通知
       if (partialFailure) {
-        showErrorSnackBar(context, '一部のタイムラインの取得に失敗しました');
+        showErrorSnackBar(context, context.l10n.timelinePartialFetchFailed);
       }
 
       // キャッシュに保存
@@ -1683,7 +1684,7 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
     _restoreScrollAnchor(anchor);
 
     if (partialFailure) {
-      showErrorSnackBar(context, '一部のタイムラインの取得に失敗しました');
+      showErrorSnackBar(context, context.l10n.timelinePartialFetchFailed);
     }
   }
 
@@ -2117,13 +2118,13 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
     // アカウントがまだロードされていない場合
     if (authState.accounts.isEmpty) {
       debugPrint('No accounts loaded yet for timeline, column: $_columnKey');
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('アカウント情報を読み込み中...'),
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(context.l10n.timelineLoadingAccount),
           ],
         ),
       );
@@ -2132,8 +2133,8 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
     // カラムのソースをチェック
     final sources = widget.column['sources'] as List?;
     if (sources == null || sources.isEmpty) {
-      return const Center(
-        child: Text('このカラムにはソースが設定されていません'),
+      return Center(
+        child: Text(context.l10n.timelineNoSources),
       );
     }
 
@@ -2166,17 +2167,17 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
             children: [
               const Icon(Icons.cloud_off, size: 56, color: Colors.grey),
               const SizedBox(height: 12),
-              const Text('タイムラインの取得に失敗しました',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(context.l10n.timelineFetchFailed,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               Text(
-                'ネットワーク接続を確認して再試行してください',
+                context.l10n.timelineCheckNetwork,
                 style: TextStyle(color: Colors.grey[600], fontSize: 13),
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 icon: const Icon(Icons.refresh),
-                label: const Text('再試行'),
+                label: Text(context.l10n.retry),
                 onPressed: () {
                   setState(() {
                     _allSourcesFailed = false;
@@ -2321,7 +2322,7 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
                                 size: 16, color: Colors.white),
                             const SizedBox(width: 4),
                             Text(
-                              '未読 $count 件',
+                              context.l10n.timelineUnreadCount(count),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -2698,8 +2699,7 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
       if (residualGap != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                '${newPosts.length} 件読み込みました。続きはギャップから再取得できます'),
+            content: Text(context.l10n.timelineGapLoaded(newPosts.length)),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -2840,10 +2840,10 @@ class _StreamReconnectBanner extends StatelessWidget {
           ),
         ],
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
+          const SizedBox(
             width: 14,
             height: 14,
             child: CircularProgressIndicator(
@@ -2851,10 +2851,10 @@ class _StreamReconnectBanner extends StatelessWidget {
               color: Colors.white,
             ),
           ),
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
           Text(
-            'ストリーミング再接続中…',
-            style: TextStyle(
+            context.l10n.timelineStreamReconnecting,
+            style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 12,

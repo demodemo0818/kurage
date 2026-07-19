@@ -4,6 +4,7 @@ import 'package:emoji_picker_flutter/emoji_picker_flutter.dart' as ep;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/l10n.dart';
 import '../models/emoji.dart';
 import '../services/mastodon_api.dart' as api;
 import '../providers/auth_provider.dart';
@@ -165,7 +166,7 @@ class _EmojiPickerState extends ConsumerState<EmojiPicker> with TickerProviderSt
         }
       }
       if (uncategorized.isNotEmpty) {
-        byCategory['未分類'] = uncategorized;
+        byCategory[l10n.emojiUncategorized] = uncategorized;
       }
 
       if (mounted) {
@@ -194,9 +195,9 @@ class _EmojiPickerState extends ConsumerState<EmojiPicker> with TickerProviderSt
   /// 縦スクロール表示する。
   Widget _buildCustomEmojiCategorizedView() {
     if (_customByCategory.isEmpty) {
-      return const Center(
-        child: Text('カスタム絵文字がありません',
-            style: TextStyle(color: Colors.grey)),
+      return Center(
+        child: Text(context.l10n.emojiNoCustom,
+            style: const TextStyle(color: Colors.grey)),
       );
     }
     return ListView(
@@ -321,10 +322,10 @@ class _EmojiPickerState extends ConsumerState<EmojiPicker> with TickerProviderSt
     final hasCustom = _filteredCustomEmojis.isNotEmpty;
     final hasStandard = _filteredStandardEmojis.isNotEmpty;
     if (!hasCustom && !hasStandard) {
-      return const Center(
+      return Center(
         child: Text(
-          '該当する絵文字が見つかりませんでした',
-          style: TextStyle(color: Colors.grey),
+          context.l10n.emojiNoneFound,
+          style: const TextStyle(color: Colors.grey),
         ),
       );
     }
@@ -332,7 +333,8 @@ class _EmojiPickerState extends ConsumerState<EmojiPicker> with TickerProviderSt
       padding: const EdgeInsets.all(8),
       children: [
         if (hasCustom) ...[
-          _buildSectionHeader('カスタム絵文字', _filteredCustomEmojis.length),
+          _buildSectionHeader(
+              context.l10n.emojiCustomSection, _filteredCustomEmojis.length),
           Wrap(
             spacing: 4,
             runSpacing: 4,
@@ -347,7 +349,8 @@ class _EmojiPickerState extends ConsumerState<EmojiPicker> with TickerProviderSt
           ),
         ],
         if (hasStandard) ...[
-          _buildSectionHeader('標準絵文字', _filteredStandardEmojis.length),
+          _buildSectionHeader(context.l10n.emojiStandardSection,
+              _filteredStandardEmojis.length),
           Wrap(
             spacing: 4,
             runSpacing: 4,
@@ -419,13 +422,14 @@ class _EmojiPickerState extends ConsumerState<EmojiPicker> with TickerProviderSt
         // 親 (高さ 400 の Container) の利用可能領域にフィットさせる。
         height: double.infinity,
         checkPlatformCompatibility: true,
-        locale: const Locale('ja'),
+        // パッケージ側のカテゴリ名等をアプリの表示言語に追従させる
+        locale: Localizations.localeOf(context),
         emojiViewConfig: ep.EmojiViewConfig(
           columns: 8,
           emojiSizeMax: 24,
           backgroundColor: bg,
           noRecents: Text(
-            '最近使った絵文字はありません',
+            context.l10n.emojiNoRecent,
             style: TextStyle(fontSize: 14, color: iconColor),
             textAlign: TextAlign.center,
           ),
@@ -446,7 +450,7 @@ class _EmojiPickerState extends ConsumerState<EmojiPicker> with TickerProviderSt
         searchViewConfig: ep.SearchViewConfig(
           backgroundColor: bg,
           buttonIconColor: iconColor,
-          hintText: '検索',
+          hintText: context.l10n.search,
           inputTextStyle: TextStyle(color: theme.textTheme.bodyMedium?.color),
         ),
         skinToneConfig: ep.SkinToneConfig(
@@ -491,7 +495,7 @@ class _EmojiPickerState extends ConsumerState<EmojiPicker> with TickerProviderSt
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: '絵文字を検索...',
+                hintText: context.l10n.emojiSearchHint,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
@@ -516,9 +520,13 @@ class _EmojiPickerState extends ConsumerState<EmojiPicker> with TickerProviderSt
             // タブバー
             TabBar(
               controller: _tabController,
-              tabs: const [
-                Tab(icon: Icon(Icons.star), text: 'カスタム'),
-                Tab(icon: Icon(Icons.emoji_emotions), text: '標準'),
+              tabs: [
+                Tab(
+                    icon: const Icon(Icons.star),
+                    text: context.l10n.emojiCustomTab),
+                Tab(
+                    icon: const Icon(Icons.emoji_emotions),
+                    text: context.l10n.emojiStandardTab),
               ],
             ),
 

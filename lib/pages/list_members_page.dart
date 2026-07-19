@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/network_image_x.dart';
 
+import '../l10n/l10n.dart';
 import '../models/account.dart';
 import '../models/auth_account.dart';
 import '../models/mastodon_list.dart';
@@ -108,7 +109,7 @@ class _ListMembersPageState extends State<ListMembersPage> {
       setState(() {
         _loading = false;
       });
-      showErrorSnackBar(context, '続きを取得できませんでした: $e');
+      showErrorSnackBar(context, context.l10n.loadMoreFailed('$e'));
     }
   }
 
@@ -117,17 +118,18 @@ class _ListMembersPageState extends State<ListMembersPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('リストから削除'),
-        content: Text('「${widget.list.title}」から @${member.acct} を外します。'),
+        title: Text(ctx.l10n.listRemoveMemberTitle),
+        content: Text(
+            ctx.l10n.listRemoveMemberMessage(widget.list.title, member.acct)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('削除'),
+            child: Text(ctx.l10n.delete),
           ),
         ],
       ),
@@ -148,7 +150,7 @@ class _ListMembersPageState extends State<ListMembersPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      showErrorSnackBar(context, 'リストから外せませんでした: $e');
+      showErrorSnackBar(context, context.l10n.listRemoveFailed('$e'));
     } finally {
       if (mounted) {
         setState(() => _busyIds.remove(member.id));
@@ -175,7 +177,7 @@ class _ListMembersPageState extends State<ListMembersPage> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('リストのメンバー'),
+            Text(context.l10n.listMembersTitle),
             Text(
               widget.list.title,
               style: const TextStyle(fontSize: 12),
@@ -201,13 +203,13 @@ class _ListMembersPageState extends State<ListMembersPage> {
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 12),
-              Text('メンバーを取得できませんでした'),
+              Text(context.l10n.listMembersFetchFailed),
               const SizedBox(height: 4),
               Text(_error!, textAlign: TextAlign.center),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _loadFirst,
-                child: const Text('再試行'),
+                child: Text(context.l10n.retry),
               ),
             ],
           ),
@@ -227,12 +229,12 @@ class _ListMembersPageState extends State<ListMembersPage> {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               const SizedBox(height: 12),
-              const Text('メンバーがいません'),
+              Text(context.l10n.listMembersEmpty),
               const SizedBox(height: 4),
-              const Text(
-                'プロフィールページや投稿のメニューから\nリストに追加できます',
+              Text(
+                context.l10n.listMembersEmptyHint,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12),
+                style: const TextStyle(fontSize: 12),
               ),
             ],
           ),
@@ -275,7 +277,7 @@ class _ListMembersPageState extends State<ListMembersPage> {
                 : IconButton(
                     icon: const Icon(Icons.remove_circle_outline),
                     color: Colors.red,
-                    tooltip: 'リストから削除',
+                    tooltip: context.l10n.listRemoveMemberTitle,
                     onPressed: () => _removeMember(m),
                   ),
             onTap: () => _openProfile(m),

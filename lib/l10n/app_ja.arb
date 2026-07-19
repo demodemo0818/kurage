@@ -310,5 +310,137 @@
   "timelineList": "リスト",
   "columnActionsTooltip": "カラム操作",
   "columnEdit": "カラムを編集",
-  "columnDelete": "このカラムを削除"
+  "columnDelete": "このカラムを削除",
+
+  "delete": "削除",
+  "more": "その他",
+  "search": "検索",
+  "send": "送信",
+  "account": "アカウント",
+  "hashtags": "ハッシュタグ",
+  "genericError": "エラー: {error}",
+  "@genericError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "durationMinutes": "{count}分",
+  "@durationMinutes": {
+    "description": "期間の選択肢 (ミュート期間など)",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "durationHours": "{count}時間",
+  "@durationHours": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "durationDays": "{count}日",
+  "@durationDays": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "dmEmpty": "DMはありません",
+  "dmNoMessages": "メッセージがありません",
+  "dmDeleteConversationTitle": "会話を削除",
+  "dmDeleteConversationMessage": "この会話を削除しますか？この操作は取り消せません。",
+
+  "listRemoveMemberTitle": "リストから削除",
+  "listRemoveMemberMessage": "「{listTitle}」から @{acct} を外します。",
+  "@listRemoveMemberMessage": {
+    "placeholders": {
+      "listTitle": {"type": "String"},
+      "acct": {"type": "String"}
+    }
+  },
+  "listRemoveFailed": "リストから外せませんでした: {error}",
+  "@listRemoveFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "listMembersTitle": "リストのメンバー",
+  "listMembersFetchFailed": "メンバーを取得できませんでした",
+  "listMembersEmpty": "メンバーがいません",
+  "listMembersEmptyHint": "プロフィールページや投稿のメニューから\nリストに追加できます",
+
+  "emojiUncategorized": "未分類",
+  "emojiNoCustom": "カスタム絵文字がありません",
+  "emojiNoneFound": "該当する絵文字が見つかりませんでした",
+  "emojiCustomSection": "カスタム絵文字",
+  "emojiStandardSection": "標準絵文字",
+  "emojiNoRecent": "最近使った絵文字はありません",
+  "emojiSearchHint": "絵文字を検索...",
+  "emojiCustomTab": "カスタム",
+  "emojiStandardTab": "標準",
+
+  "muteTitle": "ミュート",
+  "muteConfirmMessage": "@{acct}をミュートしますか？\n\nミュートすると、そのユーザーの投稿がタイムラインに表示されなくなります。",
+  "@muteConfirmMessage": {
+    "placeholders": {
+      "acct": {"type": "String"}
+    }
+  },
+  "muteDurationLabel": "期間",
+  "muteDurationIndefinite": "無期限",
+  "muteNotificationsToo": "このユーザーからの通知も非表示にする",
+
+  "liveModeTitle": "実況モード設定",
+  "liveModeEnable": "実況モードを有効にする",
+  "liveModeEnableSubtitle": "投稿時に自動でハッシュタグを追加",
+  "liveModeInsertPositionLabel": "挿入位置: ",
+  "liveModeAppendToEnd": "末尾に追加",
+  "liveModePrependToStart": "先頭に追加",
+  "liveModeHashtagHint": "ハッシュタグを入力（#なしで）",
+  "liveModeAddedHashtags": "追加されるハッシュタグ:",
+  "liveModeNoHashtags": "ハッシュタグが設定されていません",
+  "liveModePreviewLabel": "プレビュー:",
+  "liveModePostPlaceholder": "投稿内容",
+
+  "timelinePartialFetchFailed": "一部のタイムラインの取得に失敗しました",
+  "timelineLoadingAccount": "アカウント情報を読み込み中...",
+  "timelineNoSources": "このカラムにはソースが設定されていません",
+  "timelineFetchFailed": "タイムラインの取得に失敗しました",
+  "timelineCheckNetwork": "ネットワーク接続を確認して再試行してください",
+  "timelineUnreadCount": "未読 {count} 件",
+  "@timelineUnreadCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "timelineGapLoaded": "{count} 件読み込みました。続きはギャップから再取得できます",
+  "@timelineGapLoaded": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "timelineStreamReconnecting": "ストリーミング再接続中…",
+
+  "visibilityPublic": "公開",
+  "visibilityUnlisted": "未収載",
+  "visibilityPrivate": "フォロワー限定",
+  "visibilityDirect": "ダイレクト",
+  "visibilityTooltip": "公開範囲",
+
+  "bossNoAccounts": "アカウントがありません",
+  "bossPostFailed": "投稿に失敗しました",
+  "bossNotLoggedIn": "ログインしていません",
+  "bossSearchFailed": "検索結果を取得できませんでした",
+  "bossAboutNResults": "約 {count} 件の結果",
+  "@bossAboutNResults": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "bossReplyingTo": "返信先 {label}",
+  "@bossReplyingTo": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  }
 }
