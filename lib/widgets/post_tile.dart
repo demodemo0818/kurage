@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;     // 親投稿取得のため
 import 'dart:io' show Platform;
 
+import '../l10n/l10n.dart';
 import '../models/status.dart';
 import '../models/auth_account.dart';
 import '../models/account.dart';
@@ -143,8 +144,7 @@ const double _kAvatarBodySpacer = 12.0;
 
 /// リモート由来 status をホームサーバー上の ID に解決できなかった時の
 /// 共通メッセージ (`_boostAsAccount` 等の既存文言と揃える)。
-const String _kStatusNotResolvedMsg =
-    'この投稿は対象のインスタンスで見つかりません。連合していないか、非公開の投稿の可能性があります。';
+String get _kStatusNotResolvedMsg => l10n.postNotFoundOnInstance;
 
 class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClientMixin {
   /// CW 展開状態。`ValueNotifier` 化することで、トグル時に PostTile 全体を
@@ -834,36 +834,36 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       }
       // ファイルがある場合
       else if (files.isNotEmpty) {
-        noteContent = '[${files.length}個のファイル]';
+        noteContent = l10n.postNoteFiles(files.length);
       }
       // リノート（純粋なリブログ）の場合
       else if (misskeyNote['renoteId'] != null) {
-        noteContent = '[リノート]';
+        noteContent = l10n.postNoteRenote;
       }
       // 返信の場合
       else if (misskeyNote['replyId'] != null) {
-        noteContent = '[返信]';
+        noteContent = l10n.postNoteReply;
       }
       // 公開範囲が限定的な場合（フォロワー限定など）
       else if (misskeyNote['visibility'] != null && misskeyNote['visibility'] != 'public') {
         final visibility = misskeyNote['visibility'].toString();
         switch (visibility) {
           case 'followers':
-            noteContent = '[フォロワー限定の投稿]';
+            noteContent = l10n.postNoteFollowersOnly;
             break;
           case 'specified':
-            noteContent = '[指定ユーザー限定の投稿]';
+            noteContent = l10n.postNoteDirect;
             break;
           case 'home':
-            noteContent = '[ホーム限定の投稿]';
+            noteContent = l10n.postNoteHomeOnly;
             break;
           default:
-            noteContent = '[限定公開の投稿]';
+            noteContent = l10n.postNoteLimited;
         }
       }
       // 本当に内容がない場合
       else {
-        noteContent = '[内容なし]';
+        noteContent = l10n.postNoteEmpty;
       }
     }
     
@@ -970,26 +970,26 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('引用元を表示'),
-          content: const Text('引用元の投稿をどのように表示しますか？'),
+          title: Text(context.l10n.postQuoteSourceTitle),
+          content: Text(context.l10n.postQuoteSourceHow),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('キャンセル'),
+              child: Text(context.l10n.cancel),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
                 _openExternalUrl(quotedUrl);
               },
-              child: const Text('ブラウザで開く'),
+              child: Text(context.l10n.profOpenInBrowser),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
                 _searchAndOpenPost(quotedUrl);
               },
-              child: const Text('現在のアカウントから検索'),
+              child: Text(context.l10n.postSearchFromCurrent),
             ),
             if (_canOpenInApp(quotedStatus))
               TextButton(
@@ -997,7 +997,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
                   Navigator.pop(context);
                   _openInApp(quotedStatus);
                 },
-                child: const Text('このインスタンスで表示'),
+                child: Text(context.l10n.postShowOnThisInstance),
               )
             else if (_originStatusId(quotedUrl) != null)
               TextButton(
@@ -1005,7 +1005,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
                   Navigator.pop(context);
                   _openOnOriginServer(quotedUrl);
                 },
-                child: const Text('投稿元のサーバーで開く'),
+                child: Text(context.l10n.postOpenOnOriginServer),
               ),
           ],
         ),
@@ -1013,7 +1013,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     } else {
       // URLがない場合は何もしない
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('引用元の詳細を表示できません')),
+        SnackBar(content: Text(context.l10n.postQuoteDetailUnavailable)),
       );
     }
   }
@@ -1025,12 +1025,12 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        throw Exception('URLを開けませんでした');
+        throw Exception(l10n.postUrlOpenFailed);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ブラウザで開けませんでした: $e')),
+          SnackBar(content: Text(l10n.postBrowserOpenFailed('$e'))),
         );
       }
     }
@@ -1053,16 +1053,16 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(
+      builder: (context) => Center(
         child: Card(
           child: Padding(
-            padding: EdgeInsets.all(20),
+            padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('投稿を検索中...'),
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(context.l10n.postSearching),
               ],
             ),
           ),
@@ -1093,13 +1093,13 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     } on TimeoutException {
       closeLoadingDialog();
       if (mounted) {
-        showErrorSnackBar(context, '検索がタイムアウトしました。しばらくしてから再度お試しください。');
+        showErrorSnackBar(context, l10n.postSearchTimeout);
       }
       return;
     } catch (e) {
       closeLoadingDialog();
       if (mounted) {
-        showErrorSnackBar(context, '検索エラー: $e');
+        showErrorSnackBar(context, l10n.searchError('$e'));
       }
       return;
     }
@@ -1130,8 +1130,8 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('投稿が見つかりません'),
-            content: const Text('現在のアカウントからこの投稿にアクセスできませんでした。'),
+            title: Text(context.l10n.postNotFoundTitle),
+            content: Text(context.l10n.postNotFoundBody),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
@@ -1142,7 +1142,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
                   Navigator.pop(context);
                   _openExternalUrl(url);
                 },
-                child: const Text('ブラウザで開く'),
+                child: Text(context.l10n.profOpenInBrowser),
               ),
             ],
           ),
@@ -1248,7 +1248,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
                           onChanged: (v) =>
                               setDialog(() => dontAskAgain = v ?? false),
                         ),
-                        const Expanded(child: Text('今後は表示しない')),
+                        Expanded(child: Text(ctx.l10n.postDontShowAgain)),
                       ],
                     ),
                   ),
@@ -1257,7 +1257,9 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('キャンセル')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(ctx.l10n.cancel)),
             ElevatedButton(onPressed: () => Navigator.pop(ctx, true),  child: const Text('OK')),
           ],
         ),
@@ -1301,10 +1303,10 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
                   padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
                   child: Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          '投稿',
-                          style: TextStyle(
+                          context.l10n.postLabel,
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
@@ -1312,7 +1314,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
                       ),
                       IconButton(
                         icon: const Icon(Icons.close),
-                        tooltip: '閉じる',
+                        tooltip: context.l10n.close,
                         onPressed: () => Navigator.of(dialogCtx).pop(),
                       ),
                     ],
@@ -1695,7 +1697,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          display.quotedUrl ?? '引用元を読み込み中...',
+                          display.quotedUrl ?? context.l10n.postQuoteLoading,
                           style: TextStyle(
                             fontSize: fs * 0.9,
                             color: Colors.grey[600],
@@ -1832,8 +1834,8 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
                                 onTap: () =>
                                     _showEditHistory(acct, display.id),
                                 child: Tooltip(
-                                  message:
-                                      '編集済み (${formatRelative(display.editedAt!)})',
+                                  message: context.l10n.postEdited(
+                                      formatRelative(display.editedAt!)),
                                   child: Icon(
                                     Icons.edit_note,
                                     size: fs * 1.1,
@@ -1906,11 +1908,11 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
                               //  - それ以外     : displayName 取得済み
                               final String label;
                               if (name == null) {
-                                label = '返信先取得中…';
+                                label = context.l10n.postReplyFetching;
                               } else if (name == _kInReplyToFetchFailed) {
-                                label = '返信';
+                                label = context.l10n.postReplyLabel;
                               } else {
-                                label = '$nameへの返信';
+                                label = context.l10n.postReplyTo(name);
                               }
                               return Text(
                                 label,
@@ -2034,7 +2036,8 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
             iconColor: iconColor,
             isOwnPost: _isOwnPost(),
             domainBlockLabel: display.account.acct.contains('@')
-                ? '${display.account.acct.split('@').last}をドメインブロック'
+                ? context.l10n
+                    .profDomainBlockAction(display.account.acct.split('@').last)
                 : null,
             onMenuAction: _handleMenuAction,
             statusSourceInstanceUrl: widget.statusSourceInstanceUrl,
@@ -2142,7 +2145,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
         if (url == null || url.isEmpty) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('この投稿のURLが取得できません')),
+              SnackBar(content: Text(l10n.postUrlUnavailable)),
             );
           }
         } else {
@@ -2239,13 +2242,13 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('ミュートしました')),
+          SnackBar(content: Text(l10n.profMuted)),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ミュートに失敗しました: $e')),
+          SnackBar(content: Text(l10n.postMuteFailed('$e'))),
         );
       }
     }
@@ -2255,42 +2258,40 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('ブロック'),
-        content: Text(
-          '@${account.acct}をブロックしますか？\n\nブロックすると、そのユーザーとの相互フォローが解除され、そのユーザーからあなたへの返信、フォロー、メンションができなくなります。'
-        ),
+        title: Text(ctx.l10n.profBlock),
+        content: Text(ctx.l10n.profBlockConfirm(account.acct)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('ブロック'),
+            child: Text(ctx.l10n.profBlock),
           ),
         ],
       ),
     );
-    
+
     if (confirmed != true) return;
-    
+
     try {
       await blockAccount(
         instanceUrl: auth.instanceUrl,
         accessToken: auth.accessToken,
         accountId: account.id,
       );
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('ブロックしました')),
+          SnackBar(content: Text(l10n.profBlocked)),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ブロックに失敗しました: $e')),
+          SnackBar(content: Text(l10n.postBlockFailed('$e'))),
         );
       }
     }
@@ -2302,42 +2303,40 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('ドメインをブロック'),
-        content: Text(
-          '$domainをブロックしますか？\n\nこのドメインのすべてのユーザーからの投稿が非表示になります。'
-        ),
+        title: Text(ctx.l10n.profDomainBlockTitle),
+        content: Text(ctx.l10n.profDomainBlockConfirm(domain)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('ブロック'),
+            child: Text(ctx.l10n.profBlock),
           ),
         ],
       ),
     );
-    
+
     if (confirmed != true) return;
-    
+
     try {
       await blockDomain(
         instanceUrl: auth.instanceUrl,
         accessToken: auth.accessToken,
         domain: domain,
       );
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$domainをブロックしました')),
+          SnackBar(content: Text(l10n.profDomainBlocked(domain))),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ドメインブロックに失敗しました: $e')),
+          SnackBar(content: Text(l10n.profDomainBlockFailed('$e'))),
         );
       }
     }
@@ -2532,7 +2531,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('編集に失敗しました: $e')),
+          SnackBar(content: Text(l10n.composeEditFailed('$e'))),
         );
       }
     }
@@ -2543,17 +2542,17 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('投稿を削除'),
-        content: const Text('この投稿を削除しますか？'),
+        title: Text(ctx.l10n.postDeleteTitle),
+        content: Text(ctx.l10n.postDeleteConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('削除'),
+            child: Text(ctx.l10n.delete),
           ),
         ],
       ),
@@ -2573,11 +2572,11 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       publishLocalStatusDeleted(accountId: auth.id, statusId: status.id);
 
       if (mounted) {
-        showCenteredToast(context, '投稿を削除しました');
+        showCenteredToast(context, l10n.postDeleted);
       }
     } catch (e) {
       if (mounted) {
-        showErrorSnackBar(context, '削除に失敗しました: $e');
+        showErrorSnackBar(context, l10n.postDeleteFailed('$e'));
       }
     }
   }
@@ -2587,17 +2586,17 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('削除して下書きに戻す'),
-        content: const Text('この投稿を削除して、内容を下書きとして投稿ページに復元しますか？'),
+        title: Text(ctx.l10n.postRedraftTitle),
+        content: Text(ctx.l10n.postRedraftConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.orange),
-            child: const Text('削除して下書きに戻す'),
+            child: Text(ctx.l10n.postRedraftTitle),
           ),
         ],
       ),
@@ -2624,7 +2623,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       publishLocalStatusDeleted(accountId: auth.id, statusId: status.id);
 
       if (mounted) {
-        showCenteredToast(context, '投稿を削除しました');
+        showCenteredToast(context, l10n.postDeleted);
 
         // 投稿ページに遷移（下書きとして復元）。本文は source エンドポイントから
         // 取った plain text、その他のフィールドは Status 本体から復元する。
@@ -2652,7 +2651,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('操作に失敗しました: $e')),
+          SnackBar(content: Text(l10n.profActionFailed('$e'))),
         );
       }
     }
@@ -2678,7 +2677,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       );
 
       if (!config.translationEnabled) {
-        throw Exception('このインスタンスは翻訳機能をサポートしていません');
+        throw Exception(l10n.postTranslateUnsupported);
       }
 
       final translation = await translateStatus(
@@ -2702,7 +2701,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('翻訳完了（${translation.provider}）'),
+            content: Text(l10n.postTranslateDone(translation.provider)),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -2713,7 +2712,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('翻訳に失敗しました: $e'),
+            content: Text(l10n.postTranslateFailed('$e')),
             backgroundColor: Colors.red,
           ),
         );
@@ -2760,7 +2759,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       if (plainText.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('翻訳するテキストがありません')),
+            SnackBar(content: Text(l10n.postNoTextToTranslate)),
           );
         }
         return;
@@ -2782,7 +2781,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('翻訳処理でエラーが発生しました: $e'),
+            content: Text(l10n.postTranslateError('$e')),
             backgroundColor: Colors.red,
           ),
         );
@@ -2819,11 +2818,9 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     await Clipboard.setData(ClipboardData(text: text));
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Google翻訳を起動できなかったため、テキストをコピーしました。',
-          ),
-          duration: Duration(seconds: 3),
+        SnackBar(
+          content: Text(l10n.postGoogleTranslateCopied),
+          duration: const Duration(seconds: 3),
         ),
       );
     }
@@ -2846,7 +2843,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
         const platform = MethodChannel('jp.demo2.kurage/share');
         await platform.invokeMethod('shareText', {
           'text': url,
-          'title': 'URLを共有',
+          'title': l10n.postShareUrlTitle,
         });
         return;
       } catch (e) {
@@ -2872,11 +2869,11 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     }
     // フォールバック: クリップボードにコピー (iOS / ネイティブデスクトップ /
     // Web の navigator.share 非対応ブラウザ)
-    await _copyToClipboardOnly(url, label: '投稿URL');
+    await _copyToClipboardOnly(url, label: l10n.postCopyLabelUrl);
   }
 
   /// クリップボードにコピーのみ
-  Future<void> _copyToClipboardOnly(String text, {String label = 'テキスト'}) async {
+  Future<void> _copyToClipboardOnly(String text, {String? label}) async {
     await Clipboard.setData(ClipboardData(text: text));
 
     if (mounted) {
@@ -2891,14 +2888,15 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
               const Icon(Icons.check_circle, color: Colors.white),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('$labelをクリップボードにコピーしました'),
+                child: Text(l10n.postCopiedToClipboard(
+                    label ?? l10n.postCopyLabelText)),
               ),
             ],
           ),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 3),
           action: SnackBarAction(
-            label: '確認',
+            label: l10n.postCopyConfirmAction,
             textColor: Colors.white,
             onPressed: () {
               messenger.hideCurrentSnackBar();
@@ -2943,11 +2941,9 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     await Clipboard.setData(ClipboardData(text: text));
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Google翻訳を開けなかったため、テキストをクリップボードにコピーしました',
-          ),
-          duration: Duration(seconds: 3),
+        SnackBar(
+          content: Text(l10n.postGoogleTranslateOpenFailedCopied),
+          duration: const Duration(seconds: 3),
         ),
       );
     }
@@ -3006,8 +3002,8 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       await showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('別アカウントからリアクション'),
-          content: const Text('他に使用可能なアカウントがありません。'),
+          title: Text(context.l10n.postReactFromOtherTitle),
+          content: Text(context.l10n.postNoOtherAccounts),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -3023,7 +3019,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     final selectedAccount = await showDialog<AuthAccount>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('リアクションするアカウントを選択'),
+        title: Text(context.l10n.postSelectReactionAccount),
         content: SizedBox(
           // 広い画面 (Deck) でダイアログが横に広がりすぎないよう最大幅を制限
           // (通知フィルター等と同じ方針)。狭い画面はフル幅。
@@ -3052,12 +3048,12 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
+            child: Text(context.l10n.cancel),
           ),
         ],
       ),
     );
-    
+
     if (selectedAccount == null) return;
     
     // リアクション選択ダイアログを表示
@@ -3069,13 +3065,15 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('${account.displayName.isNotEmpty ? account.displayName : account.username}でリアクション'),
+        title: Text(context.l10n.postReactAs(account.displayName.isNotEmpty
+            ? account.displayName
+            : account.username)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.reply),
-              title: const Text('返信'),
+              title: Text(context.l10n.postReplyLabel),
               onTap: () {
                 Navigator.pop(context);
                 _replyAsAccount(account, status);
@@ -3083,7 +3081,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
             ),
             ListTile(
               leading: const Icon(Icons.repeat),
-              title: const Text('ブースト'),
+              title: Text(context.l10n.postBoostLabel),
               onTap: () {
                 Navigator.pop(context);
                 _boostAsAccount(account, status);
@@ -3091,7 +3089,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
             ),
             ListTile(
               leading: const Icon(Icons.format_quote),
-              title: const Text('引用'),
+              title: Text(context.l10n.postQuoteAction),
               onTap: () {
                 Navigator.pop(context);
                 _quoteAsAccount(account, status);
@@ -3099,7 +3097,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
             ),
             ListTile(
               leading: const Icon(Icons.star_border),
-              title: const Text('お気に入り'),
+              title: Text(context.l10n.favourite),
               onTap: () {
                 Navigator.pop(context);
                 _favoriteAsAccount(account, status);
@@ -3107,7 +3105,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
             ),
             ListTile(
               leading: const Icon(Icons.bookmark_border),
-              title: const Text('ブックマーク'),
+              title: Text(context.l10n.postBookmarkLabel),
               onTap: () {
                 Navigator.pop(context);
                 _bookmarkAsAccount(account, status);
@@ -3118,7 +3116,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
+            child: Text(context.l10n.cancel),
           ),
         ],
       ),
@@ -3133,9 +3131,9 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       // ステータスのURLを取得
       final originalUrl = display.url ?? display.uri;
       if (originalUrl == null) {
-        throw Exception('投稿のURLが取得できません');
+        throw Exception(l10n.postUrlUnavailable);
       }
-      
+
       // 対象インスタンスでステータスを解決
       final resolvedStatusId = await resolveStatusOnInstanceCached(
         instanceUrl: account.instanceUrl,
@@ -3157,7 +3155,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
         );
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('この投稿に直接返信できないため、メンション付きの投稿を作成します')),
+          SnackBar(content: Text(l10n.postCannotReplyMention)),
         );
         return;
       }
@@ -3184,7 +3182,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('この投稿に直接返信できないため、メンション付きの投稿を作成します')),
+          SnackBar(content: Text(l10n.postCannotReplyMention)),
         );
       }
     }
@@ -3196,8 +3194,8 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     
     if (!await _confirmIfNeeded(
       settings.confirmReblog,
-      'ブースト',
-      'このアカウントでブーストしますか？',
+      l10n.postBoostLabel,
+      l10n.postBoostAsConfirm,
       onDontAskAgain: () =>
           ref.read(settingsProvider.notifier).setConfirmReblog(false),
     )) {
@@ -3209,7 +3207,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       final display = status.reblog ?? status;
       final originalUrl = display.url ?? display.uri;
       if (originalUrl == null) {
-        throw Exception('投稿のURLが取得できません');
+        throw Exception(l10n.postUrlUnavailable);
       }
       
       // 対象インスタンスでステータスを解決
@@ -3220,7 +3218,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       );
       
       if (resolvedStatusId == null) {
-        throw Exception('この投稿は対象のインスタンスで見つかりません。連合していないか、非公開の投稿の可能性があります。');
+        throw Exception(l10n.postNotFoundOnInstance);
       }
       
       await toggleReblog(
@@ -3232,20 +3230,23 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${account.displayName.isNotEmpty ? account.displayName : account.username}でブーストしました')),
+          SnackBar(
+              content: Text(l10n.postBoostedAs(account.displayName.isNotEmpty
+                  ? account.displayName
+                  : account.username))),
         );
       }
     } catch (e) {
       String errorMessage;
       final errorString = e.toString();
       if (errorString.contains('404')) {
-        errorMessage = 'この投稿は対象のインスタンスでアクセスできません';
+        errorMessage = l10n.postNotAccessibleOnInstance;
       } else if (errorString.contains('403')) {
-        errorMessage = 'この操作を行う権限がありません';
-      } else if (errorString.contains('見つかりません')) {
+        errorMessage = l10n.postNoPermission;
+      } else if (errorString.contains(l10n.postNotFoundOnInstance)) {
         errorMessage = errorString;
       } else {
-        errorMessage = 'ブーストに失敗しました: $e';
+        errorMessage = l10n.postBoostFailed('$e');
       }
       
       if (mounted) {
@@ -3263,7 +3264,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     try {
       final originalUrl = display.url ?? display.uri;
       if (originalUrl == null) {
-        throw Exception('投稿のURLが取得できません');
+        throw Exception(l10n.postUrlUnavailable);
       }
 
       // 引用には対象インスタンス上の Status オブジェクトが必要
@@ -3285,7 +3286,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       if (!mounted) return;
 
       if (resolvedStatus == null) {
-        throw Exception('この投稿は対象のインスタンスで見つかりません。連合していないか、非公開の投稿の可能性があります。');
+        throw Exception(l10n.postNotFoundOnInstance);
       }
 
       openCompose(
@@ -3299,13 +3300,13 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       String errorMessage;
       final errorString = e.toString();
       if (errorString.contains('404')) {
-        errorMessage = 'この投稿は対象のインスタンスでアクセスできません';
+        errorMessage = l10n.postNotAccessibleOnInstance;
       } else if (errorString.contains('403')) {
-        errorMessage = 'この操作を行う権限がありません';
-      } else if (errorString.contains('見つかりません')) {
+        errorMessage = l10n.postNoPermission;
+      } else if (errorString.contains(l10n.postNotFoundOnInstance)) {
         errorMessage = errorString;
       } else {
-        errorMessage = '引用に失敗しました: $e';
+        errorMessage = l10n.postQuoteFailed('$e');
       }
 
       if (mounted) {
@@ -3322,8 +3323,8 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     
     if (!await _confirmIfNeeded(
       settings.confirmFavourite,
-      'お気に入り',
-      'このアカウントでお気に入りに追加しますか？',
+      l10n.favourite,
+      l10n.postFavAsConfirm,
       onDontAskAgain: () =>
           ref.read(settingsProvider.notifier).setConfirmFavourite(false),
     )) {
@@ -3335,7 +3336,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       final display = status.reblog ?? status;
       final originalUrl = display.url ?? display.uri;
       if (originalUrl == null) {
-        throw Exception('投稿のURLが取得できません');
+        throw Exception(l10n.postUrlUnavailable);
       }
       
       // 対象インスタンスでステータスを解決
@@ -3346,7 +3347,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       );
       
       if (resolvedStatusId == null) {
-        throw Exception('この投稿は対象のインスタンスで見つかりません。連合していないか、非公開の投稿の可能性があります。');
+        throw Exception(l10n.postNotFoundOnInstance);
       }
       
       await toggleFavourite(
@@ -3358,20 +3359,23 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${account.displayName.isNotEmpty ? account.displayName : account.username}でお気に入りに追加しました')),
+          SnackBar(
+              content: Text(l10n.postFavedAs(account.displayName.isNotEmpty
+                  ? account.displayName
+                  : account.username))),
         );
       }
     } catch (e) {
       String errorMessage;
       final errorString = e.toString();
       if (errorString.contains('404')) {
-        errorMessage = 'この投稿は対象のインスタンスでアクセスできません';
+        errorMessage = l10n.postNotAccessibleOnInstance;
       } else if (errorString.contains('403')) {
-        errorMessage = 'この操作を行う権限がありません';
-      } else if (errorString.contains('見つかりません')) {
+        errorMessage = l10n.postNoPermission;
+      } else if (errorString.contains(l10n.postNotFoundOnInstance)) {
         errorMessage = errorString;
       } else {
-        errorMessage = 'お気に入りに失敗しました: $e';
+        errorMessage = l10n.postFavFailed('$e');
       }
       
       if (mounted) {
@@ -3388,8 +3392,8 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     
     if (!await _confirmIfNeeded(
       settings.confirmBookmark,
-      'ブックマーク',
-      'このアカウントでブックマークに追加しますか？',
+      l10n.postBookmarkLabel,
+      l10n.postBookmarkAsConfirm,
       onDontAskAgain: () =>
           ref.read(settingsProvider.notifier).setConfirmBookmark(false),
     )) {
@@ -3401,7 +3405,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       final display = status.reblog ?? status;
       final originalUrl = display.url ?? display.uri;
       if (originalUrl == null) {
-        throw Exception('投稿のURLが取得できません');
+        throw Exception(l10n.postUrlUnavailable);
       }
       
       // 対象インスタンスでステータスを解決
@@ -3412,7 +3416,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       );
       
       if (resolvedStatusId == null) {
-        throw Exception('この投稿は対象のインスタンスで見つかりません。連合していないか、非公開の投稿の可能性があります。');
+        throw Exception(l10n.postNotFoundOnInstance);
       }
       
       await toggleBookmark(
@@ -3424,20 +3428,24 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${account.displayName.isNotEmpty ? account.displayName : account.username}でブックマークに追加しました')),
+          SnackBar(
+              content: Text(l10n.postBookmarkedAs(
+                  account.displayName.isNotEmpty
+                      ? account.displayName
+                      : account.username))),
         );
       }
     } catch (e) {
       String errorMessage;
       final errorString = e.toString();
       if (errorString.contains('404')) {
-        errorMessage = 'この投稿は対象のインスタンスでアクセスできません';
+        errorMessage = l10n.postNotAccessibleOnInstance;
       } else if (errorString.contains('403')) {
-        errorMessage = 'この操作を行う権限がありません';
-      } else if (errorString.contains('見つかりません')) {
+        errorMessage = l10n.postNoPermission;
+      } else if (errorString.contains(l10n.postNotFoundOnInstance)) {
         errorMessage = errorString;
       } else {
-        errorMessage = 'ブックマークに失敗しました: $e';
+        errorMessage = l10n.postBookmarkFailed('$e');
       }
       
       if (mounted) {
@@ -3490,7 +3498,8 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
             children: [
               const CircularProgressIndicator(),
               const SizedBox(height: 16),
-              Text('${Uri.parse(authorServerUrl).host} のサーバー情報を取得中...'),
+              Text(ctx.l10n
+                  .profFetchingServerInfo(Uri.parse(authorServerUrl).host)),
             ],
           ),
         );
@@ -3527,7 +3536,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       closeLoading();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('サーバー情報の取得に失敗しました: $e')),
+          SnackBar(content: Text(l10n.profServerInfoFailed('$e'))),
         );
       }
     }
@@ -3569,8 +3578,8 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
               Expanded(
                 child: Text(
                   filterTitle.isEmpty
-                      ? 'フィルタ条件に一致する投稿'
-                      : 'フィルタ: $filterTitle',
+                      ? context.l10n.postFilterMatched
+                      : context.l10n.postFilterLabel(filterTitle),
                   style: TextStyle(
                     fontSize: 13,
                     color: isDark
@@ -3585,7 +3594,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
                     _filterRevealedStatusIds.add(statusId);
                   });
                 },
-                child: const Text('表示'),
+                child: Text(context.l10n.postShowAction),
               ),
             ],
           ),
@@ -3612,12 +3621,12 @@ class _ServerInfoDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     if (serverInfo['error'] != null) {
       return AlertDialog(
-        title: const Text('サーバー情報'),
-        content: Text('エラー: ${serverInfo['error']}'),
+        title: Text(context.l10n.profServerInfoTitle),
+        content: Text(context.l10n.genericError('${serverInfo['error']}')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('閉じる'),
+            child: Text(context.l10n.close),
           ),
         ],
       );
@@ -3630,7 +3639,7 @@ class _ServerInfoDialog extends StatelessWidget {
 
     final serverTitle = serverInfo['title'] ?? Uri.parse(instanceUrl).host;
     final dialogTitle = authorAccount != null
-        ? '@${authorAccount!.username} のサーバー情報'
+        ? context.l10n.profServerInfoDialogTitle(authorAccount!.username)
         : serverTitle;
 
     // 広い画面 (Deck) では double.maxFinite だとダイアログがウィンドウ幅
@@ -3650,75 +3659,111 @@ class _ServerInfoDialog extends StatelessWidget {
             children: [
               // 投稿主情報（該当する場合）
               if (authorAccount != null)
-                _buildSection('投稿主', [
-                  _buildInfoRow('ユーザー名', '@${authorAccount!.username}'),
-                  _buildInfoRow('表示名', authorAccount!.displayName.isNotEmpty ? authorAccount!.displayName : null),
+                _buildSection(context.l10n.postSectionAuthor, [
+                  _buildInfoRow(context.l10n.profInfoUsername,
+                      '@${authorAccount!.username}'),
+                  _buildInfoRow(
+                      context.l10n.displayNameLabel,
+                      authorAccount!.displayName.isNotEmpty
+                          ? authorAccount!.displayName
+                          : null),
                   // 実際に情報を取得したサーバー (instanceUrl) の host を出す。
                   // acct ドメインだと WEB_DOMAIN ≠ LOCAL_DOMAIN 構成で取得元と
                   // ズレるため、取得元ホストを表示する。
-                  _buildInfoRow('サーバー', '@${Uri.parse(instanceUrl).host}'),
+                  _buildInfoRow(context.l10n.profInfoServer,
+                      '@${Uri.parse(instanceUrl).host}'),
                 ]),
-              
+
               // 基本情報
-              _buildSection('サーバー基本情報', [
-                _buildInfoRow('名前', serverInfo['title']),
+              _buildSection(context.l10n.profSectionServerBasic, [
+                _buildInfoRow(context.l10n.profInfoName, serverInfo['title']),
                 _buildInfoRow('URL', serverInfo['uri'] ?? instanceUrl),
-                _buildInfoRow('バージョン', serverInfo['version']),
-                if (software != null) _buildInfoRow('ソフトウェア', '${software['name']} ${software['version']}'),
+                _buildInfoRow(
+                    context.l10n.profInfoVersion, serverInfo['version']),
+                if (software != null)
+                  _buildInfoRow(context.l10n.profInfoSoftware,
+                      '${software['name']} ${software['version']}'),
               ]),
-              
+
               // 説明
               if (serverInfo['short_description']?.toString().isNotEmpty == true)
-                _buildSection('説明', [
+                _buildSection(context.l10n.profSectionDescription, [
                   Text(
                     serverInfo['short_description'],
                     style: const TextStyle(fontSize: 14),
                   ),
                 ]),
-              
+
               // 統計情報
               if (stats != null)
-                _buildSection('統計', [
-                  _buildInfoRow('ユーザー数', stats['user_count']?.toString()),
-                  _buildInfoRow('投稿数', stats['status_count']?.toString()),
-                  _buildInfoRow('ドメイン数', stats['domain_count']?.toString()),
+                _buildSection(context.l10n.profSectionStats, [
+                  _buildInfoRow(context.l10n.profInfoUserCount,
+                      stats['user_count']?.toString()),
+                  _buildInfoRow(context.l10n.profInfoStatusCount,
+                      stats['status_count']?.toString()),
+                  _buildInfoRow(context.l10n.profInfoDomainCount,
+                      stats['domain_count']?.toString()),
                 ]),
-              
+
               // 登録情報
-              _buildSection('登録', [
-                _buildInfoRow('新規登録', serverInfo['registrations'] == true ? '可能' : '不可'),
-                _buildInfoRow('承認制', serverInfo['approval_required'] == true ? 'あり' : 'なし'),
-                _buildInfoRow('招待制', serverInfo['invites_enabled'] == true ? 'あり' : 'なし'),
+              _buildSection(context.l10n.profSectionRegistrations, [
+                _buildInfoRow(
+                    context.l10n.profInfoNewRegistrations,
+                    serverInfo['registrations'] == true
+                        ? context.l10n.profRegOpen
+                        : context.l10n.profRegClosed),
+                _buildInfoRow(
+                    context.l10n.profInfoApprovalRequired,
+                    serverInfo['approval_required'] == true
+                        ? context.l10n.profYes
+                        : context.l10n.profNo),
+                _buildInfoRow(
+                    context.l10n.profInfoInvitesEnabled,
+                    serverInfo['invites_enabled'] == true
+                        ? context.l10n.profYes
+                        : context.l10n.profNo),
               ]),
-              
+
               // 設定情報
               if (config != null) ...[
                 if (config['statuses'] != null)
-                  _buildSection('投稿設定', [
-                    _buildInfoRow('最大文字数', config['statuses']['max_characters']?.toString()),
-                    _buildInfoRow('最大メディア数', config['statuses']['max_media_attachments']?.toString()),
+                  _buildSection(context.l10n.profSectionPostSettings, [
+                    _buildInfoRow(context.l10n.profInfoMaxChars,
+                        config['statuses']['max_characters']?.toString()),
+                    _buildInfoRow(
+                        context.l10n.profInfoMaxMedia,
+                        config['statuses']['max_media_attachments']
+                            ?.toString()),
                   ]),
                 if (config['media_attachments'] != null)
-                  _buildSection('メディア設定', [
-                    _buildInfoRow('画像サイズ上限', _formatBytes(config['media_attachments']['image_size_limit'])),
-                    _buildInfoRow('動画サイズ上限', _formatBytes(config['media_attachments']['video_size_limit'])),
+                  _buildSection(context.l10n.profSectionMediaSettings, [
+                    _buildInfoRow(
+                        context.l10n.profInfoImageSizeLimit,
+                        _formatBytes(
+                            config['media_attachments']['image_size_limit'])),
+                    _buildInfoRow(
+                        context.l10n.profInfoVideoSizeLimit,
+                        _formatBytes(
+                            config['media_attachments']['video_size_limit'])),
                   ]),
               ],
-              
+
               // 言語
               if (serverInfo['languages'] is List && (serverInfo['languages'] as List).isNotEmpty)
-                _buildSection('対応言語', [
+                _buildSection(context.l10n.profSectionLanguages, [
                   Text(
                     (serverInfo['languages'] as List).join(', '),
                     style: const TextStyle(fontSize: 14),
                   ),
                 ]),
-              
+
               // 連絡先
               if (serverInfo['contact_account'] != null)
-                _buildSection('管理者', [
-                  _buildInfoRow('ユーザー名', '@${serverInfo['contact_account']['username']}'),
-                  _buildInfoRow('表示名', serverInfo['contact_account']['display_name']),
+                _buildSection(context.l10n.profSectionAdmin, [
+                  _buildInfoRow(context.l10n.profInfoUsername,
+                      '@${serverInfo['contact_account']['username']}'),
+                  _buildInfoRow(context.l10n.displayNameLabel,
+                      serverInfo['contact_account']['display_name']),
                 ]),
             ],
           ),
@@ -3727,7 +3772,7 @@ class _ServerInfoDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('閉じる'),
+          child: Text(context.l10n.close),
         ),
       ],
     );
@@ -3888,7 +3933,7 @@ class _HideMediaButton extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Tooltip(
-          message: 'メディアを隠す',
+          message: context.l10n.postHideMedia,
           child: Container(
             width: size,
             height: size,
@@ -3914,7 +3959,7 @@ void showAltTextDialog(BuildContext context, String description) {
   showDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('ALT文'),
+      title: Text(ctx.l10n.composeAltLabel),
       content: ConstrainedBox(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(ctx).size.height * 0.6,
@@ -3926,7 +3971,7 @@ void showAltTextDialog(BuildContext context, String description) {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: const Text('閉じる'),
+          child: Text(ctx.l10n.close),
         ),
       ],
     ),
@@ -4288,7 +4333,7 @@ class _PostMediaGalleryState extends State<_PostMediaGallery> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '表示する',
+                  context.l10n.postRevealAction,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: fs * 0.85,
@@ -4318,7 +4363,7 @@ class _PostMediaGalleryState extends State<_PostMediaGallery> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: Text(
-                  '表示する',
+                  context.l10n.postRevealAction,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: fs * 0.8,
@@ -4591,8 +4636,8 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
         showErrorSnackBar(
           context,
           wasPinned
-              ? 'ピン留め解除に失敗しました: $e'
-              : 'ピン留めできません。最大 5 件、公開範囲が public/unlisted の自分の投稿のみ可能です。',
+              ? l10n.postUnpinFailed('$e')
+              : l10n.postPinNotAllowed,
         );
       }
       return;
@@ -4600,7 +4645,7 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
       if (mounted) {
         showErrorSnackBar(
           context,
-          wasPinned ? 'ピン留め解除に失敗しました' : 'ピン留めに失敗しました',
+          wasPinned ? l10n.postUnpinFailedPlain : l10n.postPinFailedPlain,
         );
       }
       return;
@@ -4612,7 +4657,7 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            newValue ? 'プロフィールに固定しました' : 'プロフィールの固定を解除しました',
+            newValue ? l10n.postPinned : l10n.postUnpinned,
           ),
           duration: const Duration(seconds: 2),
         ),
@@ -4655,7 +4700,7 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
                           onChanged: (v) =>
                               setDialog(() => dontAskAgain = v ?? false),
                         ),
-                        const Expanded(child: Text('今後は表示しない')),
+                        Expanded(child: Text(ctx.l10n.postDontShowAgain)),
                       ],
                     ),
                   ),
@@ -4666,7 +4711,7 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('キャンセル'),
+              child: Text(ctx.l10n.cancel),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
@@ -4728,7 +4773,7 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
   Widget _replyButton() {
     return IconButton(
       icon: Icon(Icons.reply, color: widget.iconColor),
-      tooltip: '返信',
+      tooltip: context.l10n.postReplyLabel,
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(),
@@ -4764,7 +4809,7 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
         inactiveColor: widget.iconColor,
         rotateOnChange: true,
       ),
-      tooltip: 'ブースト',
+      tooltip: context.l10n.postBoostLabel,
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(),
@@ -4776,8 +4821,10 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
         final wasReblogged = _reblogged;
         if (!await _confirm(
           needConfirm,
-          'ブースト',
-          _reblogged ? 'ブーストを解除しますか？' : 'ブーストしますか？',
+          context.l10n.postBoostLabel,
+          _reblogged
+              ? context.l10n.postUnboostConfirm
+              : context.l10n.postBoostConfirm,
           onDontAskAgain: () {
             final n = ref.read(settingsProvider.notifier);
             if (wasReblogged) {
@@ -4807,7 +4854,9 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
             if (mounted) {
               showErrorSnackBar(
                 context,
-                _reblogged ? 'ブースト解除に失敗しました' : 'ブーストに失敗しました',
+                _reblogged
+                    ? l10n.postUnboostFailed
+                    : l10n.postBoostFailedPlain,
               );
             }
             return;
@@ -4847,7 +4896,7 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
   Widget _quoteButton() {
     return IconButton(
       icon: Icon(Icons.format_quote, color: widget.iconColor),
-      tooltip: '引用',
+      tooltip: context.l10n.postQuoteAction,
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(),
@@ -4882,7 +4931,7 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
         activeColor: Colors.amber,
         inactiveColor: widget.iconColor,
       ),
-      tooltip: 'お気に入り',
+      tooltip: context.l10n.favourite,
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(),
@@ -4893,8 +4942,10 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
         final wasFavourited = _favourited;
         if (!await _confirm(
           needConfirm,
-          'お気に入り',
-          _favourited ? 'お気に入りを解除しますか？' : 'お気に入りに追加しますか？',
+          context.l10n.favourite,
+          _favourited
+              ? context.l10n.postUnfavConfirm
+              : context.l10n.postFavConfirm,
           onDontAskAgain: () {
             final n = ref.read(settingsProvider.notifier);
             if (wasFavourited) {
@@ -4924,7 +4975,7 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
             if (mounted) {
               showErrorSnackBar(
                 context,
-                _favourited ? 'お気に入り解除に失敗しました' : 'お気に入り登録に失敗しました',
+                _favourited ? l10n.postUnfavFailed : l10n.postFavFailedPlain,
               );
             }
             return;
@@ -4965,7 +5016,7 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
         activeColor: Colors.blue,
         inactiveColor: widget.iconColor,
       ),
-      tooltip: 'ブックマーク',
+      tooltip: context.l10n.postBookmarkLabel,
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(),
@@ -4976,8 +5027,10 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
         final wasBookmarked = _bookmarked;
         if (!await _confirm(
           needConfirm,
-          'ブックマーク',
-          _bookmarked ? 'ブックマークを解除しますか？' : 'ブックマークに追加しますか？',
+          context.l10n.postBookmarkLabel,
+          _bookmarked
+              ? context.l10n.postUnbookmarkConfirm
+              : context.l10n.postBookmarkConfirm,
           onDontAskAgain: () {
             final n = ref.read(settingsProvider.notifier);
             if (wasBookmarked) {
@@ -5007,7 +5060,9 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
             if (mounted) {
               showErrorSnackBar(
                 context,
-                _bookmarked ? 'ブックマーク解除に失敗しました' : 'ブックマーク登録に失敗しました',
+                _bookmarked
+                    ? l10n.postUnbookmarkFailed
+                    : l10n.postBookmarkFailedPlain,
               );
             }
             return;
@@ -5050,28 +5105,29 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
         //   5. 他人の投稿のみ (一番下): ミュート / ブロック / ドメインブロック
         final items = <PopupMenuEntry<String>>[
           if (widget.isOwnPost) ...[
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'edit',
               child: ListTile(
-                leading: Icon(Icons.edit),
-                title: Text('編集'),
+                leading: const Icon(Icons.edit),
+                title: Text(context.l10n.postEditAction),
                 dense: true,
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'delete',
               child: ListTile(
-                leading: Icon(Icons.delete, color: Colors.red),
-                title: Text('削除', style: TextStyle(color: Colors.red)),
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: Text(context.l10n.delete,
+                    style: const TextStyle(color: Colors.red)),
                 dense: true,
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'delete_and_redraft',
               child: ListTile(
-                leading: Icon(Icons.edit_note, color: Colors.orange),
-                title: Text('削除して下書きに戻す',
-                    style: TextStyle(color: Colors.orange)),
+                leading: const Icon(Icons.edit_note, color: Colors.orange),
+                title: Text(context.l10n.postRedraftTitle,
+                    style: const TextStyle(color: Colors.orange)),
                 dense: true,
               ),
             ),
@@ -5086,18 +5142,20 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
                     ? Icons.push_pin
                     : Icons.push_pin_outlined),
                 title: Text(
-                  _pinned ? 'プロフィールの固定を解除' : 'プロフィールに固定',
+                  _pinned
+                      ? context.l10n.postUnpinAction
+                      : context.l10n.postPinAction,
                 ),
                 dense: true,
               ),
             ),
             const PopupMenuDivider(),
           ],
-          const PopupMenuItem(
+          PopupMenuItem(
             value: 'react_as_other_account',
             child: ListTile(
-              leading: Icon(Icons.switch_account),
-              title: Text('別アカウントからリアクション'),
+              leading: const Icon(Icons.switch_account),
+              title: Text(context.l10n.postReactFromOtherTitle),
               dense: true,
             ),
           ),
@@ -5111,8 +5169,9 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
               leading: const Icon(Icons.repeat),
               title: Text(
                 widget.displayStatus.reblogsCount > 0
-                    ? 'ブーストした人 (${widget.displayStatus.reblogsCount})'
-                    : 'ブーストした人',
+                    ? context.l10n.postRebloggedByCount(
+                        widget.displayStatus.reblogsCount)
+                    : context.l10n.postRebloggedBy,
               ),
               dense: true,
             ),
@@ -5123,51 +5182,52 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
               leading: const Icon(Icons.star_border),
               title: Text(
                 widget.displayStatus.favouritesCount > 0
-                    ? 'お気に入りした人 (${widget.displayStatus.favouritesCount})'
-                    : 'お気に入りした人',
+                    ? context.l10n.postFavouritedByCount(
+                        widget.displayStatus.favouritesCount)
+                    : context.l10n.postFavouritedBy,
               ),
               dense: true,
             ),
           ),
           const PopupMenuDivider(),
-          const PopupMenuItem(
+          PopupMenuItem(
             value: 'translate_instance',
             child: ListTile(
-              leading: Icon(Icons.translate),
-              title: Text('翻訳(インスタンス機能)'),
+              leading: const Icon(Icons.translate),
+              title: Text(context.l10n.postTranslateInstance),
               dense: true,
             ),
           ),
-          const PopupMenuItem(
+          PopupMenuItem(
             value: 'translate_google',
             child: ListTile(
-              leading: Icon(Icons.g_translate),
-              title: Text('Google翻訳で開く'),
+              leading: const Icon(Icons.g_translate),
+              title: Text(context.l10n.postOpenGoogleTranslate),
               dense: true,
             ),
           ),
           const PopupMenuDivider(),
-          const PopupMenuItem(
+          PopupMenuItem(
             value: 'copy_to_clipboard',
             child: ListTile(
-              leading: Icon(Icons.content_copy),
-              title: Text('本文をクリップボードにコピー'),
+              leading: const Icon(Icons.content_copy),
+              title: Text(context.l10n.postCopyBody),
               dense: true,
             ),
           ),
-          const PopupMenuItem(
+          PopupMenuItem(
             value: 'copy_url',
             child: ListTile(
-              leading: Icon(Icons.share),
-              title: Text('URLを共有'),
+              leading: const Icon(Icons.share),
+              title: Text(context.l10n.postShareUrlTitle),
               dense: true,
             ),
           ),
-          const PopupMenuItem(
+          PopupMenuItem(
             value: 'server_info',
             child: ListTile(
-              leading: Icon(Icons.dns),
-              title: Text('サーバー情報'),
+              leading: const Icon(Icons.dns),
+              title: Text(context.l10n.profServerInfoTitle),
               dense: true,
             ),
           ),
@@ -5177,27 +5237,28 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
           // 同じ操作はプロフィールページ (home 解決済み) から行える。
           if (!widget.isOwnPost && widget.statusSourceInstanceUrl == null) ...[
             const PopupMenuDivider(),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'add_to_list',
               child: ListTile(
-                leading: Icon(Icons.playlist_add),
-                title: Text('リストに追加'),
+                leading: const Icon(Icons.playlist_add),
+                title: Text(context.l10n.listAddToList),
                 dense: true,
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'mute',
               child: ListTile(
-                leading: Icon(Icons.volume_off),
-                title: Text('ミュート'),
+                leading: const Icon(Icons.volume_off),
+                title: Text(context.l10n.muteTitle),
                 dense: true,
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'block',
               child: ListTile(
-                leading: Icon(Icons.block, color: Colors.red),
-                title: Text('ブロック', style: TextStyle(color: Colors.red)),
+                leading: const Icon(Icons.block, color: Colors.red),
+                title: Text(context.l10n.profBlock,
+                    style: const TextStyle(color: Colors.red)),
                 dense: true,
               ),
             ),
@@ -5213,11 +5274,12 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
                   dense: true,
                 ),
               ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'report',
               child: ListTile(
-                leading: Icon(Icons.flag_outlined, color: Colors.red),
-                title: Text('通報', style: TextStyle(color: Colors.red)),
+                leading: const Icon(Icons.flag_outlined, color: Colors.red),
+                title: Text(context.l10n.reportAction,
+                    style: const TextStyle(color: Colors.red)),
                 dense: true,
               ),
             ),
@@ -5363,7 +5425,7 @@ class _BoostInfoBar extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    ' さんがブースト',
+                    context.l10n.postBoostedBySuffix,
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: fontSize,
@@ -5563,7 +5625,9 @@ class _CwToggleButton extends StatelessWidget {
         color: Colors.white,
       ),
       label: Text(
-        revealed ? '畳む' : '表示',
+        revealed
+            ? context.l10n.postCollapseAction
+            : context.l10n.postShowAction,
         style: TextStyle(fontSize: fontSize, color: Colors.white),
       ),
       style: ElevatedButton.styleFrom(
@@ -5929,7 +5993,9 @@ class _QuotedPostCardState extends State<_QuotedPostCard> {
                     size: fontSize * 0.9,
                   ),
                   label: Text(
-                    revealed ? '畳む' : '表示',
+                    revealed
+                        ? context.l10n.postCollapseAction
+                        : context.l10n.postShowAction,
                     style: TextStyle(fontSize: fontSize * 0.8),
                   ),
                   style: TextButton.styleFrom(
@@ -5970,7 +6036,8 @@ class _QuotedPostCardState extends State<_QuotedPostCard> {
                       size: fontSize, color: Colors.grey[600]),
                   const SizedBox(width: 4),
                   Text(
-                    'メディア ${quotedStatus.mediaAttachments.length} 件',
+                    context.l10n.postQuotedMediaCount(
+                        quotedStatus.mediaAttachments.length),
                     style: TextStyle(
                       fontSize: fontSize * 0.8,
                       color: Colors.grey[600],
@@ -6035,7 +6102,7 @@ class _TranslationResultBox extends StatelessWidget {
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  '翻訳結果',
+                  context.l10n.postTranslationResult,
                   style: defaultStyle.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.primary,
@@ -6047,7 +6114,7 @@ class _TranslationResultBox extends StatelessWidget {
                 onPressed: onClose,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
-                tooltip: '翻訳を閉じる',
+                tooltip: context.l10n.postCloseTranslation,
               ),
             ],
           ),
@@ -6062,7 +6129,7 @@ class _TranslationResultBox extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                'CW (翻訳): ${data.spoilerText}',
+                context.l10n.postCwTranslated(data.spoilerText!),
                 style: defaultStyle.copyWith(
                   fontStyle: FontStyle.italic,
                   color: Colors.orange.shade800,
@@ -6087,7 +6154,7 @@ class _TranslationResultBox extends StatelessWidget {
             children: [
               if (data.detectedLanguage != null) ...[
                 Text(
-                  '検出言語: ${data.detectedLanguage}',
+                  context.l10n.postDetectedLanguage(data.detectedLanguage!),
                   style: defaultStyle.copyWith(
                     fontSize: defaultStyle.fontSize! * 0.85,
                     color: Colors.grey[600],
@@ -6097,7 +6164,7 @@ class _TranslationResultBox extends StatelessWidget {
               ],
               if (data.provider != null)
                 Text(
-                  '翻訳: ${data.provider}',
+                  context.l10n.postTranslationProvider(data.provider!),
                   style: defaultStyle.copyWith(
                     fontSize: defaultStyle.fontSize! * 0.85,
                     color: Colors.grey[600],

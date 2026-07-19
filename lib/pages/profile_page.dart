@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'dart:async';
 
+import '../l10n/l10n.dart';
 import '../models/auth_account.dart';
 import '../models/account.dart';
 import '../models/emoji.dart';
@@ -21,7 +22,6 @@ import '../services/local_status_event_bus.dart';
 import '../utils/html_parser.dart';
 import '../utils/instance_utils.dart';
 import '../utils/snackbar_helpers.dart';
-import 'package:intl/intl.dart';
 import '../widgets/post_tile.dart';
 import '../widgets/mute_dialog.dart';
 import '../widgets/add_to_list_sheet.dart';
@@ -339,7 +339,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     );
 
     if (searchResults.isEmpty) {
-      throw Exception('ユーザーが見つかりません: $fullAcct');
+      throw Exception(l10n.profUserNotFound(fullAcct));
     }
     debugPrint('Found user via search: ${searchResults.first.acct}');
     return searchResults.first;
@@ -562,7 +562,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       });
     } catch (e) {
       if (!mounted) return;
-      showErrorSnackBar(context, '投稿を再取得できませんでした: $e');
+      showErrorSnackBar(context, l10n.profStatusRefetchFailed('$e'));
     }
   }
 
@@ -751,14 +751,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(isFollowing ? 'フォロー解除' : 'フォロー'),
-        content: Text(
-          isFollowing ? 'フォローを解除しますか？' : 'ユーザーをフォローしますか？'
-        ),
+        title: Text(isFollowing ? ctx.l10n.unfollow : ctx.l10n.follow),
+        content: Text(isFollowing
+            ? ctx.l10n.profUnfollowConfirm
+            : ctx.l10n.profFollowConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -787,7 +787,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('フォロー操作に失敗しました: $e')),
+          SnackBar(content: Text(l10n.profFollowActionFailed('$e'))),
         );
       }
     }
@@ -799,14 +799,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(isNotifying ? '通知オフ' : '通知オン'),
-        content: Text(
-          isNotifying ? '投稿通知をオフにしますか？' : '投稿通知をオンにしますか？'
-        ),
+        title: Text(isNotifying ? ctx.l10n.profNotifyOff : ctx.l10n.profNotifyOn),
+        content: Text(isNotifying
+            ? ctx.l10n.profNotifyOffConfirm
+            : ctx.l10n.profNotifyOnConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -829,11 +829,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('通知設定変更に失敗しました: $e')),
+          SnackBar(content: Text(l10n.profNotifyChangeFailed('$e'))),
         );
       }
     }
   }
+
+  /// 登録日ラベル。年月日の並び順の locale 差は .arb 側で吸収する。
+  String _joinedOnLabel(DateTime d) =>
+      context.l10n.profJoinedOn(d.year, d.month, d.day);
 
   bool _hasValidHeader(String? headerUrl) {
     if (headerUrl == null || headerUrl.trim().isEmpty) return false;
@@ -911,7 +915,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     } catch (_) {
       // 下の snackbar にフォールスルー
     }
-    if (mounted) showErrorSnackBar(context, 'ブラウザを開けませんでした');
+    if (mounted) showErrorSnackBar(context, l10n.profBrowserOpenFailed);
   }
 
   /// `account.url` が空のときの fallback プロフィール URL。リモートは
@@ -975,7 +979,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
             children: [
               const CircularProgressIndicator(),
               const SizedBox(height: 16),
-              Text('$remoteHostLabel からプロフィールを取得中...'),
+              Text(ctx.l10n.profFetchingRemoteProfile(remoteHostLabel)),
             ],
           ),
         );
@@ -1063,8 +1067,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       closeProgress();
       if (!mounted) return;
       final msg = misskey
-          ? 'このサーバー（Misskey 系）のプロフィールはアプリ内で読み込めません。ブラウザで開いてください。'
-          : '相手サーバーから取得できませんでした（secure mode 等の可能性）。ブラウザで開いてみてください。';
+          ? l10n.profRemoteMisskeyNote
+          : l10n.profRemoteFetchFailedNote;
       // SnackBar はアクションを 1 つしか持てず「閉じる」を併置できない (かつ
       // デスクトップではスワイプ解除も効かない) ため、確実に閉じられるダイアログ
       // にする。ダイアログ自身の context で pop するので Deck でも確実に閉じる。
@@ -1075,14 +1079,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('閉じる'),
+              child: Text(ctx.l10n.close),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
                 _openInBrowser(account);
               },
-              child: const Text('ブラウザで開く'),
+              child: Text(ctx.l10n.profOpenInBrowser),
             ),
           ],
         ),
@@ -1102,16 +1106,16 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('ミュート解除'),
-          content: Text('@${account.acct}のミュートを解除しますか？'),
+          title: Text(ctx.l10n.unmuteTitle),
+          content: Text(ctx.l10n.profUnmuteConfirm(account.acct)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('キャンセル'),
+              child: Text(ctx.l10n.cancel),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('ミュート解除'),
+              child: Text(ctx.l10n.unmuteTitle),
             ),
           ],
         ),
@@ -1141,13 +1145,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(isMuting ? 'ミュートを解除しました' : 'ミュートしました')),
+          SnackBar(content: Text(isMuting ? l10n.profUnmuted : l10n.profMuted)),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('操作に失敗しました: $e')),
+          SnackBar(content: Text(l10n.profActionFailed('$e'))),
         );
       }
     }
@@ -1160,23 +1164,22 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(isBlocking ? 'ブロック解除' : 'ブロック'),
-        content: Text(
-          isBlocking 
-            ? '@${account.acct}のブロックを解除しますか？' 
-            : '@${account.acct}をブロックしますか？\n\nブロックすると、そのユーザーとの相互フォローが解除され、そのユーザーからあなたへの返信、フォロー、メンションができなくなります。'
-        ),
+        title: Text(isBlocking ? ctx.l10n.unblockTitle : ctx.l10n.profBlock),
+        content: Text(isBlocking
+            ? ctx.l10n.profUnblockConfirm(account.acct)
+            : ctx.l10n.profBlockConfirm(account.acct)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: isBlocking ? null : Colors.red,
             ),
-            child: Text(isBlocking ? 'ブロック解除' : 'ブロック'),
+            child:
+                Text(isBlocking ? ctx.l10n.unblockTitle : ctx.l10n.profBlock),
           ),
         ],
       ),
@@ -1201,13 +1204,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(isBlocking ? 'ブロックを解除しました' : 'ブロックしました')),
+          SnackBar(
+              content:
+                  Text(isBlocking ? l10n.profUnblocked : l10n.profBlocked)),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('操作に失敗しました: $e')),
+          SnackBar(content: Text(l10n.profActionFailed('$e'))),
         );
       }
     }
@@ -1219,19 +1224,17 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('ドメインをブロック'),
-        content: Text(
-          '$domainをブロックしますか？\n\nこのドメインのすべてのユーザーからの投稿が非表示になります。'
-        ),
+        title: Text(ctx.l10n.profDomainBlockTitle),
+        content: Text(ctx.l10n.profDomainBlockConfirm(domain)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('ブロック'),
+            child: Text(ctx.l10n.profBlock),
           ),
         ],
       ),
@@ -1248,13 +1251,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$domainをブロックしました')),
+          SnackBar(content: Text(l10n.profDomainBlocked(domain))),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ドメインブロックに失敗しました: $e')),
+          SnackBar(content: Text(l10n.profDomainBlockFailed('$e'))),
         );
       }
     }
@@ -1293,7 +1296,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
             children: [
               const CircularProgressIndicator(),
               const SizedBox(height: 16),
-              Text('${Uri.parse(authorServerUrl).host} のサーバー情報を取得中...'),
+              Text(ctx.l10n
+                  .profFetchingServerInfo(Uri.parse(authorServerUrl).host)),
             ],
           ),
         );
@@ -1330,7 +1334,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       closeLoading();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('サーバー情報の取得に失敗しました: $e')),
+          SnackBar(content: Text(l10n.profServerInfoFailed('$e'))),
         );
       }
     }
@@ -1353,17 +1357,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     IconData icon = Icons.error_outline;
     if (raw.contains('404') ||
         raw.contains('Not Found') ||
-        raw.contains('ユーザーが見つかりません')) {
-      friendly = 'ユーザーが見つかりません。\n'
-          'アカウントが削除されたか、サーバー間のフェデレーションに失敗している可能性があります。';
+        raw.contains(context.l10n.profUserNotFound(''))) {
+      friendly = context.l10n.profErrUserNotFound;
       icon = Icons.person_off_outlined;
     } else if (raw.contains('403')) {
-      friendly = 'このアカウントの情報を取得できませんでした。\n'
-          '鍵アカウント・ブロックなどでアクセスが制限されている可能性があります。';
+      friendly = context.l10n.profErrRestricted;
       icon = Icons.lock_outline;
     } else if (raw.contains('401')) {
-      friendly = '認証エラーです。\n'
-          'アクセストークンが失効している可能性があります。再ログインを試してください。';
+      friendly = context.l10n.profErrAuth;
       icon = Icons.no_accounts_outlined;
     } else if (raw.contains('SocketException') ||
         raw.contains('TimeoutException') ||
@@ -1371,17 +1372,16 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         raw.contains('Network is') ||
         raw.contains('Failed host lookup') ||
         raw.contains('No address associated')) {
-      friendly = 'ネットワークに接続できませんでした。\n'
-          '電波状況やインスタンスの稼働状況を確認してください。';
+      friendly = context.l10n.profErrNetwork;
       icon = Icons.wifi_off;
     } else if (raw.isEmpty) {
-      friendly = '読み込みに失敗しました。';
+      friendly = context.l10n.profErrLoadFailed;
     } else {
-      friendly = '読み込みに失敗しました。\n下の「詳細」を開くと原因のヒントが出ます。';
+      friendly = context.l10n.profErrLoadFailedHint;
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('エラー')),
+      appBar: AppBar(title: Text(context.l10n.profErrorTitle)),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -1404,7 +1404,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                   child: ExpansionTile(
                     tilePadding: EdgeInsets.zero,
                     title: Text(
-                      '詳細を表示',
+                      context.l10n.profShowDetails,
                       style: TextStyle(
                         fontSize: 12,
                         color: theme.hintColor,
@@ -1434,12 +1434,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
               ElevatedButton.icon(
                 onPressed: _reloadAll,
                 icon: const Icon(Icons.refresh),
-                label: const Text('再試行'),
+                label: Text(context.l10n.retry),
               ),
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('戻る'),
+                child: Text(context.l10n.profBack),
               ),
             ],
           ),
@@ -1496,7 +1496,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
           if (widget.targetAccountId == null || acct.id == widget.user.id) ...[
             IconButton(
               icon: const Icon(Icons.edit),
-              tooltip: 'プロフィールを編集',
+              tooltip: context.l10n.profEditTooltip,
               onPressed: () async {
                 final result = await Navigator.push(
                   context,
@@ -1525,7 +1525,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                   size: 18,
                 ),
                 label: Text(
-                  rel.following ? 'フォロー解除' : 'フォロー',
+                  rel.following ? context.l10n.unfollow : context.l10n.follow,
                   style: const TextStyle(
                     fontSize: 12,
                   ),
@@ -1547,7 +1547,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                   : Icons.notifications_none,
                 color: rel.notifications ? Colors.orange : null,
               ),
-              tooltip: rel.notifications ? '通知オフ' : '通知オン',
+              tooltip: rel.notifications
+                  ? context.l10n.profNotifyOff
+                  : context.l10n.profNotifyOn,
               onPressed: _onNotifyPressed,
             ),
           ],
@@ -1564,20 +1566,20 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
               final isSelf = acct.id == widget.user.id;
               return [
                 if (!isSelf) ...[
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'add_to_list',
                     child: ListTile(
-                      leading: Icon(Icons.playlist_add),
-                      title: Text('リストに追加'),
+                      leading: const Icon(Icons.playlist_add),
+                      title: Text(context.l10n.listAddToList),
                       dense: true,
                     ),
                   ),
                   if (_supportsV46Features)
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'add_to_collection',
                       child: ListTile(
-                        leading: Icon(Icons.collections_bookmark),
-                        title: Text('コレクションに追加'),
+                        leading: const Icon(Icons.collections_bookmark),
+                        title: Text(context.l10n.profAddToCollection),
                         dense: true,
                       ),
                     ),
@@ -1588,7 +1590,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                       leading: Icon(
                         rel.muting ? Icons.volume_up : Icons.volume_off,
                       ),
-                      title: Text(rel.muting ? 'ミュート解除' : 'ミュート'),
+                      title: Text(rel.muting
+                          ? context.l10n.unmuteTitle
+                          : context.l10n.muteTitle),
                       dense: true,
                     ),
                   ),
@@ -1600,7 +1604,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                         color: rel.blocking ? Colors.red : null,
                       ),
                       title: Text(
-                        rel.blocking ? 'ブロック解除' : 'ブロック',
+                        rel.blocking
+                            ? context.l10n.unblockTitle
+                            : context.l10n.profBlock,
                         style: TextStyle(
                           color: rel.blocking ? Colors.red : null,
                         ),
@@ -1612,11 +1618,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                   // ブロックほど強い操作ではないので、ブロック群より前に置く。
                   if (rel.followedBy) ...[
                     const PopupMenuDivider(),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 'remove_from_followers',
                       child: ListTile(
-                        leading: Icon(Icons.person_remove_outlined),
-                        title: Text('フォロワーから外す'),
+                        leading: const Icon(Icons.person_remove_outlined),
+                        title: Text(context.l10n.profRemoveFollower),
                         dense: true,
                       ),
                     ),
@@ -1628,7 +1634,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                       child: ListTile(
                         leading: const Icon(Icons.shield, color: Colors.red),
                         title: Text(
-                          '${acct.acct.split('@').last}をドメインブロック',
+                          context.l10n
+                              .profDomainBlockAction(acct.acct.split('@').last),
                           style: const TextStyle(color: Colors.red),
                         ),
                         dense: true,
@@ -1640,11 +1647,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                 // ブラウザで開く: 相手サーバーが認証 / 公開範囲を正しく
                 // 処理するので、完全かつ正確な情報を確実に見られる。自他
                 // どちらでも有用なので常に出す。
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'open_in_browser',
                   child: ListTile(
-                    leading: Icon(Icons.open_in_browser),
-                    title: Text('ブラウザで開く'),
+                    leading: const Icon(Icons.open_in_browser),
+                    title: Text(context.l10n.profOpenInBrowser),
                     dense: true,
                   ),
                 ),
@@ -1653,11 +1660,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                 // ときだけ。連合スナップショットでなく正確なカウント /
                 // 公開投稿を相手インスタンス直叩きで取得する。
                 if (acct.acct.contains('@') && !_remoteView)
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'load_from_remote',
                     child: ListTile(
-                      leading: Icon(Icons.cloud_download_outlined),
-                      title: Text('相手サーバーからプロフィールを読み込む'),
+                      leading: const Icon(Icons.cloud_download_outlined),
+                      title: Text(context.l10n.profLoadFromRemote),
                       dense: true,
                     ),
                   ),
@@ -1666,7 +1673,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                   value: 'server_info',
                   child: ListTile(
                     leading: const Icon(Icons.dns),
-                    title: const Text('サーバー情報'),
+                    title: Text(context.l10n.profServerInfoTitle),
                     dense: true,
                   ),
                 ),
@@ -1708,12 +1715,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                   TabBar(
                     controller: _tabController,
                     tabs: [
-                      const Tab(text: '投稿'),
-                      const Tab(text: 'メディア'),
-                      const Tab(text: 'フォロー'),
-                      const Tab(text: 'フォロワー'),
+                      Tab(text: context.l10n.profTabPosts),
+                      Tab(text: context.l10n.profTabMedia),
+                      Tab(text: context.l10n.profTabFollowing),
+                      Tab(text: context.l10n.profTabFollowers),
                       // コレクションタブは 4.6+ のみ。
-                      if (_supportsV46Features) const Tab(text: 'コレクション'),
+                      if (_supportsV46Features)
+                        Tab(text: context.l10n.profTabCollections),
                     ],
                   ),
                 ),
@@ -1732,7 +1740,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
               _KeepAliveTab(
                 child: _buildAccountList(
                   _following,
-                  'フォロー中',
+                  context.l10n.profFollowingLabel,
                   hasMore: _hasMoreFollowing,
                 ),
               ),
@@ -1740,7 +1748,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
               _KeepAliveTab(
                 child: _buildAccountList(
                   _followers,
-                  'フォロワー',
+                  context.l10n.profTabFollowers,
                   allowRemoveFromFollowers: widget.targetAccountId == null ||
                       _account?.id == widget.user.id,
                   hasMore: _hasMoreFollowers,
@@ -1780,7 +1788,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                '$host の公開情報を表示中・フォロワー限定投稿は含まれません',
+                context.l10n.profRemoteViewNotice(host),
                 style: const TextStyle(fontSize: 12),
               ),
             ),
@@ -1791,7 +1799,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Text('自インスタンスに戻す', style: TextStyle(fontSize: 12)),
+              child: Text(context.l10n.profBackToHomeInstance,
+                  style: const TextStyle(fontSize: 12)),
             ),
           ],
         ),
@@ -1894,7 +1903,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                               size: fs - 2, color: textColor),
                           const SizedBox(width: 4),
                           Text(
-                            '${DateFormat('yyyy年M月d日').format(acct.createdAt.toLocal())}に登録',
+                            _joinedOnLabel(acct.createdAt.toLocal()),
                             style: TextStyle(
                               color: textColor,
                               fontSize: fs - 2,
@@ -1924,7 +1933,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                                 ),
                               ),
                               child: Text(
-                                'フォローされています',
+                                context.l10n.profFollowsYou,
                                 style: TextStyle(
                                   fontSize: fs - 2,
                                   color: Theme.of(context).brightness == Brightness.dark
@@ -1948,7 +1957,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                                 ),
                               ),
                               child: Text(
-                                'フォロー中',
+                                context.l10n.profFollowingLabel,
                                 style: TextStyle(
                                   fontSize: fs - 2,
                                   color: Theme.of(context).brightness == Brightness.dark
@@ -1972,9 +1981,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _countCol('投稿',     acct.statusesCount),
-              _countCol('フォロー', acct.followingCount),
-              _countCol('フォロワー', acct.followersCount),
+              _countCol(context.l10n.profTabPosts, acct.statusesCount),
+              _countCol(context.l10n.profTabFollowing, acct.followingCount),
+              _countCol(context.l10n.profTabFollowers, acct.followersCount),
             ],
           ),
         ),
@@ -2234,7 +2243,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                           : Colors.amber.shade800),
                   const SizedBox(width: 6),
                   Text(
-                    'メモ (自分にのみ表示)',
+                    context.l10n.profMemoLabel,
                     style: TextStyle(
                       fontSize: fs - 1,
                       fontWeight: FontWeight.bold,
@@ -2260,7 +2269,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
               ] else ...[
                 const SizedBox(height: 4),
                 Text(
-                  'タップしてメモを追加',
+                  context.l10n.profMemoTapToAdd,
                   style: TextStyle(
                     fontSize: fs - 1,
                     color: Colors.grey,
@@ -2280,7 +2289,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('メモを編集'),
+        title: Text(ctx.l10n.profMemoEditTitle),
         content: SizedBox(
           width: 420,
           child: TextField(
@@ -2289,20 +2298,20 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
             maxLines: 6,
             minLines: 3,
             maxLength: 2000,
-            decoration: const InputDecoration(
-              hintText: '自分にのみ表示されるメモ',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              hintText: ctx.l10n.profMemoHint,
+              border: const OutlineInputBorder(),
             ),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('保存'),
+            child: Text(ctx.l10n.save),
           ),
         ],
       ),
@@ -2324,7 +2333,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       }
     } catch (e) {
       if (mounted) {
-        showErrorSnackBar(context, 'メモの保存に失敗しました');
+        showErrorSnackBar(context, l10n.profMemoSaveFailed);
       }
     }
   }
@@ -2341,7 +2350,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         SwitchListTile(
           dense: true,
           secondary: const Icon(Icons.alternate_email),
-          title: const Text('ダイレクトメッセージを表示'),
+          title: Text(context.l10n.profShowDm),
           value: !_excludeDirect,
           onChanged: (show) => _setExcludeDirect(!show),
         ),
@@ -2375,11 +2384,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Padding(
+                Padding(
                   padding:
-                      EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                  child: Text('📌 固定投稿',
-                      style: TextStyle(
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  child: Text(context.l10n.profPinnedPosts,
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                       )),
                 ),
@@ -2473,7 +2482,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     bool hasMore = false,
   }) {
     if (list.isEmpty) {
-      return Center(child: Text('[$label] のデータがありません'));
+      return Center(child: Text(context.l10n.profNoData(label)));
     }
     return RefreshIndicator(
       onRefresh: _reloadAll,
@@ -2514,7 +2523,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
               trailing: allowRemoveFromFollowers
                   ? IconButton(
                       icon: const Icon(Icons.person_remove_outlined),
-                      tooltip: 'フォロワーから外す',
+                      tooltip: context.l10n.profRemoveFollower,
                       onPressed: () => _removeFromFollowers(a),
                     )
                   : null,
@@ -2554,22 +2563,17 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('フォロワーから外す'),
-        content: Text(
-          '@${follower.acct} をフォロワーから外しますか？\n\n'
-          'ブロックとは違い、相手があなたを再度フォローすることは可能です。\n'
-          '相手にこの操作の通知は送られませんが、フォロー中タイムラインから\n'
-          'あなたの投稿は消えます。',
-        ),
+        title: Text(ctx.l10n.profRemoveFollower),
+        content: Text(ctx.l10n.profRemoveFollowerConfirm(follower.acct)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('キャンセル'),
+            child: Text(ctx.l10n.cancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('外す'),
+            child: Text(ctx.l10n.profRemoveAction),
           ),
         ],
       ),
@@ -2593,14 +2597,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         }
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('@${follower.acct} をフォロワーから外しました')),
+        SnackBar(content: Text(l10n.profFollowerRemoved(follower.acct))),
       );
     } on RemoveFromFollowersNotSupportedException catch (e) {
       if (!mounted) return;
       showErrorSnackBar(context, e.message);
     } catch (e) {
       if (!mounted) return;
-      showErrorSnackBar(context, 'フォロワーから外せませんでした: $e');
+      showErrorSnackBar(context, l10n.profRemoveFollowerFailed('$e'));
     }
   }
 
@@ -2626,11 +2630,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
 
     final String text;
     if (list.length == 1) {
-      text = '$firstName さんがフォローしています';
+      text = context.l10n.profFamiliarOne(firstName);
     } else if (list.length == 2) {
-      text = '$firstName さんと $secondName さんがフォローしています';
+      text = context.l10n.profFamiliarTwo(firstName, secondName!);
     } else {
-      text = '$firstName さん、$secondName さん、他 $remaining 人がフォローしています';
+      text = context.l10n.profFamiliarMany(firstName, secondName!, remaining);
     }
 
     return InkWell(
@@ -2775,9 +2779,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                '別のアカウントから開く',
-                style: TextStyle(
+              Text(
+                context.l10n.profOpenFromAnotherAccount,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -3099,12 +3103,12 @@ class _ProfileServerInfoDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     if (serverInfo['error'] != null) {
       return AlertDialog(
-        title: const Text('サーバー情報'),
-        content: Text('エラー: ${serverInfo['error']}'),
+        title: Text(context.l10n.profServerInfoTitle),
+        content: Text(context.l10n.genericError('${serverInfo['error']}')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('閉じる'),
+            child: Text(context.l10n.close),
           ),
         ],
       );
@@ -3115,7 +3119,8 @@ class _ProfileServerInfoDialog extends StatelessWidget {
     final nodeInfo = serverInfo['nodeinfo'] as Map<String, dynamic>?;
     final software = nodeInfo?['software'] as Map<String, dynamic>?;
 
-    final dialogTitle = '@${authorAccount.username} のサーバー情報';
+    final dialogTitle =
+        context.l10n.profServerInfoDialogTitle(authorAccount.username);
 
     // 広い画面 (Deck) では double.maxFinite だとダイアログがウィンドウ幅
     // いっぱいに広がってしまうので最大幅を制限する (通知フィルターと同様)。
@@ -3133,75 +3138,111 @@ class _ProfileServerInfoDialog extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               // プロフィール主情報
-              _buildSection('プロフィール主', [
-                _buildInfoRow('ユーザー名', '@${authorAccount.username}'),
-                _buildInfoRow('表示名', authorAccount.displayName.isNotEmpty ? authorAccount.displayName : null),
+              _buildSection(context.l10n.profSectionProfileOwner, [
+                _buildInfoRow(context.l10n.profInfoUsername,
+                    '@${authorAccount.username}'),
+                _buildInfoRow(
+                    context.l10n.displayNameLabel,
+                    authorAccount.displayName.isNotEmpty
+                        ? authorAccount.displayName
+                        : null),
                 // 実際に情報を取得したサーバー (instanceUrl) の host を出す
                 // (acct ドメインだと WEB_DOMAIN ≠ LOCAL_DOMAIN 構成で取得元と
                 // ズレるため)。
-                _buildInfoRow('サーバー', Uri.parse(instanceUrl).host),
+                _buildInfoRow(
+                    context.l10n.profInfoServer, Uri.parse(instanceUrl).host),
               ]),
-              
+
               // 基本情報
-              _buildSection('サーバー基本情報', [
-                _buildInfoRow('名前', serverInfo['title']),
+              _buildSection(context.l10n.profSectionServerBasic, [
+                _buildInfoRow(context.l10n.profInfoName, serverInfo['title']),
                 _buildInfoRow('URL', serverInfo['uri'] ?? instanceUrl),
-                _buildInfoRow('バージョン', serverInfo['version']),
-                if (software != null) _buildInfoRow('ソフトウェア', '${software['name']} ${software['version']}'),
+                _buildInfoRow(
+                    context.l10n.profInfoVersion, serverInfo['version']),
+                if (software != null)
+                  _buildInfoRow(context.l10n.profInfoSoftware,
+                      '${software['name']} ${software['version']}'),
               ]),
-              
+
               // 説明
               if (serverInfo['short_description']?.toString().isNotEmpty == true)
-                _buildSection('説明', [
+                _buildSection(context.l10n.profSectionDescription, [
                   Text(
                     serverInfo['short_description'],
                     style: const TextStyle(fontSize: 14),
                   ),
                 ]),
-              
+
               // 統計情報
               if (stats != null)
-                _buildSection('統計', [
-                  _buildInfoRow('ユーザー数', stats['user_count']?.toString()),
-                  _buildInfoRow('投稿数', stats['status_count']?.toString()),
-                  _buildInfoRow('ドメイン数', stats['domain_count']?.toString()),
+                _buildSection(context.l10n.profSectionStats, [
+                  _buildInfoRow(context.l10n.profInfoUserCount,
+                      stats['user_count']?.toString()),
+                  _buildInfoRow(context.l10n.profInfoStatusCount,
+                      stats['status_count']?.toString()),
+                  _buildInfoRow(context.l10n.profInfoDomainCount,
+                      stats['domain_count']?.toString()),
                 ]),
-              
+
               // 登録情報
-              _buildSection('登録', [
-                _buildInfoRow('新規登録', serverInfo['registrations'] == true ? '可能' : '不可'),
-                _buildInfoRow('承認制', serverInfo['approval_required'] == true ? 'あり' : 'なし'),
-                _buildInfoRow('招待制', serverInfo['invites_enabled'] == true ? 'あり' : 'なし'),
+              _buildSection(context.l10n.profSectionRegistrations, [
+                _buildInfoRow(
+                    context.l10n.profInfoNewRegistrations,
+                    serverInfo['registrations'] == true
+                        ? context.l10n.profRegOpen
+                        : context.l10n.profRegClosed),
+                _buildInfoRow(
+                    context.l10n.profInfoApprovalRequired,
+                    serverInfo['approval_required'] == true
+                        ? context.l10n.profYes
+                        : context.l10n.profNo),
+                _buildInfoRow(
+                    context.l10n.profInfoInvitesEnabled,
+                    serverInfo['invites_enabled'] == true
+                        ? context.l10n.profYes
+                        : context.l10n.profNo),
               ]),
-              
+
               // 設定情報
               if (config != null) ...[
                 if (config['statuses'] != null)
-                  _buildSection('投稿設定', [
-                    _buildInfoRow('最大文字数', config['statuses']['max_characters']?.toString()),
-                    _buildInfoRow('最大メディア数', config['statuses']['max_media_attachments']?.toString()),
+                  _buildSection(context.l10n.profSectionPostSettings, [
+                    _buildInfoRow(context.l10n.profInfoMaxChars,
+                        config['statuses']['max_characters']?.toString()),
+                    _buildInfoRow(
+                        context.l10n.profInfoMaxMedia,
+                        config['statuses']['max_media_attachments']
+                            ?.toString()),
                   ]),
                 if (config['media_attachments'] != null)
-                  _buildSection('メディア設定', [
-                    _buildInfoRow('画像サイズ上限', _formatBytes(config['media_attachments']['image_size_limit'])),
-                    _buildInfoRow('動画サイズ上限', _formatBytes(config['media_attachments']['video_size_limit'])),
+                  _buildSection(context.l10n.profSectionMediaSettings, [
+                    _buildInfoRow(
+                        context.l10n.profInfoImageSizeLimit,
+                        _formatBytes(
+                            config['media_attachments']['image_size_limit'])),
+                    _buildInfoRow(
+                        context.l10n.profInfoVideoSizeLimit,
+                        _formatBytes(
+                            config['media_attachments']['video_size_limit'])),
                   ]),
               ],
-              
+
               // 言語
               if (serverInfo['languages'] is List && (serverInfo['languages'] as List).isNotEmpty)
-                _buildSection('対応言語', [
+                _buildSection(context.l10n.profSectionLanguages, [
                   Text(
                     (serverInfo['languages'] as List).join(', '),
                     style: const TextStyle(fontSize: 14),
                   ),
                 ]),
-              
+
               // 連絡先
               if (serverInfo['contact_account'] != null)
-                _buildSection('管理者', [
-                  _buildInfoRow('ユーザー名', '@${serverInfo['contact_account']['username']}'),
-                  _buildInfoRow('表示名', serverInfo['contact_account']['display_name']),
+                _buildSection(context.l10n.profSectionAdmin, [
+                  _buildInfoRow(context.l10n.profInfoUsername,
+                      '@${serverInfo['contact_account']['username']}'),
+                  _buildInfoRow(context.l10n.displayNameLabel,
+                      serverInfo['contact_account']['display_name']),
                 ]),
             ],
           ),
@@ -3210,7 +3251,7 @@ class _ProfileServerInfoDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('閉じる'),
+          child: Text(context.l10n.close),
         ),
       ],
     );
@@ -3305,7 +3346,7 @@ class _FamiliarFollowersListPage extends StatelessWidget {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('共通のフォロワー'),
+            Text(context.l10n.profCommonFollowers),
             if (targetUsername.isNotEmpty)
               Text(
                 '@$targetUsername',
@@ -3456,11 +3497,12 @@ class _CollectionsTabState extends State<_CollectionsTab> {
             children: [
               const Icon(Icons.error_outline, size: 48, color: Colors.red),
               const SizedBox(height: 12),
-              const Text('コレクションを取得できませんでした'),
+              Text(context.l10n.profCollectionsFetchFailed),
               const SizedBox(height: 4),
               Text(_error!, textAlign: TextAlign.center),
               const SizedBox(height: 16),
-              ElevatedButton(onPressed: _load, child: const Text('再試行')),
+              ElevatedButton(
+                  onPressed: _load, child: Text(context.l10n.retry)),
             ],
           ),
         ),
@@ -3480,7 +3522,7 @@ class _CollectionsTabState extends State<_CollectionsTab> {
                 child: FilledButton.icon(
                   onPressed: _create,
                   icon: const Icon(Icons.add),
-                  label: const Text('コレクションを作成'),
+                  label: Text(context.l10n.profCreateCollection),
                 ),
               ),
             ),
@@ -3490,8 +3532,8 @@ class _CollectionsTabState extends State<_CollectionsTab> {
               child: Center(
                 child: Text(
                   widget.isSelf
-                      ? 'まだコレクションがありません'
-                      : 'コレクションがありません',
+                      ? context.l10n.profNoCollectionsOwn
+                      : context.l10n.profNoCollections,
                   style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                 ),
               ),
@@ -3502,7 +3544,7 @@ class _CollectionsTabState extends State<_CollectionsTab> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
               child: Text(
-                '掲載されているコレクション',
+                context.l10n.profFeaturedCollections,
                 style: theme.textTheme.titleSmall,
               ),
             ),
@@ -3515,8 +3557,9 @@ class _CollectionsTabState extends State<_CollectionsTab> {
 
   Widget _buildTile(Collection c) {
     final subtitle = c.description.isNotEmpty
-        ? '${c.itemCount} 人・${c.description}'
-        : '${c.itemCount} 人';
+        ? context.l10n
+            .profCollectionSubtitleWithDesc(c.itemCount, c.description)
+        : context.l10n.profCollectionMemberCount(c.itemCount);
     return ListTile(
       leading: const Icon(Icons.collections_bookmark),
       title: Text(
@@ -3597,12 +3640,12 @@ class _AddToCollectionSheetState extends State<_AddToCollectionSheet> {
       if (!mounted) return;
       Navigator.pop(context);
       messenger.showSnackBar(
-        SnackBar(content: Text('「${c.name}」に追加しました')),
+        SnackBar(content: Text(l10n.profAddedToCollection(c.name))),
       );
     } catch (e) {
       if (!mounted) return;
       setState(() => _busyId = null);
-      showErrorSnackBar(context, 'コレクションに追加できませんでした: $e');
+      showErrorSnackBar(context, l10n.profAddToCollectionFailed('$e'));
     }
   }
 
@@ -3625,13 +3668,13 @@ class _AddToCollectionSheetState extends State<_AddToCollectionSheet> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Text(
-                'コレクションに追加',
+                context.l10n.profAddToCollection,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
             ListTile(
               leading: const Icon(Icons.add),
-              title: const Text('新規作成して追加'),
+              title: Text(context.l10n.profCreateAndAdd),
               onTap: _busyId == null ? _createAndAdd : null,
             ),
             const Divider(height: 1),
@@ -3655,18 +3698,18 @@ class _AddToCollectionSheetState extends State<_AddToCollectionSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('コレクションを取得できませんでした: $_error',
+            Text(context.l10n.profCollectionsFetchFailedError('$_error'),
                 textAlign: TextAlign.center),
             const SizedBox(height: 12),
-            ElevatedButton(onPressed: _load, child: const Text('再試行')),
+            ElevatedButton(onPressed: _load, child: Text(context.l10n.retry)),
           ],
         ),
       );
     }
     if (_collections.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(24),
-        child: Center(child: Text('コレクションがありません。上から新規作成できます。')),
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Center(child: Text(context.l10n.profNoCollectionsCreateHint)),
       );
     }
     return ListView.builder(
@@ -3678,7 +3721,7 @@ class _AddToCollectionSheetState extends State<_AddToCollectionSheet> {
         return ListTile(
           leading: const Icon(Icons.collections_bookmark),
           title: Text(c.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-          subtitle: Text('${c.itemCount} 人'),
+          subtitle: Text(context.l10n.profCollectionMemberCount(c.itemCount)),
           trailing: busy
               ? const SizedBox(
                   width: 20,

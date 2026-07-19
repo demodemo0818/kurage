@@ -1314,5 +1314,756 @@
   "appearanceNoBlurTitle": "メディアのぼかしを常に解除",
   "appearanceNoBlurSubtitle": "NSFW や CW のメディアも、常にぼかしなしで表示",
   "appearanceExpandCwTitle": "CWを常に開く",
-  "appearanceExpandCwSubtitle": "コンテンツ警告のある投稿を常に展開表示"
+  "appearanceExpandCwSubtitle": "コンテンツ警告のある投稿を常に展開表示",
+
+  "composeUploadFailed": "アップロードに失敗しました: {error}",
+  "@composeUploadFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "composeImageUploaded": "画像をアップロードしました",
+  "composeUploadPartialFail": "{count} アカウントでアップロード失敗 (投稿時に再試行されます)",
+  "@composeUploadPartialFail": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "composeMediaUploadedCount": "{count} 件のメディアをアップロードしました",
+  "@composeMediaUploadedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "composeMediaUploadedPartial": "{count} 件アップロード ({failed} 件で一部アカウント失敗)",
+  "@composeMediaUploadedPartial": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "failed": {"type": "int"}
+    }
+  },
+  "composeMediaUploadFailed": "メディアアップロードに失敗しました",
+  "composeSelectAccountFirst": "先に投稿アカウントを選択してください",
+  "composeDropMediaOnly": "画像・動画・音声ファイルをドロップしてください",
+  "composeMediaAttachedCount": "{count} 件のメディアを添付しました",
+  "@composeMediaAttachedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "composeMediaAttachedPartial": "{count} 件添付 ({failed} 件で一部アカウント失敗)",
+  "@composeMediaAttachedPartial": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "failed": {"type": "int"}
+    }
+  },
+  "composeMediaAttachFailed": "メディアの添付に失敗しました",
+  "composeClipboardNoImage": "クリップボードに画像がありません",
+  "composeImagePastedCount": "{count} 件の画像を貼り付けました",
+  "@composeImagePastedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "composeImagePastedPartial": "{count} 件貼り付け ({failed} 件で一部アカウント失敗)",
+  "@composeImagePastedPartial": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "failed": {"type": "int"}
+    }
+  },
+  "composePasteFailedWithError": "画像の貼り付けに失敗しました: {error}",
+  "@composePasteFailedWithError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "composePasteFailed": "画像の貼り付けに失敗しました",
+  "composeDropHere": "ここにドロップして添付",
+  "composeSaveDraftTitle": "下書きを保存",
+  "composeSaveDraftConfirm": "下書きを保存しますか？",
+  "composeMediaOnlyDraft": "メディアのみの下書き",
+  "composeDraftSaved": "下書きを保存しました",
+  "composeDiscardTitle": "入力を破棄",
+  "composeDiscardConfirm": "編集中の内容を破棄しますか？",
+  "composeDiscard": "破棄",
+  "composeDiscarded": "入力を破棄しました",
+  "composeSelectPostAccount": "投稿するアカウントを選択してください",
+  "composeWaitMediaUpload": "メディアのアップロードが完了するまでお待ちください",
+  "composePreflightMissingFile": "アカウント \"{account}\" に未アップロードのメディアがありますが (おそらく編集モード由来の既存メディア)、元ファイルが無く再アップロードできません",
+  "@composePreflightMissingFile": {
+    "placeholders": {
+      "account": {"type": "String"}
+    }
+  },
+  "composeExtraUploadFailed": "メディアの追加アップロードに失敗: {error}",
+  "@composeExtraUploadFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "composeScheduledToAccounts": "{count}件のアカウントに予約投稿しました",
+  "@composeScheduledToAccounts": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "composePostedToAccounts": "{count}件のアカウントに投稿しました",
+  "@composePostedToAccounts": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "composeScheduledPartial": "予約投稿: {success}件成功、{fail}件失敗",
+  "@composeScheduledPartial": {
+    "placeholders": {
+      "success": {"type": "int"},
+      "fail": {"type": "int"}
+    }
+  },
+  "composePostedPartial": "{success}件成功、{fail}件失敗",
+  "@composePostedPartial": {
+    "placeholders": {
+      "success": {"type": "int"},
+      "fail": {"type": "int"}
+    }
+  },
+  "composePostErrorDetailTitle": "投稿エラー詳細",
+  "composePostFailed": "投稿に失敗しました: {error}",
+  "@composePostFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "composeEditNoSchedule": "編集では予約日時を使えません。予約表示の × で解除してから保存してください",
+  "composePostUpdated": "投稿を更新しました",
+  "composeEditFailed": "編集に失敗しました: {error}",
+  "@composeEditFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "composeScheduledPrefix": "予約: {when}",
+  "@composeScheduledPrefix": {
+    "placeholders": {
+      "when": {"type": "String"}
+    }
+  },
+  "composeEditCannotSchedule": "公開済み投稿の編集は予約できません。予約したい場合は「削除して下書きに」で新規の予約投稿にしてください",
+  "composePickDateHelp": "予約投稿日を選択",
+  "composePickTimeHelp": "予約投稿時刻を選択",
+  "composeHourLabel": "時",
+  "composeMinuteLabel": "分",
+  "composeScheduleMinFive": "予約投稿は5分後以降の時刻を選択してください",
+  "composeQuoteLabel": "引用: @{acct}",
+  "@composeQuoteLabel": {
+    "placeholders": {
+      "acct": {"type": "String"}
+    }
+  },
+  "composeQuoteCancelTooltip": "引用を取消",
+  "composeAltEditTitle": "ALT文を編集",
+  "composeAltHelp": "アクセシビリティのために、画像の内容を説明してください。",
+  "composeAltLabel": "ALT文",
+  "composeAltHint": "画像の内容を説明してください",
+  "composeAltUpdateFailed": "ALT文の更新に失敗しました: {error}",
+  "@composeAltUpdateFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "composeSelectAccountsTitle": "投稿アカウントを選択",
+  "composeSelectCount": "選択 ({count}件)",
+  "@composeSelectCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "composeVideoLabel": "動画",
+  "composePollCreate": "投票を作成",
+  "composePollDeleteTooltip": "投票を削除",
+  "composePollOptionN": "選択肢 {n}",
+  "@composePollOptionN": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "composePollOptionDeleteTooltip": "選択肢を削除",
+  "composePollAddOption": "選択肢を追加",
+  "composePollDuration": "投票期間",
+  "composeDuration5m": "5分",
+  "composeDuration30m": "30分",
+  "composeDuration1h": "1時間",
+  "composeDuration6h": "6時間",
+  "composeDuration1d": "1日",
+  "composeDuration3d": "3日",
+  "composeDuration7d": "7日",
+  "composePollMultiple": "複数選択",
+  "composeEditModeNotice": "編集モード: 公開範囲・投稿アカウント・予約日時は変更できません",
+  "composeVisibilityTooltip": "公開範囲",
+  "composeLanguageLabel": "言語",
+  "composeLangAuto": "自動検出",
+  "composeBodyHint": "投稿内容を入力…",
+  "composeRemainingChars": "残り {count} 文字",
+  "@composeRemainingChars": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "composeRemainingCharsHost": "残り {count} 文字 ({host})",
+  "@composeRemainingCharsHost": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "host": {"type": "String"}
+    }
+  },
+  "composeLiveTag": "実況タグ: {tags}",
+  "@composeLiveTag": {
+    "placeholders": {
+      "tags": {"type": "String"}
+    }
+  },
+  "composeUploadingMedia": "メディアアップロード中…",
+  "composePosting": "投稿中…",
+  "composeEmojiPickerTitle": "絵文字を選択",
+  "composeInterruptTitle": "投稿を中断しますか？",
+  "composeInterruptBody": "編集中の投稿があります。\n「閉じる」 — 本文・CW・予約日時・投票は下書きとして自動保存されます (添付メディアは破棄)。\n「破棄」 — 本文や添付・予約日時を含めてすべて破棄します。",
+  "composeKeepWriting": "続ける",
+  "composeStopEditTooltip": "編集をやめて新規投稿に戻る",
+  "composePinTooltip": "投稿欄を固定表示",
+  "composeUnpinTooltip": "固定を解除",
+  "composeEditTitle": "投稿を編集",
+  "composeReplyTitle": "返信",
+  "composeNewTitle": "新規投稿",
+  "composePickMediaTooltip": "メディアを選択",
+  "composePickFile": "ファイルを選択",
+  "composeTakePhoto": "カメラで撮影",
+  "composePickFromGallery": "ギャラリーから選択",
+  "composePasteFromClipboard": "クリップボードから貼り付け",
+  "composeOptionsTooltip": "投稿オプション",
+  "composeScheduledManage": "予約投稿管理",
+  "composeAccountSelectLabel": "アカウント選択",
+  "composeCwLabel": "コンテンツワーニング",
+  "composeCwHint": "警告文を入力（任意）",
+  "composePollLabel": "投票",
+  "composeScheduleChipLabel": "予約",
+  "composeLiveChipLabel": "実況",
+
+  "profUserNotFound": "ユーザーが見つかりません: {acct}",
+  "@profUserNotFound": {
+    "placeholders": {
+      "acct": {"type": "String"}
+    }
+  },
+  "profStatusRefetchFailed": "投稿を再取得できませんでした: {error}",
+  "@profStatusRefetchFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "profFollowConfirm": "ユーザーをフォローしますか？",
+  "profUnfollowConfirm": "フォローを解除しますか？",
+  "profFollowActionFailed": "フォロー操作に失敗しました: {error}",
+  "@profFollowActionFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "profNotifyOn": "通知オン",
+  "profNotifyOff": "通知オフ",
+  "profNotifyOnConfirm": "投稿通知をオンにしますか？",
+  "profNotifyOffConfirm": "投稿通知をオフにしますか？",
+  "profNotifyChangeFailed": "通知設定変更に失敗しました: {error}",
+  "@profNotifyChangeFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "profBrowserOpenFailed": "ブラウザを開けませんでした",
+  "profFetchingRemoteProfile": "{host} からプロフィールを取得中...",
+  "@profFetchingRemoteProfile": {
+    "placeholders": {
+      "host": {"type": "String"}
+    }
+  },
+  "profRemoteMisskeyNote": "このサーバー（Misskey 系）のプロフィールはアプリ内で読み込めません。ブラウザで開いてください。",
+  "profRemoteFetchFailedNote": "相手サーバーから取得できませんでした（secure mode 等の可能性）。ブラウザで開いてみてください。",
+  "profOpenInBrowser": "ブラウザで開く",
+  "profUnmuteConfirm": "@{acct}のミュートを解除しますか？",
+  "@profUnmuteConfirm": {
+    "placeholders": {
+      "acct": {"type": "String"}
+    }
+  },
+  "profMuted": "ミュートしました",
+  "profUnmuted": "ミュートを解除しました",
+  "profActionFailed": "操作に失敗しました: {error}",
+  "@profActionFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "profBlock": "ブロック",
+  "profUnblockConfirm": "@{acct}のブロックを解除しますか？",
+  "@profUnblockConfirm": {
+    "placeholders": {
+      "acct": {"type": "String"}
+    }
+  },
+  "profBlockConfirm": "@{acct}をブロックしますか？\n\nブロックすると、そのユーザーとの相互フォローが解除され、そのユーザーからあなたへの返信、フォロー、メンションができなくなります。",
+  "@profBlockConfirm": {
+    "placeholders": {
+      "acct": {"type": "String"}
+    }
+  },
+  "profBlocked": "ブロックしました",
+  "profUnblocked": "ブロックを解除しました",
+  "profDomainBlockTitle": "ドメインをブロック",
+  "profDomainBlockConfirm": "{domain}をブロックしますか？\n\nこのドメインのすべてのユーザーからの投稿が非表示になります。",
+  "@profDomainBlockConfirm": {
+    "placeholders": {
+      "domain": {"type": "String"}
+    }
+  },
+  "profDomainBlocked": "{domain}をブロックしました",
+  "@profDomainBlocked": {
+    "placeholders": {
+      "domain": {"type": "String"}
+    }
+  },
+  "profDomainBlockFailed": "ドメインブロックに失敗しました: {error}",
+  "@profDomainBlockFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "profFetchingServerInfo": "{host} のサーバー情報を取得中...",
+  "@profFetchingServerInfo": {
+    "placeholders": {
+      "host": {"type": "String"}
+    }
+  },
+  "profServerInfoFailed": "サーバー情報の取得に失敗しました: {error}",
+  "@profServerInfoFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "profErrUserNotFound": "ユーザーが見つかりません。\nアカウントが削除されたか、サーバー間のフェデレーションに失敗している可能性があります。",
+  "profErrRestricted": "このアカウントの情報を取得できませんでした。\n鍵アカウント・ブロックなどでアクセスが制限されている可能性があります。",
+  "profErrAuth": "認証エラーです。\nアクセストークンが失効している可能性があります。再ログインを試してください。",
+  "profErrNetwork": "ネットワークに接続できませんでした。\n電波状況やインスタンスの稼働状況を確認してください。",
+  "profErrLoadFailed": "読み込みに失敗しました。",
+  "profErrLoadFailedHint": "読み込みに失敗しました。\n下の「詳細」を開くと原因のヒントが出ます。",
+  "profErrorTitle": "エラー",
+  "profShowDetails": "詳細を表示",
+  "profBack": "戻る",
+  "profEditTooltip": "プロフィールを編集",
+  "profAddToCollection": "コレクションに追加",
+  "profRemoveFollower": "フォロワーから外す",
+  "profDomainBlockAction": "{domain}をドメインブロック",
+  "@profDomainBlockAction": {
+    "placeholders": {
+      "domain": {"type": "String"}
+    }
+  },
+  "profLoadFromRemote": "相手サーバーからプロフィールを読み込む",
+  "profServerInfoTitle": "サーバー情報",
+  "profTabPosts": "投稿",
+  "profTabMedia": "メディア",
+  "profTabFollowing": "フォロー",
+  "profTabFollowers": "フォロワー",
+  "profTabCollections": "コレクション",
+  "profFollowingLabel": "フォロー中",
+  "profRemoteViewNotice": "{host} の公開情報を表示中・フォロワー限定投稿は含まれません",
+  "@profRemoteViewNotice": {
+    "placeholders": {
+      "host": {"type": "String"}
+    }
+  },
+  "profBackToHomeInstance": "自インスタンスに戻す",
+  "profJoinedOn": "{year}年{month}月{day}日に登録",
+  "@profJoinedOn": {
+    "placeholders": {
+      "year": {"type": "int"},
+      "month": {"type": "int"},
+      "day": {"type": "int"}
+    }
+  },
+  "profFollowsYou": "フォローされています",
+  "profMemoLabel": "メモ (自分にのみ表示)",
+  "profMemoTapToAdd": "タップしてメモを追加",
+  "profMemoEditTitle": "メモを編集",
+  "profMemoHint": "自分にのみ表示されるメモ",
+  "profMemoSaveFailed": "メモの保存に失敗しました",
+  "profShowDm": "ダイレクトメッセージを表示",
+  "profPinnedPosts": "📌 固定投稿",
+  "profNoData": "[{label}] のデータがありません",
+  "@profNoData": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "profRemoveFollowerConfirm": "@{acct} をフォロワーから外しますか？\n\nブロックとは違い、相手があなたを再度フォローすることは可能です。\n相手にこの操作の通知は送られませんが、フォロー中タイムラインからあなたの投稿は消えます。",
+  "@profRemoveFollowerConfirm": {
+    "placeholders": {
+      "acct": {"type": "String"}
+    }
+  },
+  "profRemoveAction": "外す",
+  "profFollowerRemoved": "@{acct} をフォロワーから外しました",
+  "@profFollowerRemoved": {
+    "placeholders": {
+      "acct": {"type": "String"}
+    }
+  },
+  "profRemoveFollowerFailed": "フォロワーから外せませんでした: {error}",
+  "@profRemoveFollowerFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "profFamiliarOne": "{name} さんがフォローしています",
+  "@profFamiliarOne": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "profFamiliarTwo": "{name} さんと {second} さんがフォローしています",
+  "@profFamiliarTwo": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "second": {"type": "String"}
+    }
+  },
+  "profFamiliarMany": "{name} さん、{second} さん、他 {count} 人がフォローしています",
+  "@profFamiliarMany": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "second": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "profOpenFromAnotherAccount": "別のアカウントから開く",
+  "profServerInfoDialogTitle": "@{username} のサーバー情報",
+  "@profServerInfoDialogTitle": {
+    "placeholders": {
+      "username": {"type": "String"}
+    }
+  },
+  "profSectionProfileOwner": "プロフィール主",
+  "profInfoUsername": "ユーザー名",
+  "profInfoServer": "サーバー",
+  "profSectionServerBasic": "サーバー基本情報",
+  "profInfoName": "名前",
+  "profInfoVersion": "バージョン",
+  "profInfoSoftware": "ソフトウェア",
+  "profSectionDescription": "説明",
+  "profSectionStats": "統計",
+  "profInfoUserCount": "ユーザー数",
+  "profInfoStatusCount": "投稿数",
+  "profInfoDomainCount": "ドメイン数",
+  "profSectionRegistrations": "登録",
+  "profInfoNewRegistrations": "新規登録",
+  "profRegOpen": "可能",
+  "profRegClosed": "不可",
+  "profInfoApprovalRequired": "承認制",
+  "profInfoInvitesEnabled": "招待制",
+  "profYes": "あり",
+  "profNo": "なし",
+  "profSectionPostSettings": "投稿設定",
+  "profInfoMaxChars": "最大文字数",
+  "profInfoMaxMedia": "最大メディア数",
+  "profSectionMediaSettings": "メディア設定",
+  "profInfoImageSizeLimit": "画像サイズ上限",
+  "profInfoVideoSizeLimit": "動画サイズ上限",
+  "profSectionLanguages": "対応言語",
+  "profSectionAdmin": "管理者",
+  "profCommonFollowers": "共通のフォロワー",
+  "profCollectionsFetchFailed": "コレクションを取得できませんでした",
+  "profCollectionsFetchFailedError": "コレクションを取得できませんでした: {error}",
+  "@profCollectionsFetchFailedError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "profCreateCollection": "コレクションを作成",
+  "profNoCollectionsOwn": "まだコレクションがありません",
+  "profNoCollections": "コレクションがありません",
+  "profFeaturedCollections": "掲載されているコレクション",
+  "profCollectionSubtitleWithDesc": "{count} 人・{desc}",
+  "@profCollectionSubtitleWithDesc": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "desc": {"type": "String"}
+    }
+  },
+  "profCollectionMemberCount": "{count} 人",
+  "@profCollectionMemberCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "profAddedToCollection": "「{name}」に追加しました",
+  "@profAddedToCollection": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "profAddToCollectionFailed": "コレクションに追加できませんでした: {error}",
+  "@profAddToCollectionFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "profCreateAndAdd": "新規作成して追加",
+  "profNoCollectionsCreateHint": "コレクションがありません。上から新規作成できます。",
+
+  "postNotFoundOnInstance": "この投稿は対象のインスタンスで見つかりません。連合していないか、非公開の投稿の可能性があります。",
+  "postNoteFiles": "[{count}個のファイル]",
+  "@postNoteFiles": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "postNoteRenote": "[リノート]",
+  "postNoteReply": "[返信]",
+  "postNoteFollowersOnly": "[フォロワー限定の投稿]",
+  "postNoteDirect": "[指定ユーザー限定の投稿]",
+  "postNoteHomeOnly": "[ホーム限定の投稿]",
+  "postNoteLimited": "[限定公開の投稿]",
+  "postNoteEmpty": "[内容なし]",
+  "postQuoteSourceTitle": "引用元を表示",
+  "postQuoteSourceHow": "引用元の投稿をどのように表示しますか？",
+  "postSearchFromCurrent": "現在のアカウントから検索",
+  "postShowOnThisInstance": "このインスタンスで表示",
+  "postOpenOnOriginServer": "投稿元のサーバーで開く",
+  "postQuoteDetailUnavailable": "引用元の詳細を表示できません",
+  "postUrlOpenFailed": "URLを開けませんでした",
+  "postBrowserOpenFailed": "ブラウザで開けませんでした: {error}",
+  "@postBrowserOpenFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "postSearching": "投稿を検索中...",
+  "postSearchTimeout": "検索がタイムアウトしました。しばらくしてから再度お試しください。",
+  "postNotFoundTitle": "投稿が見つかりません",
+  "postNotFoundBody": "現在のアカウントからこの投稿にアクセスできませんでした。",
+  "postDontShowAgain": "今後は表示しない",
+  "postLabel": "投稿",
+  "postQuoteLoading": "引用元を読み込み中...",
+  "postEdited": "編集済み ({time})",
+  "@postEdited": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "postReplyFetching": "返信先取得中…",
+  "postReplyLabel": "返信",
+  "postReplyTo": "{name}への返信",
+  "@postReplyTo": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "postUrlUnavailable": "この投稿のURLが取得できません",
+  "postMuteFailed": "ミュートに失敗しました: {error}",
+  "@postMuteFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "postBlockFailed": "ブロックに失敗しました: {error}",
+  "@postBlockFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "postDeleteTitle": "投稿を削除",
+  "postDeleteConfirm": "この投稿を削除しますか？",
+  "postDeleted": "投稿を削除しました",
+  "postDeleteFailed": "削除に失敗しました: {error}",
+  "@postDeleteFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "postRedraftTitle": "削除して下書きに戻す",
+  "postRedraftConfirm": "この投稿を削除して、内容を下書きとして投稿ページに復元しますか？",
+  "postTranslateUnsupported": "このインスタンスは翻訳機能をサポートしていません",
+  "postTranslateDone": "翻訳完了（{provider}）",
+  "@postTranslateDone": {
+    "placeholders": {
+      "provider": {"type": "String"}
+    }
+  },
+  "postTranslateFailed": "翻訳に失敗しました: {error}",
+  "@postTranslateFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "postNoTextToTranslate": "翻訳するテキストがありません",
+  "postTranslateError": "翻訳処理でエラーが発生しました: {error}",
+  "@postTranslateError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "postGoogleTranslateCopied": "Google翻訳を起動できなかったため、テキストをコピーしました。",
+  "postShareUrlTitle": "URLを共有",
+  "postCopyLabelUrl": "投稿URL",
+  "postCopyLabelText": "テキスト",
+  "postCopiedToClipboard": "{label}をクリップボードにコピーしました",
+  "@postCopiedToClipboard": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "postCopyConfirmAction": "確認",
+  "postGoogleTranslateOpenFailedCopied": "Google翻訳を開けなかったため、テキストをクリップボードにコピーしました",
+  "postReactFromOtherTitle": "別アカウントからリアクション",
+  "postNoOtherAccounts": "他に使用可能なアカウントがありません。",
+  "postSelectReactionAccount": "リアクションするアカウントを選択",
+  "postReactAs": "{name}でリアクション",
+  "@postReactAs": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "postBoostLabel": "ブースト",
+  "postQuoteAction": "引用",
+  "postBookmarkLabel": "ブックマーク",
+  "postCannotReplyMention": "この投稿に直接返信できないため、メンション付きの投稿を作成します",
+  "postBoostAsConfirm": "このアカウントでブーストしますか？",
+  "postBoostedAs": "{name}でブーストしました",
+  "@postBoostedAs": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "postNotAccessibleOnInstance": "この投稿は対象のインスタンスでアクセスできません",
+  "postNoPermission": "この操作を行う権限がありません",
+  "postBoostFailed": "ブーストに失敗しました: {error}",
+  "@postBoostFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "postQuoteFailed": "引用に失敗しました: {error}",
+  "@postQuoteFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "postFavAsConfirm": "このアカウントでお気に入りに追加しますか？",
+  "postFavedAs": "{name}でお気に入りに追加しました",
+  "@postFavedAs": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "postFavFailed": "お気に入りに失敗しました: {error}",
+  "@postFavFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "postBookmarkAsConfirm": "このアカウントでブックマークに追加しますか？",
+  "postBookmarkedAs": "{name}でブックマークに追加しました",
+  "@postBookmarkedAs": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "postBookmarkFailed": "ブックマークに失敗しました: {error}",
+  "@postBookmarkFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "postFilterMatched": "フィルタ条件に一致する投稿",
+  "postFilterLabel": "フィルタ: {title}",
+  "@postFilterLabel": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "postShowAction": "表示",
+  "postSectionAuthor": "投稿主",
+  "postHideMedia": "メディアを隠す",
+  "postRevealAction": "表示する",
+  "postUnpinFailed": "ピン留め解除に失敗しました: {error}",
+  "@postUnpinFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "postPinNotAllowed": "ピン留めできません。最大 5 件、公開範囲が public/unlisted の自分の投稿のみ可能です。",
+  "postUnpinFailedPlain": "ピン留め解除に失敗しました",
+  "postPinFailedPlain": "ピン留めに失敗しました",
+  "postPinned": "プロフィールに固定しました",
+  "postUnpinned": "プロフィールの固定を解除しました",
+  "postBoostConfirm": "ブーストしますか？",
+  "postUnboostConfirm": "ブーストを解除しますか？",
+  "postUnboostFailed": "ブースト解除に失敗しました",
+  "postBoostFailedPlain": "ブーストに失敗しました",
+  "postFavConfirm": "お気に入りに追加しますか？",
+  "postUnfavConfirm": "お気に入りを解除しますか？",
+  "postUnfavFailed": "お気に入り解除に失敗しました",
+  "postFavFailedPlain": "お気に入り登録に失敗しました",
+  "postBookmarkConfirm": "ブックマークに追加しますか？",
+  "postUnbookmarkConfirm": "ブックマークを解除しますか？",
+  "postUnbookmarkFailed": "ブックマーク解除に失敗しました",
+  "postBookmarkFailedPlain": "ブックマーク登録に失敗しました",
+  "postEditAction": "編集",
+  "postPinAction": "プロフィールに固定",
+  "postUnpinAction": "プロフィールの固定を解除",
+  "postRebloggedBy": "ブーストした人",
+  "postRebloggedByCount": "ブーストした人 ({count})",
+  "@postRebloggedByCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "postFavouritedBy": "お気に入りした人",
+  "postFavouritedByCount": "お気に入りした人 ({count})",
+  "@postFavouritedByCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "postTranslateInstance": "翻訳(インスタンス機能)",
+  "postOpenGoogleTranslate": "Google翻訳で開く",
+  "postCopyBody": "本文をクリップボードにコピー",
+  "postBoostedBySuffix": " さんがブースト",
+  "postCollapseAction": "畳む",
+  "postQuotedMediaCount": "メディア {count} 件",
+  "@postQuotedMediaCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "postTranslationResult": "翻訳結果",
+  "postCloseTranslation": "翻訳を閉じる",
+  "postCwTranslated": "CW (翻訳): {text}",
+  "@postCwTranslated": {
+    "placeholders": {
+      "text": {"type": "String"}
+    }
+  },
+  "postDetectedLanguage": "検出言語: {lang}",
+  "@postDetectedLanguage": {
+    "placeholders": {
+      "lang": {"type": "String"}
+    }
+  },
+  "postTranslationProvider": "翻訳: {provider}",
+  "@postTranslationProvider": {
+    "placeholders": {
+      "provider": {"type": "String"}
+    }
+  }
 }

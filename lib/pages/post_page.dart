@@ -15,6 +15,7 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
 
+import '../l10n/l10n.dart';
 import '../models/draft.dart';
 import '../models/poll.dart';
 import '../models/live_mode.dart';
@@ -1211,7 +1212,8 @@ class _PostPageState extends ConsumerState<PostPage> {
       // 全アカウント失敗時のみエラー表示。1 件でも成功していれば
       // MediaItem を作って先に進める (失敗アカウントは _submit の
       // pre-flight で再 upload するか、ユーザーがアカウントを外す)。
-      _showPostPageSnackBar('アップロードに失敗しました: ${failures.values.first}');
+      _showPostPageSnackBar(
+          l10n.composeUploadFailed('${failures.values.first}'));
       return;
     }
 
@@ -1220,10 +1222,10 @@ class _PostPageState extends ConsumerState<PostPage> {
     });
 
     if (failures.isEmpty) {
-      _showPostPageSnackBar('画像をアップロードしました');
+      _showPostPageSnackBar(l10n.composeImageUploaded);
     } else {
       _showPostPageSnackBar(
-        '${failures.length} アカウントでアップロード失敗 (投稿時に再試行されます)',
+        l10n.composeUploadPartialFail(failures.length),
       );
     }
   }
@@ -1261,11 +1263,12 @@ class _PostPageState extends ConsumerState<PostPage> {
       });
       if (newItems.isNotEmpty) {
         final msg = perFileFailures.isEmpty
-            ? '${newItems.length} 件のメディアをアップロードしました'
-            : '${newItems.length} 件アップロード (${perFileFailures.length} 件で一部アカウント失敗)';
+            ? l10n.composeMediaUploadedCount(newItems.length)
+            : l10n.composeMediaUploadedPartial(
+                newItems.length, perFileFailures.length);
         _showPostPageSnackBar(msg);
       } else {
-        _showPostPageSnackBar('メディアアップロードに失敗しました');
+        _showPostPageSnackBar(l10n.composeMediaUploadFailed);
       }
     } finally {
       setState(() => _isUploading = false);
@@ -1301,7 +1304,7 @@ class _PostPageState extends ConsumerState<PostPage> {
   Future<void> _handleDroppedFiles(List<DropItem> files) async {
     if (files.isEmpty) return;
     if (_selectedAccountIds.isEmpty) {
-      _showPostPageSnackBar('先に投稿アカウントを選択してください');
+      _showPostPageSnackBar(context.l10n.composeSelectAccountFirst);
       return;
     }
 
@@ -1314,7 +1317,7 @@ class _PostPageState extends ConsumerState<PostPage> {
     }).toList();
 
     if (media.isEmpty) {
-      _showPostPageSnackBar('画像・動画・音声ファイルをドロップしてください');
+      _showPostPageSnackBar(context.l10n.composeDropMediaOnly);
       return;
     }
 
@@ -1341,11 +1344,12 @@ class _PostPageState extends ConsumerState<PostPage> {
       if (newItems.isNotEmpty) {
         _showPostPageSnackBar(
           perFileFailures.isEmpty
-              ? '${newItems.length} 件のメディアを添付しました'
-              : '${newItems.length} 件添付 (${perFileFailures.length} 件で一部アカウント失敗)',
+              ? l10n.composeMediaAttachedCount(newItems.length)
+              : l10n.composeMediaAttachedPartial(
+                  newItems.length, perFileFailures.length),
         );
       } else {
-        _showPostPageSnackBar('メディアの添付に失敗しました');
+        _showPostPageSnackBar(l10n.composeMediaAttachFailed);
       }
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -1380,7 +1384,7 @@ class _PostPageState extends ConsumerState<PostPage> {
     if (images.isNotEmpty) {
       await _handleClipboardImages(images);
     } else if (notifyIfEmpty) {
-      _showPostPageSnackBar('クリップボードに画像がありません');
+      _showPostPageSnackBar(l10n.composeClipboardNoImage);
     }
   }
 
@@ -1391,7 +1395,7 @@ class _PostPageState extends ConsumerState<PostPage> {
     if (images.isEmpty) return;
     if (_isUploading) return; // 連打 / オートリピートの二重添付ガード
     if (_selectedAccountIds.isEmpty) {
-      _showPostPageSnackBar('先に投稿アカウントを選択してください');
+      _showPostPageSnackBar(context.l10n.composeSelectAccountFirst);
       return;
     }
 
@@ -1425,8 +1429,9 @@ class _PostPageState extends ConsumerState<PostPage> {
       if (newItems.isNotEmpty) {
         _showPostPageSnackBar(
           perFileFailures.isEmpty
-              ? '${newItems.length} 件の画像を貼り付けました'
-              : '${newItems.length} 件貼り付け (${perFileFailures.length} 件で一部アカウント失敗)',
+              ? l10n.composeImagePastedCount(newItems.length)
+              : l10n.composeImagePastedPartial(
+                  newItems.length, perFileFailures.length),
         );
       } else {
         // 全アカウントで失敗。原因切り分けのため実際の例外を表示する。
@@ -1436,8 +1441,8 @@ class _PostPageState extends ConsumerState<PostPage> {
             .firstWhere((e) => e != null, orElse: () => null);
         _showPostPageSnackBar(
           firstError != null
-              ? '画像の貼り付けに失敗しました: $firstError'
-              : '画像の貼り付けに失敗しました',
+              ? l10n.composePasteFailedWithError('$firstError')
+              : l10n.composePasteFailed,
         );
       }
     } finally {
@@ -1507,14 +1512,15 @@ class _PostPageState extends ConsumerState<PostPage> {
                       color: primary,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.file_download_outlined, color: Colors.white),
-                        SizedBox(width: 8),
+                        const Icon(Icons.file_download_outlined,
+                            color: Colors.white),
+                        const SizedBox(width: 8),
                         Text(
-                          'ここにドロップして添付',
-                          style: TextStyle(
+                          context.l10n.composeDropHere,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1549,16 +1555,16 @@ class _PostPageState extends ConsumerState<PostPage> {
       context: context,
       builder:
           (ctx) => AlertDialog(
-            title: const Text('下書きを保存'),
-            content: const Text('下書きを保存しますか？'),
+            title: Text(ctx.l10n.composeSaveDraftTitle),
+            content: Text(ctx.l10n.composeSaveDraftConfirm),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('キャンセル'),
+                child: Text(ctx.l10n.cancel),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('保存'),
+                child: Text(ctx.l10n.save),
               ),
             ],
           ),
@@ -1577,7 +1583,7 @@ class _PostPageState extends ConsumerState<PostPage> {
             ? (textToSave.length > 20
                 ? '${textToSave.substring(0, 20)}…'
                 : textToSave)
-            : 'メディアのみの下書き';
+            : l10n.composeMediaOnlyDraft;
     final draft = Draft(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: snippet,
@@ -1601,7 +1607,7 @@ class _PostPageState extends ConsumerState<PostPage> {
     if (mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('下書きを保存しました')));
+      ).showSnackBar(SnackBar(content: Text(context.l10n.composeDraftSaved)));
     }
   }
 
@@ -1653,16 +1659,16 @@ class _PostPageState extends ConsumerState<PostPage> {
       context: context,
       builder:
           (_) => AlertDialog(
-            title: const Text('入力を破棄'),
-            content: const Text('編集中の内容を破棄しますか？'),
+            title: Text(context.l10n.composeDiscardTitle),
+            content: Text(context.l10n.composeDiscardConfirm),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('キャンセル'),
+                child: Text(context.l10n.cancel),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('破棄'),
+                child: Text(context.l10n.composeDiscard),
               ),
             ],
           ),
@@ -1691,7 +1697,7 @@ class _PostPageState extends ConsumerState<PostPage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('入力を破棄しました')));
+        ).showSnackBar(SnackBar(content: Text(context.l10n.composeDiscarded)));
       }
     }
   }
@@ -1711,14 +1717,15 @@ class _PostPageState extends ConsumerState<PostPage> {
     if (_selectedAccountIds.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('投稿するアカウントを選択してください')));
+      ).showSnackBar(
+          SnackBar(content: Text(context.l10n.composeSelectPostAccount)));
       return;
     }
 
     // ボタンを `_isUploading` で無効化済みだが、二重防御。アップロード中に
     // 投稿してしまうと _mediaItems が未確定で「添付なし投稿」になる。
     if (_isUploading) {
-      _showPostPageSnackBar('メディアのアップロードが完了するまでお待ちください');
+      _showPostPageSnackBar(context.l10n.composeWaitMediaUpload);
       return;
     }
 
@@ -1770,11 +1777,7 @@ class _PostPageState extends ConsumerState<PostPage> {
             if (m.mediaIdsByAccount.containsKey(accountId)) continue;
             final file = m.file;
             if (file == null) {
-              throw Exception(
-                'アカウント "$accountId" に未アップロードのメディアがありますが'
-                ' (おそらく編集モード由来の既存メディア)、元ファイルが無く'
-                ' 再アップロードできません',
-              );
+              throw Exception(l10n.composePreflightMissingFile(accountId));
             }
             final acct = authState.accounts.firstWhere(
               (a) => a.id == accountId,
@@ -1797,7 +1800,7 @@ class _PostPageState extends ConsumerState<PostPage> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('メディアの追加アップロードに失敗: $e')),
+            SnackBar(content: Text(l10n.composeExtraUploadFailed('$e'))),
           );
         }
         setState(() => _isPosting = false);
@@ -1916,15 +1919,15 @@ class _PostPageState extends ConsumerState<PostPage> {
 
       if (failCount == 0) {
         if (isScheduledPost) {
-          message = '$successCount件のアカウントに予約投稿しました';
+          message = l10n.composeScheduledToAccounts(successCount);
         } else {
-          message = '$successCount件のアカウントに投稿しました';
+          message = l10n.composePostedToAccounts(successCount);
         }
       } else {
         if (isScheduledPost) {
-          message = '予約投稿: $successCount件成功、$failCount件失敗';
+          message = l10n.composeScheduledPartial(successCount, failCount);
         } else {
-          message = '$successCount件成功、$failCount件失敗';
+          message = l10n.composePostedPartial(successCount, failCount);
         }
         if (errors.isNotEmpty) {
           debugPrint('Post errors: ${errors.join(", ")}');
@@ -1934,14 +1937,14 @@ class _PostPageState extends ConsumerState<PostPage> {
               context: context,
               builder:
                   (context) => AlertDialog(
-                    title: const Text('投稿エラー詳細'),
+                    title: Text(context.l10n.composePostErrorDetailTitle),
                     content: SingleChildScrollView(
                       child: Text(errors.join('\n\n')),
                     ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('閉じる'),
+                        child: Text(context.l10n.close),
                       ),
                     ],
                   ),
@@ -1992,7 +1995,7 @@ class _PostPageState extends ConsumerState<PostPage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('投稿に失敗しました: $e')));
+        ).showSnackBar(SnackBar(content: Text(l10n.composePostFailed('$e'))));
       }
     } finally {
       setState(() => _isPosting = false);
@@ -2012,8 +2015,7 @@ class _PostPageState extends ConsumerState<PostPage> {
     // 編集モードでは予約 UI を出さないが、下書き読み込み等で予約日時が
     // 紛れ込む経路への防御。
     if (_scheduledAt != null) {
-      _showPostPageSnackBar(
-          '編集では予約日時を使えません。予約表示の × で解除してから保存してください');
+      _showPostPageSnackBar(context.l10n.composeEditNoSchedule);
       setState(() => _isPosting = false);
       return;
     }
@@ -2088,7 +2090,7 @@ class _PostPageState extends ConsumerState<PostPage> {
       // 公開するので、呼び出し元は結果を受け取らなくてよい。
       publishLocalStatusEdited(accountId: acct.id, updated: updated);
       // 中央寄せの軽量トーストで FAB と被らないように。
-      showCenteredToast(context, '投稿を更新しました');
+      showCenteredToast(context, context.l10n.composePostUpdated);
       if (widget.embedded) {
         // 埋め込み (横ペイン): ページ遷移ではないので pop せずホストに通知
         // (ホストが新規コンポーズへ戻す / 閉じるを判断)。
@@ -2099,7 +2101,7 @@ class _PostPageState extends ConsumerState<PostPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('編集に失敗しました: $e')));
+            .showSnackBar(SnackBar(content: Text(l10n.composeEditFailed('$e'))));
       }
     } finally {
       if (mounted) setState(() => _isPosting = false);
@@ -2151,30 +2153,33 @@ class _PostPageState extends ConsumerState<PostPage> {
 
     // 今日の場合
     if (scheduledDate == today) {
-      return '予約: 今日 $timeStr';
+      return context.l10n
+          .composeScheduledPrefix(context.l10n.scheduledToday(timeStr));
     }
 
     // 明日の場合
     final tomorrow = today.add(const Duration(days: 1));
     if (scheduledDate == tomorrow) {
-      return '予約: 明日 $timeStr';
+      return context.l10n
+          .composeScheduledPrefix(context.l10n.scheduledTomorrow(timeStr));
     }
 
     // 今年の場合は年を省略
     if (dateTime.year == now.year) {
-      return '予約: ${dateTime.month}月${dateTime.day}日 $timeStr';
+      return context.l10n.composeScheduledPrefix(context.l10n
+          .scheduledDateShort(dateTime.month, dateTime.day, timeStr));
     }
 
     // 来年以降の場合は年も表示
-    return '予約: ${dateTime.year}年${dateTime.month}月${dateTime.day}日 $timeStr';
+    return context.l10n.composeScheduledPrefix(context.l10n.scheduledDateFull(
+        dateTime.year, dateTime.month, dateTime.day, timeStr));
   }
 
   /// 予約投稿の日時選択ダイアログを表示
   Future<void> _showScheduledDateTimePicker() async {
     // 編集モードでは予約不可 (ボタン自体を非表示にしているが二重防御)。
     if (widget.isEditing) {
-      _showPostPageSnackBar(
-          '公開済み投稿の編集は予約できません。予約したい場合は「削除して下書きに」で新規の予約投稿にしてください');
+      _showPostPageSnackBar(context.l10n.composeEditCannotSchedule);
       return;
     }
     final now = DateTime.now();
@@ -2187,10 +2192,9 @@ class _PostPageState extends ConsumerState<PostPage> {
       initialDate: _scheduledAt ?? minDate,
       firstDate: minDate,
       lastDate: now.add(const Duration(days: 365)), // 1年後まで
-      helpText: '予約投稿日を選択',
-      cancelText: 'キャンセル',
+      helpText: context.l10n.composePickDateHelp,
+      cancelText: context.l10n.cancel,
       confirmText: 'OK',
-      locale: const Locale('ja', 'JP'),
     );
 
     if (selectedDate == null) return;
@@ -2200,18 +2204,11 @@ class _PostPageState extends ConsumerState<PostPage> {
     final selectedTime = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(_scheduledAt ?? minDate),
-      helpText: '予約投稿時刻を選択',
-      hourLabelText: '時',
-      minuteLabelText: '分',
-      cancelText: 'キャンセル',
+      helpText: context.l10n.composePickTimeHelp,
+      hourLabelText: context.l10n.composeHourLabel,
+      minuteLabelText: context.l10n.composeMinuteLabel,
+      cancelText: context.l10n.cancel,
       confirmText: 'OK',
-      builder: (BuildContext context, Widget? child) {
-        return Localizations.override(
-          context: context,
-          locale: const Locale('ja', 'JP'),
-          child: child!,
-        );
-      },
     );
 
     if (selectedTime == null) return;
@@ -2229,7 +2226,8 @@ class _PostPageState extends ConsumerState<PostPage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('予約投稿は5分後以降の時刻を選択してください')));
+        ).showSnackBar(
+            SnackBar(content: Text(context.l10n.composeScheduleMinFive)));
       }
       return;
     }
@@ -2313,7 +2311,7 @@ class _PostPageState extends ConsumerState<PostPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '引用: @${q.account.acct}',
+                  context.l10n.composeQuoteLabel(q.account.acct),
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
@@ -2333,7 +2331,7 @@ class _PostPageState extends ConsumerState<PostPage> {
           ),
           IconButton(
             icon: const Icon(Icons.close, size: 18),
-            tooltip: '引用を取消',
+            tooltip: context.l10n.composeQuoteCancelTooltip,
             visualDensity: VisualDensity.compact,
             onPressed: () => setState(() => _setQuotedStatus(null)),
           ),
@@ -2503,12 +2501,12 @@ class _PostPageState extends ConsumerState<PostPage> {
       result = await showDialog<String>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('ALT文を編集'),
+          title: Text(context.l10n.composeAltEditTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'アクセシビリティのために、画像の内容を説明してください。',
+                context.l10n.composeAltHelp,
                 style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
               ),
               const SizedBox(height: 16),
@@ -2516,10 +2514,10 @@ class _PostPageState extends ConsumerState<PostPage> {
                 controller: controller,
                 maxLines: 3,
                 maxLength: 1500,
-                decoration: const InputDecoration(
-                  labelText: 'ALT文',
-                  hintText: '画像の内容を説明してください',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: context.l10n.composeAltLabel,
+                  hintText: context.l10n.composeAltHint,
+                  border: const OutlineInputBorder(),
                 ),
               ),
             ],
@@ -2527,11 +2525,11 @@ class _PostPageState extends ConsumerState<PostPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('キャンセル'),
+              child: Text(context.l10n.cancel),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, controller.text),
-              child: const Text('保存'),
+              child: Text(context.l10n.save),
             ),
           ],
         ),
@@ -2588,7 +2586,8 @@ class _PostPageState extends ConsumerState<PostPage> {
         if (mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text('ALT文の更新に失敗しました: $e')));
+          ).showSnackBar(
+              SnackBar(content: Text(l10n.composeAltUpdateFailed('$e'))));
         }
       }
     }
@@ -2613,7 +2612,7 @@ class _PostPageState extends ConsumerState<PostPage> {
             final dialogContentWidth =
                 screenWidth < 480 ? double.maxFinite : 400.0;
             return AlertDialog(
-              title: const Text('投稿アカウントを選択'),
+              title: Text(context.l10n.composeSelectAccountsTitle),
               content: SizedBox(
                 width: dialogContentWidth,
                 child: ListView.builder(
@@ -2674,7 +2673,7 @@ class _PostPageState extends ConsumerState<PostPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('キャンセル'),
+                  child: Text(context.l10n.cancel),
                 ),
                 ElevatedButton(
                   onPressed: () {
@@ -2685,7 +2684,8 @@ class _PostPageState extends ConsumerState<PostPage> {
                     _applyDefaultVisibilityFromPreferences();
                     Navigator.of(context).pop();
                   },
-                  child: Text('選択 (${selectedIds.length}件)'),
+                  child: Text(
+                      context.l10n.composeSelectCount(selectedIds.length)),
                 ),
               ],
             );
@@ -2790,9 +2790,9 @@ class _PostPageState extends ConsumerState<PostPage> {
                 color: Colors.black54,
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: const Text(
-                '動画',
-                style: TextStyle(
+              child: Text(
+                context.l10n.composeVideoLabel,
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
@@ -2955,15 +2955,15 @@ class _PostPageState extends ConsumerState<PostPage> {
               children: [
                 const Icon(Icons.poll, size: 20),
                 const SizedBox(width: 8),
-                const Text(
-                  '投票を作成',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                Text(
+                  context.l10n.composePollCreate,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.close, size: 20),
                   onPressed: _clearPoll,
-                  tooltip: '投票を削除',
+                  tooltip: context.l10n.composePollDeleteTooltip,
                 ),
               ],
             ),
@@ -2979,7 +2979,8 @@ class _PostPageState extends ConsumerState<PostPage> {
                       child: TextField(
                         controller: _pollOptionControllers[index],
                         decoration: InputDecoration(
-                          labelText: '選択肢 ${index + 1}',
+                          labelText:
+                              context.l10n.composePollOptionN(index + 1),
                           border: const OutlineInputBorder(),
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 12,
@@ -2994,7 +2995,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                       IconButton(
                         icon: const Icon(Icons.remove_circle_outline),
                         onPressed: () => _removePollOption(index),
-                        tooltip: '選択肢を削除',
+                        tooltip: context.l10n.composePollOptionDeleteTooltip,
                       ),
                     ],
                   ],
@@ -3006,7 +3007,7 @@ class _PostPageState extends ConsumerState<PostPage> {
             if (_pollOptionControllers.length < 4)
               OutlinedButton.icon(
                 icon: const Icon(Icons.add),
-                label: const Text('選択肢を追加'),
+                label: Text(context.l10n.composePollAddOption),
                 onPressed: _addPollOption,
               ),
 
@@ -3018,18 +3019,32 @@ class _PostPageState extends ConsumerState<PostPage> {
                 Expanded(
                   child: DropdownButtonFormField<int>(
                     initialValue: _pollDuration,
-                    decoration: const InputDecoration(
-                      labelText: '投票期間',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: context.l10n.composePollDuration,
+                      border: const OutlineInputBorder(),
                     ),
-                    items: const [
-                      DropdownMenuItem(value: 300, child: Text('5分')),
-                      DropdownMenuItem(value: 1800, child: Text('30分')),
-                      DropdownMenuItem(value: 3600, child: Text('1時間')),
-                      DropdownMenuItem(value: 21600, child: Text('6時間')),
-                      DropdownMenuItem(value: 86400, child: Text('1日')),
-                      DropdownMenuItem(value: 259200, child: Text('3日')),
-                      DropdownMenuItem(value: 604800, child: Text('7日')),
+                    items: [
+                      DropdownMenuItem(
+                          value: 300,
+                          child: Text(context.l10n.composeDuration5m)),
+                      DropdownMenuItem(
+                          value: 1800,
+                          child: Text(context.l10n.composeDuration30m)),
+                      DropdownMenuItem(
+                          value: 3600,
+                          child: Text(context.l10n.composeDuration1h)),
+                      DropdownMenuItem(
+                          value: 21600,
+                          child: Text(context.l10n.composeDuration6h)),
+                      DropdownMenuItem(
+                          value: 86400,
+                          child: Text(context.l10n.composeDuration1d)),
+                      DropdownMenuItem(
+                          value: 259200,
+                          child: Text(context.l10n.composeDuration3d)),
+                      DropdownMenuItem(
+                          value: 604800,
+                          child: Text(context.l10n.composeDuration7d)),
                     ],
                     onChanged: (value) {
                       if (value != null) {
@@ -3041,7 +3056,8 @@ class _PostPageState extends ConsumerState<PostPage> {
                 const SizedBox(width: 16),
                 Column(
                   children: [
-                    const Text('複数選択', style: TextStyle(fontSize: 12)),
+                    Text(context.l10n.composePollMultiple,
+                        style: const TextStyle(fontSize: 12)),
                     Switch(
                       value: _pollMultiple,
                       onChanged:
@@ -3088,7 +3104,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      '編集モード: 公開範囲・投稿アカウント・予約日時は変更できません',
+                      context.l10n.composeEditModeNotice,
                       style: TextStyle(
                         fontSize: 12,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -3110,17 +3126,21 @@ class _PostPageState extends ConsumerState<PostPage> {
               // Mastodon API 仕様上 visibility 変更不可なので無効化する。
               PopupMenuButton<String>(
                 enabled: !widget.isEditing,
-                tooltip: '公開範囲',
+                tooltip: context.l10n.composeVisibilityTooltip,
                 position: PopupMenuPosition.under,
                 onSelected: (v) => setState(() {
                   _visibility = v;
                   _visibilityManuallySet = true;
                 }),
                 itemBuilder: (context) => [
-                  _visibilityMenuItem('public', Icons.public, '公開'),
-                  _visibilityMenuItem('unlisted', Icons.lock_open, '控えめ公開'),
-                  _visibilityMenuItem('private', Icons.lock, 'フォロワーのみ'),
-                  _visibilityMenuItem('direct', Icons.alternate_email, '特定の人'),
+                  _visibilityMenuItem(
+                      'public', Icons.public, context.l10n.visibilityPublic),
+                  _visibilityMenuItem('unlisted', Icons.lock_open,
+                      context.l10n.visibilityQuietPublic),
+                  _visibilityMenuItem('private', Icons.lock,
+                      context.l10n.visibilityFollowers),
+                  _visibilityMenuItem('direct', Icons.alternate_email,
+                      context.l10n.visibilitySpecificPeople),
                 ],
                 child: Padding(
                   padding:
@@ -3172,7 +3192,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                   DropdownButton<String?>(
                     value: _language,
                     hint: Text(
-                      '言語',
+                      context.l10n.composeLanguageLabel,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -3180,9 +3200,10 @@ class _PostPageState extends ConsumerState<PostPage> {
                     ),
                     underline: const SizedBox.shrink(),
                     items: [
-                      const DropdownMenuItem<String?>(
+                      DropdownMenuItem<String?>(
                         value: null,
-                        child: Text('自動検出', style: TextStyle(fontSize: 12)),
+                        child: Text(context.l10n.composeLangAuto,
+                            style: const TextStyle(fontSize: 12)),
                       ),
                       const DropdownMenuItem<String>(
                         value: 'ja',
@@ -3268,7 +3289,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                     expands: true,
                     textAlignVertical: TextAlignVertical.top,
                     decoration: InputDecoration(
-                      hintText: '投稿内容を入力…',
+                      hintText: context.l10n.composeBodyHint,
                       border: const OutlineInputBorder(),
                       alignLabelWithHint: true,
                       contentPadding: const EdgeInsets.fromLTRB(12, 12, 12, 48), // 下部に余白を追加
@@ -3291,8 +3312,9 @@ class _PostPageState extends ConsumerState<PostPage> {
                           // ときだけ "(host)" を併記して、最も厳しい上限が
                           // どのインスタンス由来かをユーザーに示す。
                           final label = host != null
-                              ? '残り $remaining 文字 ($host)'
-                              : '残り $remaining 文字';
+                              ? context.l10n
+                                  .composeRemainingCharsHost(remaining, host)
+                              : context.l10n.composeRemainingChars(remaining);
                           return Text(
                             label,
                             style: TextStyle(
@@ -3309,7 +3331,8 @@ class _PostPageState extends ConsumerState<PostPage> {
                       ),
                       if (_liveModeSettings.isEnabled && _liveModeSettings.hashtags.isNotEmpty)
                         Text(
-                          '実況タグ: ${_liveModeSettings.formattedHashtags.join(' ')}',
+                          context.l10n.composeLiveTag(
+                              _liveModeSettings.formattedHashtags.join(' ')),
                           style: const TextStyle(
                             fontSize: 10,
                             color: Colors.blue,
@@ -3333,8 +3356,8 @@ class _PostPageState extends ConsumerState<PostPage> {
                     onPressed: (_isPosting || _isUploading) ? null : _submit,
                     elevation: 2,
                     tooltip: _isUploading
-                        ? 'メディアアップロード中…'
-                        : (_isPosting ? '投稿中…' : null),
+                        ? context.l10n.composeUploadingMedia
+                        : (_isPosting ? context.l10n.composePosting : null),
                     child: (_isPosting || _isUploading)
                         ? const SizedBox(
                             width: 20,
@@ -3405,7 +3428,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '絵文字を選択',
+                      context.l10n.composeEmojiPickerTitle,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -3423,7 +3446,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                       iconSize: 20,
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
-                      tooltip: '閉じる',
+                      tooltip: context.l10n.close,
                     ),
                   ],
                 ),
@@ -3461,25 +3484,21 @@ class _PostPageState extends ConsumerState<PostPage> {
     return showDialog<_LeaveAction>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('投稿を中断しますか？'),
-        content: const Text(
-          '編集中の投稿があります。\n'
-          '「閉じる」 — 本文・CW・予約日時・投票は下書きとして自動保存されます (添付メディアは破棄)。\n'
-          '「破棄」 — 本文や添付・予約日時を含めてすべて破棄します。',
-        ),
+        title: Text(ctx.l10n.composeInterruptTitle),
+        content: Text(ctx.l10n.composeInterruptBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, _LeaveAction.cancel),
-            child: const Text('続ける'),
+            child: Text(ctx.l10n.composeKeepWriting),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, _LeaveAction.discard),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('破棄'),
+            child: Text(ctx.l10n.composeDiscard),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, _LeaveAction.leaveKeepDraft),
-            child: const Text('閉じる'),
+            child: Text(ctx.l10n.close),
           ),
         ],
       ),
@@ -3621,22 +3640,26 @@ class _PostPageState extends ConsumerState<PostPage> {
             : widget.isEditing
                 ? IconButton(
                     icon: const Icon(Icons.close),
-                    tooltip: '編集をやめて新規投稿に戻る',
+                    tooltip: context.l10n.composeStopEditTooltip,
                     onPressed: widget.onCancelEdit,
                   )
                 : IconButton(
                     icon: Icon(widget.pinned
                         ? Icons.push_pin
                         : Icons.push_pin_outlined),
-                    tooltip: widget.pinned ? '固定を解除' : '投稿欄を固定表示',
+                    tooltip: widget.pinned
+                        ? context.l10n.composeUnpinTooltip
+                        : context.l10n.composePinTooltip,
                     color: widget.pinned
                         ? Theme.of(context).colorScheme.primary
                         : null,
                     onPressed: widget.onTogglePin,
                   ),
         title: Text(widget.isEditing
-            ? '投稿を編集'
-            : (widget.replyToStatusId != null ? '返信' : '新規投稿')),
+            ? context.l10n.composeEditTitle
+            : (widget.replyToStatusId != null
+                ? context.l10n.composeReplyTitle
+                : context.l10n.composeNewTitle)),
         actions: [
           // メディア選択ボタン
           PopupMenuButton<String>(
@@ -3650,7 +3673,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                     ),
                   )
                 : const Icon(Icons.attach_file),
-            tooltip: 'メディアを選択',
+            tooltip: context.l10n.composePickMediaTooltip,
             enabled: !_isUploading,
             onSelected: (String value) {
               switch (value) {
@@ -3669,27 +3692,27 @@ class _PostPageState extends ConsumerState<PostPage> {
               }
             },
             itemBuilder: (BuildContext context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'file',
                 child: ListTile(
-                  leading: Icon(Icons.attach_file),
-                  title: Text('ファイルを選択'),
+                  leading: const Icon(Icons.attach_file),
+                  title: Text(context.l10n.composePickFile),
                   dense: true,
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'camera',
                 child: ListTile(
-                  leading: Icon(Icons.camera_alt),
-                  title: Text('カメラで撮影'),
+                  leading: const Icon(Icons.camera_alt),
+                  title: Text(context.l10n.composeTakePhoto),
                   dense: true,
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'gallery',
                 child: ListTile(
-                  leading: Icon(Icons.photo_library),
-                  title: Text('ギャラリーから選択'),
+                  leading: const Icon(Icons.photo_library),
+                  title: Text(context.l10n.composePickFromGallery),
                   dense: true,
                 ),
               ),
@@ -3698,11 +3721,11 @@ class _PostPageState extends ConsumerState<PostPage> {
               // Clipboard API (Chrome 限定 + 権限) になるため、Web は本文での
               // Ctrl/Cmd+V (paste イベント購読) に一本化する。
               if (clipboardPullSupported)
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'paste_clipboard',
                   child: ListTile(
-                    leading: Icon(Icons.content_paste),
-                    title: Text('クリップボードから貼り付け'),
+                    leading: const Icon(Icons.content_paste),
+                    title: Text(context.l10n.composePasteFromClipboard),
                     dense: true,
                   ),
                 ),
@@ -3711,12 +3734,12 @@ class _PostPageState extends ConsumerState<PostPage> {
           // 入力を破棄ボタン
           IconButton(
             icon: const Icon(Icons.delete_outline),
-            tooltip: '入力を破棄',
+            tooltip: context.l10n.composeDiscardTitle,
             onPressed: _confirmClear,
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
-            tooltip: '投稿オプション',
+            tooltip: context.l10n.composeOptionsTooltip,
             onSelected: (String value) {
               switch (value) {
                 case 'scheduled':
@@ -3732,27 +3755,27 @@ class _PostPageState extends ConsumerState<PostPage> {
             },
             itemBuilder:
                 (BuildContext context) => [
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'scheduled',
                     child: ListTile(
-                      leading: Icon(Icons.schedule),
-                      title: Text('予約投稿管理'),
+                      leading: const Icon(Icons.schedule),
+                      title: Text(context.l10n.composeScheduledManage),
                       dense: true,
                     ),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'drafts',
                     child: ListTile(
-                      leading: Icon(Icons.article_outlined),
-                      title: Text('下書き一覧'),
+                      leading: const Icon(Icons.article_outlined),
+                      title: Text(context.l10n.draftsTitle),
                       dense: true,
                     ),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'save_draft',
                     child: ListTile(
-                      leading: Icon(Icons.save_alt),
-                      title: Text('下書きを保存'),
+                      leading: const Icon(Icons.save_alt),
+                      title: Text(context.l10n.composeSaveDraftTitle),
                       dense: true,
                     ),
                   ),
@@ -3775,7 +3798,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                     children: [
                       // アカウント選択セクション
                       Text(
-                        'アカウント選択',
+                        context.l10n.composeAccountSelectLabel,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -3821,7 +3844,8 @@ class _PostPageState extends ConsumerState<PostPage> {
                                       child:
                                           selectedAccounts.isEmpty
                                               ? Text(
-                                                '投稿アカウントを選択',
+                                                context.l10n
+                                                    .composeSelectAccountsTitle,
                                                 style: TextStyle(
                                                   color: Theme.of(context).brightness == Brightness.dark
                                                       ? Colors.grey.shade400
@@ -3918,8 +3942,8 @@ class _PostPageState extends ConsumerState<PostPage> {
                             child: TextField(
                               controller: _spoilerController,
                               decoration: InputDecoration(
-                                labelText: 'コンテンツワーニング',
-                                hintText: '警告文を入力（任意）',
+                                labelText: context.l10n.composeCwLabel,
+                                hintText: context.l10n.composeCwHint,
                                 border: const OutlineInputBorder(),
                                 prefixIcon: Icon(
                                   Icons.warning_outlined,
@@ -3961,7 +3985,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                           // 投票
                           _buildFeatureButton(
                             icon: Icons.poll_outlined,
-                            label: '投票',
+                            label: context.l10n.composePollLabel,
                             isActive: _showPollCreation,
                             onPressed:
                                 () => setState(
@@ -3978,7 +4002,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                           if (!widget.isEditing) ...[
                             _buildFeatureButton(
                               icon: Icons.schedule_outlined,
-                              label: '予約',
+                              label: context.l10n.composeScheduleChipLabel,
                               isActive: _showScheduledPost,
                               onPressed: _showScheduledDateTimePicker,
                               activeColor: Colors.blue,
@@ -3988,7 +4012,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                           // 実況モード
                           _buildFeatureButton(
                             icon: Icons.live_tv_outlined,
-                            label: '実況',
+                            label: context.l10n.composeLiveChipLabel,
                             isActive: _liveModeSettings.isEnabled,
                             onPressed: _showLiveModeSettingsDialog,
                             activeColor: Colors.red,
@@ -4083,7 +4107,9 @@ class _PostPageState extends ConsumerState<PostPage> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  '実況タグ: ${_liveModeSettings.formattedHashtags.join(' ')}',
+                                  context.l10n.composeLiveTag(_liveModeSettings
+                                      .formattedHashtags
+                                      .join(' ')),
                                   style: TextStyle(
                                     color: Theme.of(context).brightness == Brightness.dark
                                         ? Colors.red.shade300
