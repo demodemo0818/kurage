@@ -1224,6 +1224,10 @@
   },
 
   "appearanceTitle": "外観設定",
+  "appearanceLanguageTitle": "表示言語",
+  "appearanceLanguageSystem": "システム設定に従う",
+  "appearanceLanguageJa": "日本語",
+  "appearanceLanguageEn": "English",
   "appearanceFontTitle": "フォント",
   "appearanceFontDeviceDefault": "端末デフォルト",
   "appearanceFontDeviceDefaultSubtitle": "OS のフォント（ダウンロードなし）",

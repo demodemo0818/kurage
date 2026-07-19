@@ -377,7 +377,7 @@ class MyApp extends ConsumerWidget {
 
     // 表示言語の決定。BuildContext の無い層 (services / 例外メッセージ) が
     // 参照するグローバル l10n も、ここで必ず同じ locale に同期させる。
-    const appLocale = Locale('ja');
+    final appLocale = resolveAppLocale(settings.appLocale);
     updateGlobalL10n(appLocale);
 
     return MaterialApp(
@@ -386,9 +386,6 @@ class MyApp extends ConsumerWidget {
       theme: _buildTheme(settings, Brightness.light),
       darkTheme: _buildTheme(settings, Brightness.dark),
       themeMode: settings.themeMode,
-      // TODO(v1.1.0): 全文言の英訳が完了したら resolveAppLocale(settings.appLocale)
-      // ベースの解決に切り替え、設定画面に言語ピッカーを追加して解放する
-      // (docs/i18n.md 参照)。それまでは従来どおり日本語固定。
       locale: appLocale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,

@@ -93,6 +93,44 @@ class AppearanceSettingsPage extends ConsumerWidget {
     }
   }
 
+  String _appLocaleLabel(BuildContext context, String value) {
+    switch (value) {
+      case 'ja':
+        return context.l10n.appearanceLanguageJa;
+      case 'en':
+        return context.l10n.appearanceLanguageEn;
+      default:
+        return context.l10n.appearanceLanguageSystem;
+    }
+  }
+
+  Future<void> _showAppLocalePicker(
+    BuildContext context,
+    String current,
+    SettingsNotifier notifier,
+  ) async {
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(context.l10n.appearanceLanguageTitle),
+        children: [
+          for (final value in ['system', 'ja', 'en'])
+            RadioListTile<String>(
+              title: Text(_appLocaleLabel(context, value)),
+              value: value,
+              // ignore: deprecated_member_use
+              groupValue: current,
+              // ignore: deprecated_member_use
+              onChanged: (v) => Navigator.pop(context, v),
+            ),
+        ],
+      ),
+    );
+    if (selected != null && selected != current) {
+      await notifier.setAppLocale(selected);
+    }
+  }
+
   Future<void> _showThemeModePicker(
     BuildContext context,
     ThemeMode current,
@@ -375,6 +413,14 @@ class AppearanceSettingsPage extends ConsumerWidget {
           SettingsSection(
             title: context.l10n.appearanceSectionTheme,
             children: [
+              ListTile(
+                leading: const Icon(Icons.language, color: Colors.indigo),
+                title: Text(context.l10n.appearanceLanguageTitle),
+                subtitle: Text(_appLocaleLabel(context, settings.appLocale)),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () =>
+                    _showAppLocalePicker(context, settings.appLocale, notifier),
+              ),
               ListTile(
                 leading: const Icon(Icons.brightness_6, color: Colors.amber),
                 title: Text(context.l10n.appearanceThemeModeTitle),

@@ -32,6 +32,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         options: DefaultFirebaseOptions.currentPlatform,
       );
     }
+    // widget tree が無く MyApp が走らないため、保存済み設定から明示的に同期する。
+    await updateGlobalL10nFromPrefs();
     debugPrint('[Push] background message: ${message.data}');
 
     // 別 isolate で動くので FlutterLocalNotificationsPlugin を初期化し直す

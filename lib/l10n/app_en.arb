@@ -645,6 +645,10 @@
   "appSettingsImportFailed": "Import failed: {error}",
 
   "appearanceTitle": "Appearance",
+  "appearanceLanguageTitle": "Display language",
+  "appearanceLanguageSystem": "Follow system setting",
+  "appearanceLanguageJa": "日本語",
+  "appearanceLanguageEn": "English",
   "appearanceFontTitle": "Font",
   "appearanceFontDeviceDefault": "Device default",
   "appearanceFontDeviceDefaultSubtitle": "The OS font (no download)",
