@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>認証中...</title>
+    <title id="title">Authenticating...</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -46,13 +46,38 @@
 <body>
     <div class="container">
         <div class="spinner"></div>
-        <h2>認証中...</h2>
-        <p id="status">認証情報を処理しています...</p>
+        <h2 id="heading"></h2>
+        <p id="status"></p>
         <div id="error" class="error" style="display: none;"></div>
     </div>
 
     <script>
         (function() {
+            // Flutter アプリの Widget tree が無い独立ポップアップなので、
+            // context.l10n / グローバル l10n は使えない。ブラウザの言語設定
+            // だけで日英を切り替える簡易二言語化 (docs/i18n.md 参照)。
+            const isJa = navigator.language && navigator.language.startsWith('ja');
+            const t = isJa ? {
+                title: '認証中...',
+                heading: '認証中...',
+                processing: '認証情報を処理しています...',
+                done: '認証が完了しました。このウィンドウを閉じています...',
+                error: '認証中にエラーが発生しました',
+                missingParams: '認証パラメータが不足しています',
+                noOpener: '親ウィンドウが見つかりません',
+            } : {
+                title: 'Authenticating...',
+                heading: 'Authenticating...',
+                processing: 'Processing your credentials...',
+                done: 'Authentication complete. Closing this window...',
+                error: 'An error occurred during authentication',
+                missingParams: 'Missing authentication parameters',
+                noOpener: 'Could not find the parent window',
+            };
+            document.getElementById('title').textContent = t.title;
+            document.getElementById('heading').textContent = t.heading;
+            document.getElementById('status').textContent = t.processing;
+
             try {
                 // URLパラメータを解析
                 const urlParams = new URLSearchParams(window.location.search);
@@ -66,7 +91,7 @@
                 }
 
                 if (!code || !state) {
-                    throw new Error('認証パラメータが不足しています');
+                    throw new Error(t.missingParams);
                 }
 
                 // 親ウィンドウにメッセージを送信
@@ -76,26 +101,26 @@
                         code: code,
                         state: state
                     }, window.location.origin);
-                    
-                    document.getElementById('status').textContent = '認証が完了しました。このウィンドウを閉じています...';
-                    
+
+                    document.getElementById('status').textContent = t.done;
+
                     // 少し待ってからウィンドウを閉じる
                     setTimeout(() => {
                         window.close();
                     }, 1000);
                 } else {
-                    throw new Error('親ウィンドウが見つかりません');
+                    throw new Error(t.noOpener);
                 }
 
             } catch (err) {
                 console.error('OAuth callback error:', err);
-                
+
                 const errorDiv = document.getElementById('error');
                 const statusP = document.getElementById('status');
                 const spinner = document.querySelector('.spinner');
-                
+
                 spinner.style.display = 'none';
-                statusP.textContent = '認証中にエラーが発生しました';
+                statusP.textContent = t.error;
                 errorDiv.textContent = err.message;
                 errorDiv.style.display = 'block';
 
