@@ -579,6 +579,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
           maxId: _remoteMaxId,
           excludeDirect: _excludeDirect,
         );
+        // await 中に画面が閉じられていたら setState しない (dispose 後の
+        // setState は release で null check クラッシュになる。Crashlytics 3a80ba9)。
+        if (!mounted) return;
         if (older.isNotEmpty) {
           setState(() {
             _remoteStatuses.addAll(older);
@@ -588,7 +591,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       } catch (_) {
         // ignore
       } finally {
-        setState(() => _loadingMore = false);
+        if (mounted) setState(() => _loadingMore = false);
       }
       return;
     }
@@ -604,6 +607,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         maxId: _maxId,
         excludeDirect: _excludeDirect,
       );
+      if (!mounted) return;
       if (older.isNotEmpty) {
         setState(() {
           _statuses.addAll(older);
@@ -613,7 +617,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     } catch (_) {
       // ignore
     } finally {
-      setState(() => _loadingMore = false);
+      if (mounted) setState(() => _loadingMore = false);
     }
   }
 
@@ -632,6 +636,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
           maxId: _remoteMediaMaxId,
           onlyMedia: true,
         );
+        if (!mounted) return;
         if (older.isNotEmpty) {
           setState(() {
             _remoteMediaStatuses.addAll(older);
@@ -641,7 +646,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       } catch (_) {
         // ignore
       } finally {
-        setState(() => _loadingMore = false);
+        if (mounted) setState(() => _loadingMore = false);
       }
       return;
     }
@@ -657,6 +662,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         maxId: _mediaMaxId,
         onlyMedia: true,
       );
+      if (!mounted) return;
       if (older.isNotEmpty) {
         setState(() {
           _mediaStatuses.addAll(older);
@@ -666,7 +672,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     } catch (_) {
       // ignore
     } finally {
-      setState(() => _loadingMore = false);
+      if (mounted) setState(() => _loadingMore = false);
     }
   }
 
