@@ -73,6 +73,40 @@ jobs:
             gh release create $tag @assets --title $tag --generate-notes @pre
           }
 
+      # GitHub Release 作成に成功した後だけ実行。DISCORD_WEBHOOK_URL 未設定
+      # (fork や secret 未登録) なら黙ってスキップする (CI を失敗させない)。
+      - name: Notify Discord
+        if: ${{ success() && startsWith(github.ref, 'refs/tags/v') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if (-not $env:DISCORD_WEBHOOK_URL) {
+            Write-Host "DISCORD_WEBHOOK_URL 未設定のため Discord 通知をスキップします"
+            exit 0
+          }
+          $tag = "${{ github.ref_name }}"
+          $release = gh release view $tag --json url,body,name | ConvertFrom-Json
+
+          # Discord embed description の上限は 4096 文字。安全マージンを取って切る。
+          $body = $release.body
+          if ($body.Length -gt 3800) {
+            $body = $body.Substring(0, 3800) + "`n...(省略。全文はリンク先を参照)"
+          }
+
+          $payload = @{
+            content = "🚀 Kurage $($release.name) をリリースしました"
+            embeds  = @(@{
+              title       = $release.name
+              url         = $release.url
+              description = $body
+              color       = 5793266
+            })
+          } | ConvertTo-Json -Depth 5
+
+          $bytes = [System.Text.Encoding]::UTF8.GetBytes($payload)
+          Invoke-RestMethod -Uri $env:DISCORD_WEBHOOK_URL -Method Post -ContentType 'application/json; charset=utf-8' -Body $bytes
+
       - name: Upload artifact (manual run)
         if: "!startsWith(github.ref, 'refs/tags/v')"
         uses: actions/upload-artifact@v4

@@ -313,6 +313,15 @@ windows ランナーで `tool/package_windows.ps1` を実行し、生成した z
   (従来の Discord 手動配布から移行)。
 - 手動確認したい時は Actions タブから workflow_dispatch で実行できる (この場合
   Release は作られず artifact に保存される)。
+- **Discord 通知**: Release 作成に成功すると、リポジトリ Secret
+  `DISCORD_WEBHOOK_URL` が設定されていればリリースノート本文 (先頭 3800 字) と
+  Release URL を Discord Webhook に POST する。**タイミングは Windows 自動ビルド
+  完了時点** (Android AAB / Web デプロイはローカル運用のため含まれない、ズレは
+  許容)。Secret 未設定なら黙ってスキップし CI は失敗しない。
+  - 設定手順 (ユーザー側の一回もの): Discord サーバーの通知したいチャンネルで
+    「連携サービスを編集」→「ウェブフックを作成」→ URL をコピー →
+    GitHub リポジトリの Settings → Secrets and variables → Actions →
+    `New repository secret` で名前 `DISCORD_WEBHOOK_URL` として登録。
 
 ### 署名 (未対応) と SmartScreen
 - 現状 **コード署名なし**。テスターは初回に「Windows によって PC が保護されました」
