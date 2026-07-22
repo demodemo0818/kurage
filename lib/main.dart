@@ -199,7 +199,13 @@ Future<void> main() async {
             .setCrashlyticsCollectionEnabled(enabled);
         FlutterError.onError = (details) {
           FlutterError.presentError(details);
-          if (_isTransientNetworkError(details.exception)) {
+          // 画像パイプライン (ImageStreamCompleter.reportError 経由) のエラーは
+          // library が 'image resource service' になる。破損画像のデコード失敗
+          // ("Could not getPixels") や cached_network_image の dispose 競合
+          // ("Decoded image has been disposed") はアプリを落とさないノイズなので
+          // 非致命で記録する (Crashlytics 48d4ad1 / ceb14bd)。
+          final isImagePipeline = details.library == 'image resource service';
+          if (isImagePipeline || _isTransientNetworkError(details.exception)) {
             FirebaseCrashlytics.instance
                 .recordFlutterError(details); // 非致命扱い
           } else {
