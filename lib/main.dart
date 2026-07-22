@@ -47,6 +47,7 @@ import 'services/wake_lock_service.dart';
 import 'services/app_lock_service.dart';
 import 'services/share_intake_service.dart';
 import 'l10n/l10n.dart';
+import 'l10n/safe_material_localizations.dart';
 import 'utils/app_fonts.dart';
 import 'utils/breakpoints.dart';
 import 'utils/platform.dart';
@@ -387,7 +388,13 @@ class MyApp extends ConsumerWidget {
       darkTheme: _buildTheme(settings, Brightness.dark),
       themeMode: settings.themeMode,
       locale: appLocale,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      // SafeMaterialLocalizationsDelegate は日付ピッカー入力パースの
+      // ArgumentError 素通り (flutter/flutter#126397) の対策。先頭に置いて
+      // 標準の GlobalMaterialLocalizations より優先させる (先勝ち)。
+      localizationsDelegates: const [
+        SafeMaterialLocalizationsDelegate(),
+        ...AppLocalizations.localizationsDelegates,
+      ],
       supportedLocales: AppLocalizations.supportedLocales,
       // ボスキー (偽装モード) のゲートを Navigator より上に被せる。これにより
       // 偽装シェルがダイアログ/ポップアップ/SnackBar も含めて全面を覆い、裏の

@@ -60,6 +60,24 @@
         background-color: #ffffff;
       }
     }
+
+    /* Chrome の住所オートフィル対策。Flutter Web はテキスト入力のたびに透明な
+       DOM <input> (input.flt-text-editing) を canvas 上へ重ねるが、Chrome が
+       入力内容をオートフィル対象と誤認する (例: 日付ピッカーに数字 7 桁 =
+       郵便番号) と、-webkit-autofill の背景色が UA スタイルで強制適用され、
+       透明なはずの <input> が不透明の矩形になって Flutter 描画の入力欄を
+       塗りつぶしてしまう (ダークモードではグレー)。autocomplete="off" は
+       Chrome が住所系で無視するため効かない。定番の transition 遅延ハックで
+       background-color の変更を実質無効化する。 */
+    input.flt-text-editing {
+      transition: background-color 9999999s ease-in-out 0s;
+    }
+    input.flt-text-editing:-webkit-autofill,
+    input.flt-text-editing:-webkit-autofill:hover,
+    input.flt-text-editing:-webkit-autofill:focus {
+      -webkit-text-fill-color: transparent !important;
+      transition: background-color 9999999s ease-in-out 0s;
+    }
   </style>
 </head>
 <body>
