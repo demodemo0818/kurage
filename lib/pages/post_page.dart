@@ -1139,7 +1139,9 @@ class _PostPageState extends ConsumerState<PostPage> {
 
       await _uploadImageFile(image);
     } finally {
-      setState(() => _isUploading = false);
+      // ピッカー起動中に画面が破棄されることがある (dispose 後の setState は
+      // release で null check クラッシュ。Crashlytics 7d7e775)。
+      if (mounted) setState(() => _isUploading = false);
     }
   }
 
@@ -1158,7 +1160,7 @@ class _PostPageState extends ConsumerState<PostPage> {
         await _uploadImageFile(image);
       }
     } finally {
-      setState(() => _isUploading = false);
+      if (mounted) setState(() => _isUploading = false);
     }
   }
 
@@ -1258,6 +1260,7 @@ class _PostPageState extends ConsumerState<PostPage> {
         newItems.add(MediaItem(file: x, mediaIdsByAccount: ids));
         if (failures.isNotEmpty) perFileFailures[x.name] = failures;
       }
+      if (!mounted) return;
       setState(() {
         _mediaItems.addAll(newItems);
       });
@@ -1271,7 +1274,7 @@ class _PostPageState extends ConsumerState<PostPage> {
         _showPostPageSnackBar(l10n.composeMediaUploadFailed);
       }
     } finally {
-      setState(() => _isUploading = false);
+      if (mounted) setState(() => _isUploading = false);
     }
   }
 
@@ -2448,8 +2451,11 @@ class _PostPageState extends ConsumerState<PostPage> {
   Widget _buildHashtagButton() {
     return ElevatedButton(
       onPressed: () {
-        final cursorPos = _controller.selection.baseOffset;
         final text = _controller.text;
+        // 一度もフォーカスしていないと selection.baseOffset は -1 で、
+        // substring が RangeError になる (Crashlytics ee0eb1c)。末尾扱いにする。
+        var cursorPos = _controller.selection.baseOffset;
+        if (cursorPos < 0 || cursorPos > text.length) cursorPos = text.length;
         final beforeCursor = text.substring(0, cursorPos);
         final afterCursor = text.substring(cursorPos);
 
