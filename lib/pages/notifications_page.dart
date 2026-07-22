@@ -57,9 +57,21 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
   final Set<String> _selectedAccountIds = {};
   bool _hasInitialized = false;
 
+  /// dispose / post-frame コールバックから `ref` を使うと、Riverpod 側の
+  /// element 破棄が先行したタイミングで 'Cannot use "ref" after the widget
+  /// was disposed' で落ちる (Crashlytics d2deba6 / f963269)。initState で
+  /// notifier を捕まえておき、ref を介さず直接呼ぶ。
+  late final NotificationsNotifier _notificationsNotifier;
+
+  /// `_syncViewer` が ref.read(tabStateProvider) しなくて済むよう、build の
+  /// ref.listen / initState で最新のタブ index をミラーしておく。
+  int _currentTab = 0;
+
   @override
   void initState() {
     super.initState();
+    _notificationsNotifier = ref.read(notificationsProvider.notifier);
+    _currentTab = ref.read(tabStateProvider);
     // 保存されたフィルター設定を復元
     final savedFilters = NotificationsNotifier.getSavedFilters();
     if (savedFilters.isNotEmpty) {
@@ -81,7 +93,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
     // embedded カラムは「表示中ビューア」の登録で既読制御するので別経路。
     if (!widget.embedded) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(notificationsProvider.notifier).markAsRead();
+        _notificationsNotifier.markAsRead();
       });
     } else {
       WidgetsBinding.instance.addPostFrameCallback((_) => _syncViewer());
@@ -93,15 +105,16 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
   bool _viewerRegistered = false;
 
   void _syncViewer() {
-    if (!widget.embedded || !mounted) return;
-    final visible = widget.isActive && ref.read(tabStateProvider) == 0;
-    final notifier = ref.read(notificationsProvider.notifier);
+    // ref は使わない (キャッシュ済み notifier + _currentTab のみ)。post-frame
+    // コールバック経由で widget 破棄後に呼ばれても安全に登録解除だけ行う。
+    if (!widget.embedded) return;
+    final visible = mounted && widget.isActive && _currentTab == 0;
     if (visible && !_viewerRegistered) {
       _viewerRegistered = true;
-      notifier.addNotificationViewer();
+      _notificationsNotifier.addNotificationViewer();
     } else if (!visible && _viewerRegistered) {
       _viewerRegistered = false;
-      notifier.removeNotificationViewer();
+      _notificationsNotifier.removeNotificationViewer();
     }
   }
 
@@ -119,7 +132,8 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
   void dispose() {
     if (_viewerRegistered) {
       _viewerRegistered = false;
-      ref.read(notificationsProvider.notifier).removeNotificationViewer();
+      // ref.read はここでは使えないことがある (クラス冒頭のコメント参照)。
+      _notificationsNotifier.removeNotificationViewer();
     }
     super.dispose();
   }
@@ -143,7 +157,10 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
     } else {
       // embedded カラム: ホームタブから離れる/戻る (= 裏のホームを覆う Deck
       // ポップアップや別ナビへの切替) で可視状態が変わるので同期する。
-      ref.listen<int>(tabStateProvider, (_, _) => _syncViewer());
+      ref.listen<int>(tabStateProvider, (_, next) {
+        _currentTab = next;
+        _syncViewer();
+      });
     }
 
     final asyncList = ref.watch(notificationsProvider);
