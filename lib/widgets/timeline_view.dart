@@ -1845,6 +1845,19 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
     });
   }
 
+  /// `widget.column['sources']` から accountId が一致するソース設定を返す。
+  /// 無ければ null。sources の実行時型が typed List (例: List<Map<String,
+  /// String?>>) のことがあり、dynamic 経由の `firstWhere(orElse: () => null)`
+  /// は closure の型チェックで TypeError になる (Crashlytics 8e86866/a108f7d)
+  /// ため、素朴なループで探す。
+  dynamic _findSourceForAccount(String accountId) {
+    final sources = widget.column['sources'] as List? ?? const [];
+    for (final s in sources) {
+      if (s is Map && s['accountId'] == accountId) return s;
+    }
+    return null;
+  }
+
   Future<void> _loadMore() async {
     if (_loadingMore) {
       debugPrint('Already loading more, skipping');
@@ -1978,11 +1991,8 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
       final filteredPosts = <PostWithAccount>[];
       
       for (final post in olderPosts) {
-        final source = widget.column['sources'].firstWhere(
-          (s) => s['accountId'] == post.accountId,
-          orElse: () => null,
-        );
-        
+        final source = _findSourceForAccount(post.accountId);
+
         if (source != null) {
           final tlType = source['timelineType'] as String? ?? 'home';
           
@@ -2051,10 +2061,7 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
           final accountOldestMap = <String, DateTime>{};
           for (final item in _items) {
             if (item is PostItem) {
-              final source = widget.column['sources'].firstWhere(
-                (s) => s['accountId'] == item.accountId,
-                orElse: () => null,
-              );
+              final source = _findSourceForAccount(item.accountId);
 
               if (source != null) {
                 final sourceKey = '${item.accountId}-${source['timelineType']}';
