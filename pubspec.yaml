@@ -20,7 +20,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # バージョニングルールは RELEASING.md を参照。
 # 形式: MAJOR.MINOR.PATCH[-PRERELEASE]+BUILD (SemVer 2.0.0 + Flutter +build)
 # +BUILD は通し番号でリリースごとに +1。alpha/beta/rc/安定版を跨いでも連続。
-version: 1.1.0+33
+version: 1.2.0+34
 
 environment:
   sdk: ^3.7.2
