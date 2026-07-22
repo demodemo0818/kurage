@@ -121,5 +121,101 @@ void main() {
       expect(MediaAttachment.fromJson(_mediaJson(type: 'audio')).isAudio, true);
       expect(MediaAttachment.fromJson(_mediaJson(type: 'image')).isAudio, false);
     });
+
+    // Misskey は GIF を mp4 に変換せず type だけ gifv で返す (URL は .gif の
+    // まま)。GIF は動画コーデックではなくどのプラットフォームの動画
+    // プレイヤーでも再生できないため、表示側が画像経路に倒す判定を固定する。
+    test('isAnimatedImageFile: gifv + .gif URL (Misskey 未変換) で true', () {
+      MediaAttachment media({required String type, required String url}) =>
+          MediaAttachment(id: 'm1', type: type, url: url, previewUrl: url);
+
+      expect(
+        media(type: 'gifv', url: 'https://mk.example/files/abc.gif')
+            .isAnimatedImageFile,
+        true,
+      );
+      // クエリ付き URL でも path で判定する
+      expect(
+        media(type: 'gifv', url: 'https://mk.example/files/abc.gif?sensitive=1')
+            .isAnimatedImageFile,
+        true,
+      );
+      expect(
+        media(type: 'gifv', url: 'https://mk.example/files/a.apng')
+            .isAnimatedImageFile,
+        true,
+      );
+      expect(
+        media(type: 'video', url: 'https://mk.example/files/a.webp')
+            .isAnimatedImageFile,
+        true,
+      );
+      // mp4 変換済みの正規 gifv は動画プレイヤーのまま
+      expect(
+        media(type: 'gifv', url: 'https://mastodon.example/media/abc.mp4')
+            .isAnimatedImageFile,
+        false,
+      );
+      // 画像 type は対象外 (元々画像経路)
+      expect(
+        media(type: 'image', url: 'https://mk.example/files/abc.gif')
+            .isAnimatedImageFile,
+        false,
+      );
+    });
+
+    // Mastodon が連合時に GIF を mp4 (gifv) に変換したケース。url は .mp4 に
+    // なるが remote_url は連合元の元 .gif を指す。video_player 実装が無い
+    // Linux ではこれを画像デコーダで再生するため、判定を固定する。
+    test('animatedRemoteOriginalUrl: mp4 変換済み gifv の元 .gif を返す', () {
+      MediaAttachment media({
+        String type = 'gifv',
+        String url = 'https://mastodon.example/media/abc.mp4',
+        String? remoteUrl,
+      }) =>
+          MediaAttachment(
+            id: 'm1',
+            type: type,
+            url: url,
+            previewUrl: url,
+            remoteUrl: remoteUrl,
+          );
+
+      expect(
+        media(remoteUrl: 'https://media.misskeyusercontent.jp/io/abc.gif')
+            .animatedRemoteOriginalUrl,
+        'https://media.misskeyusercontent.jp/io/abc.gif',
+      );
+      // remote_url 無し (ローカル投稿) は null
+      expect(media().animatedRemoteOriginalUrl, isNull);
+      // remote_url が動画のままなら null (通常の video の連合)
+      expect(
+        media(
+          type: 'video',
+          remoteUrl: 'https://remote.example/media/abc.mp4',
+        ).animatedRemoteOriginalUrl,
+        isNull,
+      );
+      // 画像 type は対象外
+      expect(
+        media(
+          type: 'image',
+          url: 'https://mastodon.example/media/abc.png',
+          remoteUrl: 'https://mk.example/files/abc.gif',
+        ).animatedRemoteOriginalUrl,
+        isNull,
+      );
+    });
+
+    test('fromJson は remote_url を保持する', () {
+      final json = _mediaJson(type: 'gifv');
+      json['remote_url'] = 'https://mk.example/files/abc.gif';
+      final media = MediaAttachment.fromJson(json);
+      expect(media.remoteUrl, 'https://mk.example/files/abc.gif');
+      expect(
+        media.animatedRemoteOriginalUrl,
+        'https://mk.example/files/abc.gif',
+      );
+    });
   });
 }

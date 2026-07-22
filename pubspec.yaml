@@ -88,6 +88,12 @@ dependencies:
   scrollable_positioned_list: ^0.3.8
   permission_handler: ^12.0.0+1
   video_player: ^2.8.0
+  # video_player の Windows 実装 (federated plugin、Windows 標準の Media
+  # Foundation API ベース)。公式 video_player は Windows 未対応のため追加。
+  # 依存に入れるだけで自動登録され、VideoPlayerController がそのまま動く。
+  # Linux は引き続き動画再生不可 (gifv は remote_url の元 GIF に画像フォール
+  # バックあり — full_screen_image_page.dart 参照)。
+  video_player_win: ^3.2.2
   chewie: ^1.14.1
   image_picker: ^1.0.4
   firebase_core: ^4.9.0

@@ -286,7 +286,22 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
     final attachment = widget.mediaAttachments != null && i < widget.mediaAttachments!.length
         ? widget.mediaAttachments![i]
         : null;
-    final isVideo = attachment?.isVideo ?? false;
+    // 動画プレイヤーではなく画像デコーダで再生すべき URL を決める:
+    // 1) gifv でも実ファイルが .gif のまま (Misskey 等、mp4 未変換) →
+    //    全プラットフォームで画像経路 (動画プレイヤーは GIF を再生できない)。
+    // 2) mp4 変換済みの gifv でも、video_player 実装が無い Linux では連合元の
+    //    元 GIF (remote_url) があればそれを画像経路で再生する
+    //    (Windows は video_player_win で動画再生できるので対象外)。
+    // どちらでもなければ null = 従来どおり動画プレイヤー。
+    String? animatedImageUrl;
+    if (attachment != null && attachment.isVideo) {
+      if (attachment.isAnimatedImageFile) {
+        animatedImageUrl = widget.imageUrls[i];
+      } else if (!kIsWeb && Platform.isLinux) {
+        animatedImageUrl = attachment.animatedRemoteOriginalUrl;
+      }
+    }
+    final isVideo = (attachment?.isVideo ?? false) && animatedImageUrl == null;
     final isGif = attachment?.isGif ?? false;
 
     if (isVideo) {
@@ -312,7 +327,7 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
     }
 
     return _ZoomableImage(
-      imageUrl: widget.imageUrls[i],
+      imageUrl: animatedImageUrl ?? widget.imageUrls[i],
       fit: fit,
       expandOnZoom: expandOnZoom,
       onVerticalDragUpdate: allowDragDismiss ? _onDragUpdate : null,
