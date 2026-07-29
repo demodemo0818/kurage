@@ -65,3 +65,20 @@ Mastodon が GIF→mp4 変換した `type: 'gifv'` のメディアは、タイ�
 対策は [lib/l10n/safe_material_localizations.dart](../lib/l10n/safe_material_localizations.dart) の `SafeMaterialLocalizationsDelegate`: ja / en の `parseCompactDate` を「ArgumentError もパース失敗 (null) に丸める」サブクラスで差し替え、[main.dart](../lib/main.dart) の `localizationsDelegates` **先頭** (先勝ち) に置いている。このデリゲートを外さないこと。サポートロケールを増やす場合は対応する Safe サブクラスも追加が必要。再現・検証は headless Chrome + puppeteer の E2E で実施済み (修正後は「形式が無効です。」の通常エラー表示になる)。
 
 なお Web には別件として、Chrome の住所オートフィルが Flutter の透明な DOM `<input class="flt-text-editing">` に `-webkit-autofill` の背景色を強制適用し、canvas 上の入力欄を不透明矩形で覆い得る挙動がある (Chrome は住所系で `autocomplete="off"` を無視する)。こちらは [web/index.html](../web/index.html) の transition 遅延ハック (`input.flt-text-editing { transition: background-color 9999999s }`) で予防している。このスタイルも消さないこと。
+
+## Windows 配布 zip: 同梱する VC++ ランタイムがビルド時ツールセットより古いと、起動はするのに機能単位でクラッシュする
+
+[package_windows.ps1](../tool/package_windows.ps1) は VC++ 再頒布可能パッケージ未導入のテスターでも起動できるよう、`msvcp140.dll` / `vcruntime140.dll` / `vcruntime140_1.dll` を exe の隣に同梱する。**app-local に置いた DLL は System32 より優先ロードされる**ため、ここでビルドに使った MSVC ツールセットより**古い** CRT を掴ませると、exe は起動するのに特定機能だけが落ちる、という切り分けの難しい壊れ方をする。
+
+実例が v1.2.0 の **Windows 版で動画再生がクラッシュする不具合** ([Issue #1](https://github.com/demodemo0818/kurage/issues/1))。配布 zip をビルドしている GitHub Actions の `windows-latest` ランナーは、VS2026 の Redist ディレクトリ配下に**旧世代の再頒布可能パッケージも同居させている**。旧実装の `Get-ChildItem -Recurse | Select-Object -First 1` は**バージョン順でソートせず列挙順の先頭**を採るため、実際に選ばれていたのは以下だった:
+
+```
+[package] VC++ ランタイム同梱元:
+  C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Redist\MSVC\14.29.30133\x64\Microsoft.VC142.CRT
+```
+
+`Microsoft.VC142.CRT` = VS2019 世代 (CRT **14.29.30157.0**)。一方ビルドはランナーの VS2026 (MSVC **14.51**、`kurage.exe` / `video_player_win_plugin.dll` とも linker version 14.51) で行われていた。結果 14.51 でリンクしたバイナリを 14.29 の CRT で動かす形になり、`video_player_win` (Media Foundation) の再生パスでプロセスごと落ちていた。手元の VS2022 環境は Redist が 14.44 のみでツールセットとも一致するため、**ローカルビルドでは絶対に再現しない**のがこの罠の厄介なところ。実際、切り分けの初手でローカル製の `dist/*.zip` を検体にしてしまい (linker 14.44 + CRT 14.44 で整合しているので当然再生できる)、一度誤った結論を出しかけた。**検体は必ず GitHub Release から落とした実配布物を使うこと** (`gh release download`)。ローカル製か CI 製かは `dumpbin /headers kurage.exe` の linker version で判別できる。
+
+- **切り分け方**: 展開した配布 zip から `msvcp140.dll` / `vcruntime140*.dll` をリネームして退避し (System32 の CRT が使われる)、同じ操作を試す。それで直るなら CRT 不整合。
+- **dumpbin の未解決シンボルは 0 でも安心できない**。エクスポート欠落による即死ではなく、CRT 実装差による実行時の未定義動作として出るため、静的な依存チェックでは検出できない。
+- **対策**: `package_windows.ps1` は候補をファイルバージョン**降順ソート**して最新を採り、さらに `VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt` のツールセット版と Major.Minor を比較して、**CRT の方が古ければ throw して zip を作らせない**。CI のランナー画像が更新されて VS のバージョンが上がっても、黙って壊れた zip が配られることはなくなる。

@@ -179,3 +179,4 @@ Firebase Cloud Messaging + 自前の Cloudflare Worker リレー経由で動作�
 - **`XFile.fromData` は io 実装で `name` を無視 → 空 filename で 422** → filename を必ず非空に (Web で通っても Desktop を確認)
 - **クリップボード画像貼り付けは Web/Desktop で取得経路が別物** (Windows は BMP→PNG 変換必須。Ctrl+V は `Focus.onKeyEvent` + `ignored`)
 - **日付ピッカー入力モードは巨大数字で ArgumentError が build に漏れて入力欄がグレー化** → `SafeMaterialLocalizationsDelegate` を localizationsDelegates 先頭から外さない (Web の Chrome オートフィル対策 = index.html の transition ハックも消さない)
+- **Windows 配布 zip の同梱 CRT がビルド時ツールセットより古いと起動はするのに機能単位で落ちる** (ローカルでは再現しない CI 固有の壊れ方) → `package_windows.ps1` はバージョン降順で選び、古ければ throw する

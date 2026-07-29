@@ -66,22 +66,39 @@ try {
 
   # --- 4. VC++ ランタイム DLL を app-local 同梱 ------------------------------
   # テスターが VC++ 再頒布可能パッケージ未導入でも起動できるよう、exe の隣に置く。
+  #
+  # 【重要】同梱する CRT は **ビルドに使った MSVC ツールセット以上** でなければ
+  # ならない。exe の隣に置いた msvcp140.dll は System32 より優先ロードされるため、
+  # 古いものを掴ませると「起動はするが特定機能だけ落ちる」という厄介な壊れ方をする。
+  # v1.2.0 の Windows 版で動画再生がクラッシュしたのがこれ (GitHub Issue #1):
+  # GitHub Actions ランナーは VS2026 の Redist 配下に旧世代 (Microsoft.VC142.CRT /
+  # 14.29) も同居させており、ソート無しの Select -First 1 がそれを掴む一方、
+  # ビルドは VS2026 の 14.51 で行われていた。
   $crtNames = @('msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll')
   $crtDir = $null
+  $toolsetVersion = $null
   $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
   if (Test-Path $vswhere) {
     $vsPath = & $vswhere -latest -products * -property installationPath 2>$null | Select-Object -First 1
     if ($vsPath) {
+      # CMake (= flutter build windows) が既定で使うツールセットのバージョン。
+      # 同梱 CRT の下限判定に使う。
+      $defaultTxt = Join-Path $vsPath 'VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt'
+      if (Test-Path $defaultTxt) { $toolsetVersion = (Get-Content $defaultTxt -Raw).Trim() }
+
       $redistRoot = Join-Path $vsPath 'VC\Redist\MSVC'
       # ...\<version>\x64\Microsoft.VC14x.CRT\msvcp140.dll (デスクトップ版) を探す。
       # onecore / spectre / store / debug_nonredist バリアントは通常のデスクトップ
       # アプリ向けではないので除外する (誤って onecore CRT を同梱すると一部 API で
       # 問題が出うる)。
+      # 複数バージョンが同居している環境 (CI ランナー) で古いものを引かないよう、
+      # **ファイルバージョン降順で最新を採る**。列挙順に依存させないこと。
       $hit = Get-ChildItem -Path $redistRoot -Recurse -Filter 'msvcp140.dll' -ErrorAction SilentlyContinue |
              Where-Object {
                $_.FullName -match '\\x64\\' -and
                $_.FullName -notmatch '\\(onecore|spectre|store|debug_nonredist)\\'
              } |
+             Sort-Object { [version]$_.VersionInfo.FileVersion } -Descending |
              Select-Object -First 1
       if ($hit) { $crtDir = $hit.DirectoryName }
     }
@@ -91,12 +108,32 @@ try {
     $crtDir = Join-Path $env:WINDIR 'System32'
   }
   if ($crtDir) {
+    # 選ばれた CRT がツールセットより古くないか検証する。古いまま zip を作ると
+    # 実行時にしか気付けない壊れ方をするので、黙って続行せずここで止める。
+    # 比較は Major.Minor まで (同一 Minor 内のビルド番号差は互換とみなす)。
+    $crtVersion = (Get-Item (Join-Path $crtDir 'msvcp140.dll')).VersionInfo.FileVersion
+    if ($toolsetVersion) {
+      $tv = [version]$toolsetVersion
+      $cv = [version]$crtVersion
+      if ($cv.Major -lt $tv.Major -or ($cv.Major -eq $tv.Major -and $cv.Minor -lt $tv.Minor)) {
+        throw @"
+同梱しようとした VC++ ランタイムがビルドに使ったツールセットより古いため中断しました。
+  ツールセット : $toolsetVersion
+  CRT          : $crtVersion ($crtDir)
+古い CRT を app-local 同梱すると、起動はできても実行時に機能単位でクラッシュします
+(v1.2.0 の Windows 動画再生クラッシュ / GitHub Issue #1)。
+VS Installer で「C++ 再頒布可能パッケージ」を最新に更新してから再実行してください。
+"@
+      }
+    } else {
+      Write-Warning 'MSVC ツールセットのバージョンを特定できなかったため、同梱 CRT の新旧チェックをスキップしました。'
+    }
     foreach ($n in $crtNames) {
       $p = Join-Path $crtDir $n
       if (Test-Path $p) { Copy-Item $p -Destination $stage -Force }
       else { Write-Warning "VC++ ランタイムが見つかりません: $n (テスター環境で要 VC++ 再頒布可能パッケージ)" }
     }
-    Write-Host "[package] VC++ ランタイム同梱元: $crtDir" -ForegroundColor Cyan
+    Write-Host "[package] VC++ ランタイム同梱元: $crtDir (CRT $crtVersion / toolset $toolsetVersion)" -ForegroundColor Cyan
   } else {
     Write-Warning 'VC++ ランタイム DLL の場所を特定できませんでした。zip に未同梱です (テスターは VC++ 再頒布可能パッケージの導入が必要)。'
   }
