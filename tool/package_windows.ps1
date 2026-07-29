@@ -93,12 +93,19 @@ try {
       # 問題が出うる)。
       # 複数バージョンが同居している環境 (CI ランナー) で古いものを引かないよう、
       # **ファイルバージョン降順で最新を採る**。列挙順に依存させないこと。
+      # 注: VersionInfo.FileVersion は文字列で、Microsoft 配布の DLL では
+      # "14.29.30157.0 built by: cloudtest" のように接尾辞が付くことがあり
+      # [version] にキャストできない。必ず数値フィールド (File*Part) を使う。
       $hit = Get-ChildItem -Path $redistRoot -Recurse -Filter 'msvcp140.dll' -ErrorAction SilentlyContinue |
              Where-Object {
                $_.FullName -match '\\x64\\' -and
                $_.FullName -notmatch '\\(onecore|spectre|store|debug_nonredist)\\'
              } |
-             Sort-Object { [version]$_.VersionInfo.FileVersion } -Descending |
+             Sort-Object -Descending `
+               @{ Expression = { $_.VersionInfo.FileMajorPart } },
+               @{ Expression = { $_.VersionInfo.FileMinorPart } },
+               @{ Expression = { $_.VersionInfo.FileBuildPart } },
+               @{ Expression = { $_.VersionInfo.FilePrivatePart } } |
              Select-Object -First 1
       if ($hit) { $crtDir = $hit.DirectoryName }
     }
@@ -111,7 +118,9 @@ try {
     # 選ばれた CRT がツールセットより古くないか検証する。古いまま zip を作ると
     # 実行時にしか気付けない壊れ方をするので、黙って続行せずここで止める。
     # 比較は Major.Minor まで (同一 Minor 内のビルド番号差は互換とみなす)。
-    $crtVersion = (Get-Item (Join-Path $crtDir 'msvcp140.dll')).VersionInfo.FileVersion
+    $crtInfo = (Get-Item (Join-Path $crtDir 'msvcp140.dll')).VersionInfo
+    $crtVersion = '{0}.{1}.{2}.{3}' -f $crtInfo.FileMajorPart, $crtInfo.FileMinorPart,
+                                       $crtInfo.FileBuildPart, $crtInfo.FilePrivatePart
     if ($toolsetVersion) {
       $tv = [version]$toolsetVersion
       $cv = [version]$crtVersion
