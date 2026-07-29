@@ -298,6 +298,15 @@ Windows 版は **ポータブル zip** (解凍して `kurage.exe` を実行) と
 3. 配布は **GitHub Releases** から (下記の自動ビルド参照)。ローカル生成の zip は
    動作確認・緊急時の手動配布用 (`dist/` は `.gitignore` 済みでローカルに残るだけ)。
 
+> **⚠️ 通常のリリースでローカルビルドはしない**。配布物はタグ push で GitHub Actions が
+> 作るものだけであり、ローカル版とは**ビルド環境が違う** (ローカル = VS2022 / MSVC 14.44、
+> CI ランナー = VS2026 / MSVC 14.51。同梱される VC++ ランタイムも変わる)。ローカル版で
+> 動いても CI 版が動く保証は無い。実際 [Issue #1](https://github.com/demodemo0818/kurage/issues/1)
+> (Windows で動画再生がクラッシュ) では、`dist/` に残っていたローカル製 zip を検体にして
+> 一度誤った切り分けをした。**Windows の不具合調査では必ず実配布物を使うこと**:
+> `gh release download v<版> --pattern '*-windows.zip'` (ローカル製か CI 製かは
+> `dumpbin /headers kurage.exe` の linker version で判別できる)。
+
 ### GitHub Actions 自動ビルド (配布の主経路)
 
 `v*` タグを push すると
