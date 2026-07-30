@@ -34,6 +34,23 @@ Flutter Gradle プラグインは release ビルドで R8 minify + resource shri
 
 Mastodon が GIF→mp4 変換した `type: 'gifv'` のメディアは、タイムラインで多数同時に `VideoPlayer` を立ち上げると ExoPlayer のデコーダー上限 (端末によって 8〜16) を超え、`MediaCodecVideoRenderer error` で **native レベルでアプリがクラッシュ**する。タイムラインでは静止プレビュー + 「GIF」バッジ (`_GifBadge`) のみに留め、フルスクリーン (`VideoPlayerWidget(looping: true, muted: true, showControls: false)`) で 1 枠だけ decoder を起こしてループ再生する設計。再導入したい場合は `visibility_detector` で「画面内のもののみ再生」+ 同時再生数 cap が必須。
 
+## Windows の動画は再生位置を終端に留まらせてはいけない (点滅する)
+
+Windows (`video_player_win` = Media Foundation) で通常動画を最後まで再生すると、**映像がチカチカ点滅し続ける** ([Issue #4](https://github.com/demodemo0818/kurage/issues/4)、v1.2.1 で発生・v1.2.2 で修正)。連鎖はこうなっている:
+
+1. 終端到達 → `video_player_win` が `MESessionEnded` を受けて `completed` イベントを発火
+2. `video_player` の `VideoEventType.completed` 処理が **`pause()` → `seekTo(duration)`** を呼ぶ (upstream の実装)
+3. この「終端への seek」が Media Foundation の `MESessionEnded` を**再発火**させる
+4. → 1 に戻り、以後延々と往復する
+
+実測では終端到達後に `VideoPlayerValue` の更新が **3600 回以上**発生し、`isBuffering` が **814 回** true/false を往復していた (`isCompleted` は true で安定していたので、値を眺めるときは buffering を見ること)。
+
+**重要な回り道の記録**: 当初 Chewie 側の表示ロジックが原因と考え (Chewie の `getIsBuffering` は終端でスピナーを出さない対策が `TargetPlatform.android` 限定になっており、Windows は `isBuffering` が素通りする)、終端では Chewie を外して自前表示に差し替える修正を入れたが、**実機で点滅は止まらなかった**。点滅の実体は**ネイティブ側がテクスチャを描き直し続けていること**であり、Dart 側の widget 構成とは無関係だったため。UI 層をいくら変えても直らない。
+
+対策は [video_player_widget.dart](../lib/widgets/video_player_widget.dart) の `_onValueChanged`: **終端に達したら先頭へ seek して連鎖を断つ**。`video_player` の `seekTo(duration)` と綱引きになるので、終端へ戻されたことを検知したら何度でも逃がす (`video_player` 側は `completed` イベントを受けたときしか seek しないため必ず収束する。固定遅延で一度だけ逃がす実装はタイミング依存で負けるケースがログに残ったため却下した)。終端表示は Chewie を外し、リプレイボタンを重ねた静止表示にする。**副作用として再生終了後に見えるのは最終フレームではなく先頭フレームになる** (終端に留まれないので原理的に避けられない)。
+
+`video_player_win` 固有の問題なので `defaultTargetPlatform == TargetPlatform.windows` に限定し、他プラットフォームは Chewie の標準挙動を保つこと。gifv (`looping: true`) は `video_player_win` 側が終端で先頭へ戻すため、そもそもこの連鎖に入らない (対象外にしてよい)。
+
 ## `PopScope.canPop` は build 時評価で stale になる
 
 投稿ページのように `ValueNotifier` + `ValueListenableBuilder` で setState を抑制している画面では、`canPop: !_hasContent()` のような書き方をしても `canPop` の値が rebuild されず古いまま (本文を入力しても `canPop = true` のままでダイアログが出ない)。**`canPop: false` 固定にして `onPopInvokedWithResult` 内で live に判定する** のが確実。同様の罠は他のオプティミスティックな setState 抑制パターンでも起き得る。

@@ -172,6 +172,7 @@ Firebase Cloud Messaging + 自前の Cloudflare Worker リレー経由で動作�
 - **カラム TabController から `tabStateProvider` に書き込まない** (カラムスワイプで通知ページに飛ぶ回帰)
 - **OGP は `status.card` のみ** (クライアント側 fetch の再導入は N+1 HTTP になるため要検討)
 - **gifv をタイムラインで自動再生しない** (ExoPlayer デコーダー上限超過で native クラッシュ)
+- **Windows の動画は再生位置を終端に留まらせない** (`seekTo(duration)` が `MESessionEnded` を再発火させ点滅。UI 層では止まらずネイティブが描き直し続ける)
 - **`PopScope.canPop` は build 時評価で stale になる** → `canPop: false` 固定 + `onPopInvokedWithResult` で live 判定
 - **ダイアログ内 `TextEditingController` の同期 dispose は例外連鎖** → post-frame で 1 frame 遅らせて dispose
 - **`DefaultFirebaseOptions.currentPlatform` は同期 throw** → `.catchError` では拾えず真っ白画面。`kIsWeb` 分岐で init 自体を skip
