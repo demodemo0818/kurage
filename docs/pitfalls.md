@@ -99,3 +99,21 @@ Windows (`video_player_win` = Media Foundation) で通常動画を最後まで�
 - **切り分け方**: 展開した配布 zip から `msvcp140.dll` / `vcruntime140*.dll` をリネームして退避し (System32 の CRT が使われる)、同じ操作を試す。それで直るなら CRT 不整合。
 - **dumpbin の未解決シンボルは 0 でも安心できない**。エクスポート欠落による即死ではなく、CRT 実装差による実行時の未定義動作として出るため、静的な依存チェックでは検出できない。
 - **対策**: `package_windows.ps1` は候補をファイルバージョン**降順ソート**して最新を採り、さらに `VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt` のツールセット版と Major.Minor を比較して、**CRT の方が古ければ throw して zip を作らせない**。CI のランナー画像が更新されて VS のバージョンが上がっても、黙って壊れた zip が配られることはなくなる。
+
+## `Theme.of(context).primaryColor` はダークモードで `grey[900]` を返す
+
+Material 3 (`useMaterial3: true`) でも `ThemeData` の `primaryColor` は M2 由来の互換プロパティで、実装が `primaryColor ??= isDark ? Colors.grey[900]! : colorScheme.primary` になっている。つまり **ダークテーマでは「アクセント色」ではなく限りなく黒に近いグレーが返る**。`colorSchemeSeed` (= 設定のテーマカラー) を渡していても関係なく grey[900] のままなので、カスタムカラー指定時でも直らない。
+
+これをアクセントとして文字色に使うと、ダーク背景 (`scaffoldBackgroundColor: Colors.black` / `cardColor: grey[900]`) の上で **文字が背景に埋もれて読めなくなる**。実例が v1.2.2 の「絵文字を選択」ヘッダー ([Issue #6](https://github.com/demodemo0818/kurage/issues/6))。`primaryColor.withValues(alpha: 0.1)` の帯の上に `primaryColor` の文字を載せていたため、ライトでは紫地に紫文字で読めるのに、ダークでは grey[900] 地に grey[900] 文字になっていた。
+
+- **対策**: UI のアクセント色は必ず `Theme.of(context).colorScheme.primary` を使う。`primaryColor` は新規コードで使わない。
+- 背景・枠線側だけに使っている箇所も、ダークでは「アクセントのつもりの薄いグレー」になって選択状態が伝わらないので同様に直す。
+- 同じ罠は通知フィルタダイアログでも一度踏んでおり (notifications_page.dart にコメントあり)、**再発しやすい**。
+
+## メディア保存のファイル名で拡張子を決め打ちしない
+
+全画面ビューアの保存は元々ファイル名を `mastodon_<ts>.jpg` と**決め打ち**していたため、動画 (mp4 / mov / gif) を保存しても JPG として書き出されていた ([Issue #5](https://github.com/demodemo0818/kurage/issues/5)、v1.2.2)。Web だけ正しく保存できていたのは、Web 経路 (`_saveOnWeb`) が Content-Type から拡張子を導出していたため。
+
+- **対策**: 拡張子は [lib/utils/media_filename.dart](../lib/utils/media_filename.dart) の `resolveMediaExtension(url, contentType)` に一本化した (Content-Type がメディア系ならそれを信用し、`application/octet-stream` 等や欠落時は URL の path 末尾に倒し、最後に jpg フォールバック)。純粋関数なので [test/utils/media_filename_test.dart](../test/utils/media_filename_test.dart) で回帰を止めている。
+- **`getSaveLocation` の `XTypeGroup` も併せて直す必要がある**。ここを `['jpg','jpeg','png']` 固定にしていると、ファイル名側を .mp4 にしてもネイティブの保存ダイアログが拡張子を .jpg に付け替えてしまう。`image_save_io.dart` は suggestedName の実拡張子から型グループを組む。
+- `video/quicktime` → `mov`、`audio/mpeg` → `mp3` のようにサブタイプがそのまま拡張子にならない MIME があるので、MIME のサブタイプを素で使わない。

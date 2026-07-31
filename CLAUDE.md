@@ -181,3 +181,5 @@ Firebase Cloud Messaging + 自前の Cloudflare Worker リレー経由で動作�
 - **クリップボード画像貼り付けは Web/Desktop で取得経路が別物** (Windows は BMP→PNG 変換必須。Ctrl+V は `Focus.onKeyEvent` + `ignored`)
 - **日付ピッカー入力モードは巨大数字で ArgumentError が build に漏れて入力欄がグレー化** → `SafeMaterialLocalizationsDelegate` を localizationsDelegates 先頭から外さない (Web の Chrome オートフィル対策 = index.html の transition ハックも消さない)
 - **Windows 配布 zip の同梱 CRT がビルド時ツールセットより古いと起動はするのに機能単位で落ちる** (ローカルでは再現しない CI 固有の壊れ方) → `package_windows.ps1` はバージョン降順で選び、古ければ throw する
+- **`Theme.of(context).primaryColor` はダーク時に `grey[900]` を返す** (M2 互換プロパティ。テーマカラー指定でも直らない) → アクセント色は `colorScheme.primary` を使う
+- **メディア保存のファイル名で拡張子を決め打ちしない** (動画が .jpg で保存される) → `resolveMediaExtension` に一本化、`XTypeGroup` も実拡張子に合わせる
