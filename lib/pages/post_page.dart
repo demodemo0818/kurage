@@ -2375,10 +2375,12 @@ class _PostPageState extends ConsumerState<PostPage> {
         constraints: const BoxConstraints(maxWidth: 140),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+          color:
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
+            color:
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
           ),
         ),
         child: Row(
@@ -2712,17 +2714,19 @@ class _PostPageState extends ConsumerState<PostPage> {
     Color? activeColor,
   }) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    // primaryColor はダーク時に grey[900] を返すので colorScheme.primary を使う。
+    final accent = activeColor ?? Theme.of(context).colorScheme.primary;
     final color =
         isActive
-            ? (activeColor ?? Theme.of(context).primaryColor)
+            ? accent
             : (isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600);
 
     final backgroundColor = isActive
-        ? (activeColor ?? Theme.of(context).primaryColor).withValues(alpha: isDarkMode ? 0.25 : 0.1)
+        ? accent.withValues(alpha: isDarkMode ? 0.25 : 0.1)
         : (isDarkMode ? Colors.grey.shade800.withValues(alpha: 0.5) : Colors.grey.shade50);
 
     final borderColor = isActive
-        ? (activeColor ?? Theme.of(context).primaryColor).withValues(alpha: isDarkMode ? 0.6 : 0.3)
+        ? accent.withValues(alpha: isDarkMode ? 0.6 : 0.3)
         : (isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300);
 
     return Expanded(
@@ -3413,13 +3417,19 @@ class _PostPageState extends ConsumerState<PostPage> {
           child: Column(
             children: [
               // ヘッダー（タイトルと閉じるボタン）
+              // アクセントは colorScheme.primary を使う。Theme.of(context)
+              // .primaryColor は M2 由来でダーク時に grey[900] を返すため、
+              // タイトル文字が背景に埋もれて読めなくなる。
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.1),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(12),
                     topRight: Radius.circular(12),
@@ -3429,7 +3439,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                   children: [
                     Icon(
                       Icons.emoji_emotions,
-                      color: Theme.of(context).primaryColor,
+                      color: Theme.of(context).colorScheme.primary,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
@@ -3438,7 +3448,7 @@ class _PostPageState extends ConsumerState<PostPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Theme.of(context).primaryColor,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                     const Spacer(),
