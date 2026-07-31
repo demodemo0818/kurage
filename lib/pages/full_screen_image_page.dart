@@ -15,6 +15,7 @@ import '../services/image_download_stub.dart'
     if (dart.library.js_interop) '../services/image_download_web.dart'
     as image_download;
 import '../services/image_save_io.dart';
+import '../utils/media_filename.dart';
 import '../utils/platform.dart';
 import '../widgets/network_image_x.dart';
 import '../models/media_attachment.dart';
@@ -170,7 +171,10 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
       final resp = await http.get(Uri.parse(url));
       if (resp.statusCode != 200) throw Exception(l10n.downloadFailed);
 
-      final fileName = 'mastodon_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      // 拡張子を決め打ちにすると動画 (mp4/mov/gif) まで .jpg で保存されて
+      // しまうので、Content-Type → URL の順で実体に合わせて解決する。
+      final ext = resolveMediaExtension(url, resp.headers['content-type']);
+      final fileName = 'mastodon_${DateTime.now().millisecondsSinceEpoch}.$ext';
 
       if (isDesktop()) {
         // デスクトップ: 設定の既定フォルダ or 毎回確認ダイアログで保存先を決める。
@@ -219,8 +223,8 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
       final resp = await http.get(Uri.parse(url));
       if (resp.statusCode != 200) throw Exception('HTTP ${resp.statusCode}');
       final mime = resp.headers['content-type'] ?? 'image/jpeg';
-      final fileName =
-          'mastodon_${DateTime.now().millisecondsSinceEpoch}.${_extFromMime(mime)}';
+      final fileName = 'mastodon_${DateTime.now().millisecondsSinceEpoch}'
+          '.${resolveMediaExtension(url, mime)}';
       await image_download.downloadBytes(
         resp.bodyBytes,
         fileName: fileName,
@@ -231,17 +235,6 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
       image_download.openInNewTab(url);
       _showToast(l10n.imageOpenedInNewTab);
     }
-  }
-
-  /// Content-Type の MIME からファイル拡張子を導出する (Web の保存ファイル名用)。
-  String _extFromMime(String mime) {
-    final sub = mime.split('/').last.split(';').first.trim().toLowerCase();
-    if (sub.isEmpty) return 'jpg';
-    return switch (sub) {
-      'jpeg' => 'jpg',
-      'svg+xml' => 'svg',
-      _ => sub,
-    };
   }
 
   void _onDragUpdate(DragUpdateDetails details) {

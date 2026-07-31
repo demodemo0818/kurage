@@ -30,12 +30,17 @@ Future<String?> saveImageToDesktop(
   required bool askLocation,
 }) async {
   if (askLocation) {
-    const group = XTypeGroup(
-      label: 'Image',
-      extensions: <String>['jpg', 'jpeg', 'png'],
-    );
+    // 型グループを画像固定にすると動画 (.mp4 等) を保存する時にダイアログが
+    // 拡張子を .jpg に付け替えてしまう。suggestedName の実拡張子に合わせる。
+    final dot = suggestedName.lastIndexOf('.');
+    final ext = dot != -1 && dot < suggestedName.length - 1
+        ? suggestedName.substring(dot + 1).toLowerCase()
+        : null;
+    final group = ext == null
+        ? const XTypeGroup(label: 'Media')
+        : XTypeGroup(label: ext.toUpperCase(), extensions: <String>[ext]);
     final location = await getSaveLocation(
-      acceptedTypeGroups: const [group],
+      acceptedTypeGroups: [group],
       suggestedName: suggestedName,
     );
     if (location == null) return null; // キャンセル
