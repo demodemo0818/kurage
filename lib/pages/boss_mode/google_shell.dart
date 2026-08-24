@@ -442,42 +442,86 @@ class _GoogleShellState extends ConsumerState<GoogleShell> {
 
   Widget _header() {
     final acct = _account;
+    final label = _replyTargetLabel;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const GoogleWordmark(fontSize: 26),
-          const SizedBox(width: 16),
-          Expanded(
-            child: GoogleSearchBox(
-              controller: _searchCtrl,
-              focusNode: _searchFocus,
-              autofocus: true,
-              replyingToLabel: _replyTargetLabel,
-              onCancelReply: _cancelReply,
-              onSubmit: _submit,
-              visibility: _visibility,
-              onVisibilityChanged: (v) => setState(() => _visibility = v),
-            ),
+          // 返信先チップは検索窓と同じ Row に入れず、独立した行として上に置く。
+          // 検索窓の widget 自体を縦に伸ばすと Row の縦中心が上がり、ロゴ /
+          // 更新ボタン / アバターが検索窓に対してずれる (issue #8)。
+          if (label != null) _replyChipRow(label),
+          Row(
+            children: [
+              const GoogleWordmark(fontSize: 26),
+              const SizedBox(width: 16),
+              Expanded(
+                child: GoogleSearchBox(
+                  controller: _searchCtrl,
+                  focusNode: _searchFocus,
+                  autofocus: true,
+                  onSubmit: _submit,
+                  visibility: _visibility,
+                  onVisibilityChanged: (v) => setState(() => _visibility = v),
+                ),
+              ),
+              const SizedBox(width: 6),
+              IconButton(
+                tooltip: context.l10n.refresh,
+                onPressed: _refreshing ? null : _manualRefresh,
+                icon: _refreshing
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh, color: Color(0xFF5F6368)),
+              ),
+              if (acct != null) ...[
+                const SizedBox(width: 6),
+                _accountSwitcher(acct),
+              ],
+            ],
           ),
-          const SizedBox(width: 6),
-          IconButton(
-            tooltip: context.l10n.refresh,
-            onPressed: _refreshing ? null : _manualRefresh,
-            icon: _refreshing
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.refresh, color: Color(0xFF5F6368)),
-          ),
-          if (acct != null) ...[
-            const SizedBox(width: 6),
-            _accountSwitcher(acct),
-          ],
         ],
       ),
+    );
+  }
+
+  /// 返信中の対象を示すチップの行。検索窓の真上に来るよう、左端にはロゴと
+  /// 同じ幅の不可視プレースホルダを置いて字下げする (ロゴ幅はフォント依存
+  /// なので固定値を書かない)。
+  Widget _replyChipRow(String label) {
+    return Row(
+      children: [
+        const Visibility(
+          visible: false,
+          maintainSize: true,
+          maintainAnimation: true,
+          maintainState: true,
+          child: GoogleWordmark(fontSize: 26),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 6),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: InputChip(
+                label: Text(context.l10n.bossReplyingTo(label)),
+                onDeleted: _cancelReply,
+                visualDensity: VisualDensity.compact,
+                backgroundColor: const Color(0xFFF1F3F4),
+                labelStyle:
+                    const TextStyle(color: Color(0xFF202124), fontSize: 13),
+                deleteIconColor: const Color(0xFF5F6368),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
