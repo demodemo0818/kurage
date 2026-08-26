@@ -183,3 +183,4 @@ Firebase Cloud Messaging + 自前の Cloudflare Worker リレー経由で動作�
 - **Windows 配布 zip の同梱 CRT がビルド時ツールセットより古いと起動はするのに機能単位で落ちる** (ローカルでは再現しない CI 固有の壊れ方) → `package_windows.ps1` はバージョン降順で選び、古ければ throw する
 - **`Theme.of(context).primaryColor` はダーク時に `grey[900]` を返す** (M2 互換プロパティ。テーマカラー指定でも直らない) → アクセント色は `colorScheme.primary` を使う
 - **メディア保存のファイル名で拡張子を決め打ちしない** (動画が .jpg で保存される) → `resolveMediaExtension` に一本化、`XTypeGroup` も実拡張子に合わせる
+- **常時表示スクロールバーのトラックはホイール入力を横取りする** (カラム下端でホイールが縦でなく横に動く) → コンテンツと重ねず `kDeckScrollbarReserve` ぶん余白を取る

@@ -117,3 +117,13 @@ Material 3 (`useMaterial3: true`) でも `ThemeData` の `primaryColor` は M2 �
 - **対策**: 拡張子は [lib/utils/media_filename.dart](../lib/utils/media_filename.dart) の `resolveMediaExtension(url, contentType)` に一本化した (Content-Type がメディア系ならそれを信用し、`application/octet-stream` 等や欠落時は URL の path 末尾に倒し、最後に jpg フォールバック)。純粋関数なので [test/utils/media_filename_test.dart](../test/utils/media_filename_test.dart) で回帰を止めている。
 - **`getSaveLocation` の `XTypeGroup` も併せて直す必要がある**。ここを `['jpg','jpeg','png']` 固定にしていると、ファイル名側を .mp4 にしてもネイティブの保存ダイアログが拡張子を .jpg に付け替えてしまう。`image_save_io.dart` は suggestedName の実拡張子から型グループを組む。
 - `video/quicktime` → `mov`、`audio/mpeg` → `mp3` のようにサブタイプがそのまま拡張子にならない MIME があるので、MIME のサブタイプを素で使わない。
+
+## スクロールバーのトラックはホイール入力を横取りする (コンテンツに重ねない)
+
+Flutter の `RawScrollbar` は、**トラックの上にカーソルがある間、ホイール入力を自分の軸のスクロールに回す** (`_receivedPointerSignal` が `scrollbarPainter.hitTest(event.localPosition)` で判定し、pointerSignalResolver に先に登録する)。マウスの場合の当たり判定は `_trackRect` そのもので、水平バーなら viewport 下端の **thickness 8 + crossAxisMargin 2×2 = 12px の帯**全体が対象になる。
+
+Deck (ワイドレイアウト) の横スクロールバーは `thumbVisibility: true` で常時表示しており、この帯がタイムラインの上に重なっていた。そのため **カラム下端でホイールを回すと、そのカラムが縦に動かず横スクロールしてしまう** ([Issue #7](https://github.com/demodemo0818/kurage/issues/7))。横スクロールバーをドラッグした直後はカーソルがバーの上に残るため、「横に動かして戻すとホイールがおかしくなり、別の操作をすると直る」という再現しにくい形で顔を出す。
+
+- **対策**: バーとコンテンツを重ねない。`SingleChildScrollView` に `padding: EdgeInsets.only(bottom: kDeckScrollbarReserve)` ([lib/utils/breakpoints.dart](../lib/utils/breakpoints.dart)) を渡してカラムをトラックのぶん短くする。バーが出ない時 (全カラムが画面に収まる `fits` の時) は余白を取らない。
+- `interactive: false` や `ignorePointer: true` で黙らせてはいけない。ホイールの横取りは止まるが、バーのドラッグ自体もできなくなる。
+- 常時表示のスクロールバーを新しく足す時は、**トラックが乗る帯の下に何を置いているか**を必ず確認する。同じ理由でタップ/ドラッグも吸われる。
