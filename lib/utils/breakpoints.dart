@@ -35,3 +35,15 @@ const double kComposePaneWidth = 360;
 /// Deck (ワイド) で、ホームに重ねて出す各ページ (通知/DM/プロフィール/設定/検索)
 /// ポップアップの最大幅。大画面でページが横に広がりすぎるのを防ぐ。
 const double kDeckPopupMaxWidth = 520;
+
+/// Deck (ワイド) の横スクロールバーを置くために、カラム下端に空けておく高さ。
+///
+/// Flutter の Scrollbar は「トラックの上にカーソルがある間、ホイール入力を
+/// 自分の軸のスクロールに横取りする」実装 (`RawScrollbar._receivedPointerSignal`
+/// が `scrollbarPainter.hitTest` で判定)。バーをタイムライン本体に重ねたままだと
+/// カラム下端でホイールを回しても縦に動かず横に動いてしまう (issue #7)。
+/// カラムをこの高さぶん短くしてバーとの重なりをなくす。
+///
+/// 値は Material の水平スクロールバーのトラック高 (thickness 8 + crossAxisMargin
+/// 2 × 2 辺 = 12) に合わせてある。
+const double kDeckScrollbarReserve = 12;

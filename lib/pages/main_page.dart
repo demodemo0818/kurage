@@ -452,6 +452,9 @@ class _MainPageState extends ConsumerState<MainPage>
         controller: _deckHScrollController,
         scrollDirection: Axis.horizontal,
         physics: const ClampingScrollPhysics(),
+        // スクロールバーのトラックとカラムを重ねない (issue #7)。重ねると
+        // カラム下端がホイールの横取り領域になる。詳細は kDeckScrollbarReserve。
+        padding: const EdgeInsets.only(bottom: kDeckScrollbarReserve),
         child: Row(
           // 左寄せ (Row は SingleChildScrollView 内で子の合計幅にフィットする
           // ので余りは自然と右側に出る)。縦は stretch でカラムを全高に伸ばす。
@@ -609,6 +612,12 @@ class _MainPageState extends ConsumerState<MainPage>
                         physics: fits
                             ? const NeverScrollableScrollPhysics()
                             : const ClampingScrollPhysics(),
+                        // バーが出る時だけ、その高さぶんカラムを短くして
+                        // 重なりを避ける (issue #7)。全カラムが収まっていて
+                        // バーが無い時は余白を取らない。
+                        padding: EdgeInsets.only(
+                          bottom: fits ? 0 : kDeckScrollbarReserve,
+                        ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: List.generate(
