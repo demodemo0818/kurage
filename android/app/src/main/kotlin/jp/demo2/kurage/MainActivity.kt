@@ -4,7 +4,6 @@ import android.media.MediaScannerConnection
 import android.os.Build
 import android.content.Intent
 import android.net.Uri
-import android.os.Bundle
 import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -18,43 +17,9 @@ class MainActivity: FlutterFragmentActivity() {
   private val MEDIA_CHANNEL = "kurage/media_scanner"
   private val SHARE_CHANNEL = "jp.demo2.kurage/share"
 
-  // 他アプリの「共有」メニューから受け取った text/plain を Flutter 側が
-  // 取りに来るまで保持しておくバッファ。consumePendingSharedText で取り出すと
-  // 同時にクリアされる。
-  private var pendingSharedText: String? = null
+  // 共有テキストの受け渡し用。実際に ACTION_SEND を受けるのは ShareActivity で、
+  // ここはそれが ShareIntake に貯めたものを Flutter 側へ渡すだけ。
   private val SHARE_INTAKE_CHANNEL = "jp.demo2.kurage/share_intake"
-
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    // コールドスタート時の Intent を捕捉
-    captureSharedText(intent)
-  }
-
-  override fun onNewIntent(intent: Intent) {
-    super.onNewIntent(intent)
-    // launchMode=singleTop なので、すでに動いている Activity に新しい Intent が
-    // 来た場合はここで受ける。setIntent しておかないと getIntent() で古いものが
-    // 返るので、念のため更新。
-    setIntent(intent)
-    captureSharedText(intent)
-  }
-
-  /// ACTION_SEND + text/plain なら EXTRA_TEXT (および EXTRA_SUBJECT) を
-  /// pendingSharedText に格納する。
-  private fun captureSharedText(intent: Intent?) {
-    if (intent == null) return
-    if (intent.action != Intent.ACTION_SEND) return
-    if (intent.type != "text/plain") return
-    val text = intent.getStringExtra(Intent.EXTRA_TEXT) ?: return
-    val subject = intent.getStringExtra(Intent.EXTRA_SUBJECT)
-    // ブラウザ等は EXTRA_SUBJECT にページタイトル + EXTRA_TEXT に URL を載せる。
-    // 両方ある場合は「タイトル\nURL」の形で連結して投稿欄に流し込みやすくする。
-    pendingSharedText = if (!subject.isNullOrBlank() && subject != text) {
-      "$subject\n$text"
-    } else {
-      text
-    }
-  }
 
   override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
     super.configureFlutterEngine(flutterEngine)
@@ -151,15 +116,13 @@ class MainActivity: FlutterFragmentActivity() {
     }
 
     // 他アプリの「共有」から受け取ったテキストを Flutter 側が取り出すための
-    // チャンネル。consumePendingSharedText を 1 回呼ぶと、保持していたテキストが
-    // 戻り値として返り、同時にクリアされる (二重起動防止)。
+    // チャンネル。ShareActivity が ShareIntake に貯めたテキストを 1 回だけ返し、
+    // 同時にクリアされる (二重起動防止)。
     MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SHARE_INTAKE_CHANNEL)
       .setMethodCallHandler { call, result ->
         when (call.method) {
           "consumePendingSharedText" -> {
-            val text = pendingSharedText
-            pendingSharedText = null
-            result.success(text)
+            result.success(ShareIntake.consume())
           }
           else -> result.notImplemented()
         }

@@ -77,8 +77,30 @@
                 ダイアログで Kurage を 2 つ表示し、MainActivity 側を選ぶと
                 AppAuth が code を受け取れず認証失敗する。
             -->
+        </activity>
 
-            <!-- 他アプリの「共有」メニューから text/plain (本文・URL) を受け取る -->
+        <!--
+            2) 他アプリの「共有」メニューから text/plain (本文・URL) を受け取る
+               ための中継 Activity。テキストを ShareIntake に移して MainActivity
+               を起動し、即 finish するだけ。
+
+               MainActivity に ACTION_SEND の intent-filter を直付けしてはいけない:
+               共有起動時の SEND Intent が「メインタスクの Intent」として Android
+               側に保存され、Activity 再生成 (タスク復元 / ランチャーからの再起動)
+               のたびに onCreate へ再配達される。その結果、投稿を終えたあとでも
+               次回起動時に同じ内容の投稿画面が開いてしまう。アプリ内で setIntent
+               したり extra を消しても、保存されているのは system_server 側の
+               Intent なので直らない。
+               taskAffinity="" + noHistory + excludeFromRecents でタスクに一切
+               残らない別 Activity に分離することで、この再配達を構造的に断つ。
+        -->
+        <activity
+            android:name=".ShareActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
             <intent-filter>
                 <action android:name="android.intent.action.SEND"/>
                 <category android:name="android.intent.category.DEFAULT"/>

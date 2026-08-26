@@ -3,8 +3,8 @@
 // 他アプリの「共有」メニューから本アプリに送られた text/plain を
 // ネイティブ層から取り出すためのラッパー。
 //
-// AndroidManifest の `ACTION_SEND` intent-filter で起動された MainActivity が
-// `pendingSharedText` にテキストを格納しており、Flutter 側はここで
+// AndroidManifest の `ACTION_SEND` intent-filter で起動される ShareActivity が
+// テキストを ShareIntake に格納しており、Flutter 側はここで
 // `consumePendingSharedText` を呼び出して 1 回だけ取り出す (取り出すと同時に
 // ネイティブ側でクリアされる)。
 

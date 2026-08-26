@@ -600,7 +600,7 @@ class _RootPageState extends ConsumerState<RootPage> with WidgetsBindingObserver
       WakeLockService.updateFromSettings(settings.keepScreenOn);
       // 「他アプリの共有」経由で起動された場合、ネイティブ側に貯まっている
       // テキストを取り出して投稿画面に流し込む。コールドスタート時もここで
-      // 拾える (MainActivity.onCreate でテキストはすでに captured 済み)。
+      // 拾える (ShareActivity が MainActivity 起動前に ShareIntake へ格納済み)。
       _consumeSharedTextIfReady();
     });
   }
@@ -643,8 +643,8 @@ class _RootPageState extends ConsumerState<RootPage> with WidgetsBindingObserver
 
   /// 「他アプリの共有」経由で渡された text/plain があれば PostPage を開く。
   ///
-  /// - ネイティブ側 (MainActivity) は ACTION_SEND の Intent を捕捉して
-  ///   pendingSharedText に保持しており、最初にここで取り出すと同時に
+  /// - ネイティブ側 (ShareActivity) は ACTION_SEND の Intent を捕捉して
+  ///   ShareIntake に保持しており、最初にここで取り出すと同時に
   ///   クリアされる仕組み。何度呼んでも 2 回目以降は no-op になる。
   /// - アプリロック中は PostPage を出さない。ロック解除後の resumed で
   ///   再試行されるか、ロック画面が消えた直後の build → ref.listen でも

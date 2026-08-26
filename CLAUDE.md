@@ -184,3 +184,4 @@ Firebase Cloud Messaging + 自前の Cloudflare Worker リレー経由で動作�
 - **`Theme.of(context).primaryColor` はダーク時に `grey[900]` を返す** (M2 互換プロパティ。テーマカラー指定でも直らない) → アクセント色は `colorScheme.primary` を使う
 - **メディア保存のファイル名で拡張子を決め打ちしない** (動画が .jpg で保存される) → `resolveMediaExtension` に一本化、`XTypeGroup` も実拡張子に合わせる
 - **常時表示スクロールバーのトラックはホイール入力を横取りする** (カラム下端でホイールが縦でなく横に動く) → コンテンツと重ねず `kDeckScrollbarReserve` ぶん余白を取る
+- **`ACTION_SEND` の intent-filter を `MainActivity` に直付けしない** (共有 Intent がタスクに保存され、次回起動時に投稿済みの内容で投稿画面が再表示される) → `taskAffinity=""` + `noHistory` の `ShareActivity` に分離

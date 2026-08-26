@@ -127,3 +127,13 @@ Deck (ワイドレイアウト) の横スクロールバーは `thumbVisibility:
 - **対策**: バーとコンテンツを重ねない。`SingleChildScrollView` に `padding: EdgeInsets.only(bottom: kDeckScrollbarReserve)` ([lib/utils/breakpoints.dart](../lib/utils/breakpoints.dart)) を渡してカラムをトラックのぶん短くする。バーが出ない時 (全カラムが画面に収まる `fits` の時) は余白を取らない。
 - `interactive: false` や `ignorePointer: true` で黙らせてはいけない。ホイールの横取りは止まるが、バーのドラッグ自体もできなくなる。
 - 常時表示のスクロールバーを新しく足す時は、**トラックが乗る帯の下に何を置いているか**を必ず確認する。同じ理由でタップ/ドラッグも吸われる。
+
+## `ACTION_SEND` の intent-filter をメイン Activity に直付けすると、共有 Intent が再配達される
+
+`MainActivity` に `ACTION_SEND` の intent-filter を書くと、他アプリの「共有」で起動されたときの SEND Intent が **そのままメインタスクの Intent として Android (system_server) 側に保存される**。投稿を終えて Activity / プロセスが破棄されたあと、タスク復元やランチャーからの再起動で `onCreate` が走ると **保存済みの SEND Intent が再配達され**、`EXTRA_TEXT` を読み直したアプリが「投稿済みの内容が入った投稿画面」をまた開いてしまう。
+
+- ユーザーからは「共有して投稿したのに、次にアプリを開くと同じ投稿画面が出る」と見える。下書き (`post_temp_draft`) の残骸に見えるが**下書きは無関係**。共有起動時は下書きを読まない (`post_page.dart` の `_loadTempDraft` 冒頭ガード) し、投稿成功時に全キー削除している。
+- **`setIntent()` や `intent.removeExtra()` では直らない**。保存されているのは system_server 側の Intent なので、アプリのプロセス内でオブジェクトを書き換えても、次の復元時には元のものが渡ってくる。
+- `FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY` や `savedInstanceState != null` のガードで大半は防げるが、タスクリセット等の経路を取りこぼす。
+- **対策**: SEND は `MainActivity` で受けず、専用の中継 Activity ([android/app/src/main/kotlin/jp/demo2/kurage/ShareActivity.kt](../android/app/src/main/kotlin/jp/demo2/kurage/ShareActivity.kt)) に分離する。`taskAffinity=""` + `noHistory` + `excludeFromRecents` でタスクに一切残らないようにし、テキストだけプロセス内の `ShareIntake` に移して `MainActivity` を起動して即 `finish()` する。メインタスクの Intent は常に MAIN/LAUNCHER のままになり、再配達が起きなくなる。
+- Flutter 側は `MainActivity` 起動後の post-frame と、`AppLifecycleState.resumed` のたびに `consumePendingSharedText` を叩いているので、コールド / ウォームどちらの経路でも中継 Activity 経由で拾える (Dart 側は無改修)。
