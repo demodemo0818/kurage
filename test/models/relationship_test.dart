@@ -58,4 +58,32 @@ void main() {
       expect(rel.copyWith().note, 'メモ');
     });
   });
+
+  group('Relationship の id / requested', () {
+    test('id をパースする (数値で来ても文字列化する)', () {
+      expect(Relationship.fromJson({'id': '42'}).id, '42');
+      expect(Relationship.fromJson({'id': 42}).id, '42');
+    });
+
+    test('id 欠落時は空文字 (一括取得の Map から除外される目印)', () {
+      expect(Relationship.fromJson({}).id, '');
+    });
+
+    test('requested をパースする。欠落時は false', () {
+      // 鍵アカウントへフォロー申請中は following=false / requested=true。
+      // requested を見ないと「フォロー」ボタンが押す前に戻ったように見える。
+      final rel = Relationship.fromJson({'following': false, 'requested': true});
+      expect(rel.following, false);
+      expect(rel.requested, true);
+      expect(Relationship.fromJson({}).requested, false);
+    });
+
+    test('copyWith が id と requested を保持する', () {
+      final rel = Relationship.fromJson({'id': '7', 'requested': true});
+      final copied = rel.copyWith(note: 'メモ');
+      expect(copied.id, '7');
+      expect(copied.requested, true);
+      expect(copied.note, 'メモ');
+    });
+  });
 }

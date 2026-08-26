@@ -89,6 +89,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
   /// 共通のフォロワー (= 自分のフォロー中で、このアカウントもフォローしている人)。
   /// 自分のプロフィールを開いている時は概念的に空、リクエストもしない。
   List<Account> _familiarFollowers = [];
+  /// フォロー中 / フォロワー一覧に並んでいるアカウントとの relationship。
+  /// accountId -> Relationship。ヘッダの [_rel] (表示対象のプロフィール自身との
+  /// 関係) とは別物で、こちらは一覧の各行のフォローボタン用。
+  ///
+  /// 一覧の取得とは非同期に埋まっていくので、未取得の行はボタンを出さない
+  /// (後から生えるとレイアウトが跳ねるが、誤った状態のボタンを出すよりまし)。
+  final Map<String, Relationship> _listRels = {};
   /// プロフィール読み込みの状態。`bool _loading` + `Object? _error` の
   /// 2 変数表現は (loading=true & errored の同時セット) のような矛盾組み合わせ
   /// が起きうるので enum で正規化。`_loadingMore` (= タブ内の追加ロード中) は
@@ -482,6 +489,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         _following    = following;
         _followers    = followers;
         _familiarFollowers = familiarFollowers;
+        // 一覧が丸ごと入れ替わるので relationship のキャッシュも作り直す。
+        _listRels.clear();
         _supportsV46Features = supportsV46;
         // 4.6 未満ではコレクションタブを出さない (5→4 タブ)。判定確定後に
         // length が変わったときだけ TabController を作り直す。
@@ -495,6 +504,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         // 全部入れてから loaded に遷移 (= UI が新データに切り替わる瞬間)
         _status = _ProfileLoadStatus.loaded;
       });
+
+      // 一覧のフォローボタン用 relationship は本体の表示を待たせないよう
+      // 別途 (await せずに) 取りに行く。失敗してもボタンが出ないだけ。
+      _syncListRelationships([
+        ...following.map((a) => a.id),
+        ...followers.map((a) => a.id),
+      ]);
     } catch (e) {
       debugPrint('Profile load error: $e');
       if (!mounted) return;
@@ -709,6 +725,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         }
         _hasMoreFollowing = older.length >= _accountListPageSize;
       });
+      // 追加ぶんのフォローボタン用 relationship を取りに行く (未取得ぶんだけ)。
+      _syncListRelationships(older.map((a) => a.id).toList());
     } catch (_) {
       // ignore (次回試行可能)
     } finally {
@@ -744,6 +762,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         }
         _hasMoreFollowers = older.length >= _accountListPageSize;
       });
+      // 追加ぶんのフォローボタン用 relationship を取りに行く (未取得ぶんだけ)。
+      _syncListRelationships(older.map((a) => a.id).toList());
     } catch (_) {
       // ignore
     } finally {
@@ -751,16 +771,50 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     }
   }
 
-  Future<void> _onFollowPressed() async {
-    if (_rel == null) return;
-    final isFollowing = _rel!.following;
+  /// フォロー中 / フォロワー一覧の各行に出すフォローボタン用に、まだ取っていない
+  /// アカウントの relationship をまとめて取得して [_listRels] に足す。
+  ///
+  /// 一覧の表示をブロックしないよう呼び出し側は await しない。失敗しても
+  /// 握り潰す (ボタンが出ないだけで一覧自体は使える)。
+  Future<void> _syncListRelationships(List<String> accountIds) async {
+    final targets = <String>{};
+    for (final id in accountIds) {
+      // 自分自身の行にフォローボタンは出さないので取りに行く意味がない。
+      if (id == widget.user.id) continue;
+      if (_listRels.containsKey(id)) continue;
+      targets.add(id);
+    }
+    if (targets.isEmpty) return;
+    try {
+      final rels = await fetchRelationships(
+        instanceUrl: widget.user.instanceUrl,
+        accessToken: widget.user.accessToken,
+        accountIds: targets.toList(),
+      );
+      if (!mounted || rels.isEmpty) return;
+      setState(() => _listRels.addAll(rels));
+    } catch (e) {
+      debugPrint('List relationships load error: $e');
+    }
+  }
+
+  /// フォロー / フォロー解除 / フォローリクエスト取り消しの確認ダイアログ。
+  /// ヘッダのフォローボタンと一覧の各行のフォローボタンで共用する。
+  Future<bool> _confirmFollowToggle({
+    required bool isFollowing,
+    required bool isRequested,
+  }) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(isFollowing ? ctx.l10n.unfollow : ctx.l10n.follow),
-        content: Text(isFollowing
-            ? ctx.l10n.profUnfollowConfirm
-            : ctx.l10n.profFollowConfirm),
+        title: Text(isRequested
+            ? ctx.l10n.profCancelFollowRequest
+            : (isFollowing ? ctx.l10n.unfollow : ctx.l10n.follow)),
+        content: Text(isRequested
+            ? ctx.l10n.profCancelFollowRequestConfirm
+            : (isFollowing
+                ? ctx.l10n.profUnfollowConfirm
+                : ctx.l10n.profFollowConfirm)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -773,11 +827,24 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         ],
       ),
     );
-    if (confirmed != true) return;
+    return confirmed == true;
+  }
+
+  Future<void> _onFollowPressed() async {
+    if (_rel == null) return;
+    final isFollowing = _rel!.following;
+    final isRequested = _rel!.requested;
+    if (!await _confirmFollowToggle(
+      isFollowing: isFollowing,
+      isRequested: isRequested,
+    )) {
+      return;
+    }
 
     try {
       final auth = widget.user;
-      final updated = isFollowing
+      // リクエスト承認待ちの取り消しも unfollow エンドポイント。
+      final updated = (isFollowing || isRequested)
         ? await unfollowAccount(
             instanceUrl: auth.instanceUrl,
             accessToken: auth.accessToken,
@@ -789,6 +856,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
             accountId: widget.targetAccountId ?? widget.user.id,
             notify: _rel!.notifications,
           );
+      if (!mounted) return;
       setState(() => _rel = updated);
     } catch (e) {
       if (mounted) {
@@ -797,6 +865,76 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         );
       }
     }
+  }
+
+  /// フォロー中 / フォロワー一覧の行のフォローボタン。操作対象はヘッダの
+  /// プロフィールではなく行のアカウントなので、更新先も [_rel] ではなく
+  /// [_listRels] のエントリ。
+  Future<void> _onListFollowPressed(Account a) async {
+    final rel = _listRels[a.id];
+    if (rel == null) return;
+    final isFollowing = rel.following;
+    final isRequested = rel.requested;
+    if (!await _confirmFollowToggle(
+      isFollowing: isFollowing,
+      isRequested: isRequested,
+    )) {
+      return;
+    }
+
+    try {
+      final auth = widget.user;
+      final updated = (isFollowing || isRequested)
+          ? await unfollowAccount(
+              instanceUrl: auth.instanceUrl,
+              accessToken: auth.accessToken,
+              accountId: a.id,
+            )
+          : await followAccount(
+              instanceUrl: auth.instanceUrl,
+              accessToken: auth.accessToken,
+              accountId: a.id,
+              notify: rel.notifications,
+            );
+      if (!mounted) return;
+      setState(() => _listRels[a.id] = updated);
+    } catch (e) {
+      if (!mounted) return;
+      showErrorSnackBar(context, l10n.profFollowActionFailed('$e'));
+    }
+  }
+
+  /// フォロー状態を表す共通ボタン。ヘッダと一覧の各行で見た目を揃える。
+  /// 3 状態: フォロー中 (= 解除) / リクエスト承認待ち (= 取り消し) / 未フォロー。
+  Widget _buildFollowButton(Relationship rel, VoidCallback onPressed) {
+    final IconData icon;
+    final String label;
+    final Color background;
+    if (rel.following) {
+      icon = Icons.person_remove;
+      label = context.l10n.unfollow;
+      background = Colors.grey;
+    } else if (rel.requested) {
+      icon = Icons.hourglass_top;
+      label = context.l10n.profFollowRequested;
+      background = Colors.grey;
+    } else {
+      icon = Icons.person_add;
+      label = context.l10n.follow;
+      background = Colors.blue;
+    }
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18),
+      label: Text(label, style: const TextStyle(fontSize: 12)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: background,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    );
   }
 
   Future<void> _onNotifyPressed() async {
@@ -1524,26 +1662,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
             // 他のユーザーのプロフィールの場合はフォローボタンを表示
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-              child: ElevatedButton.icon(
-                onPressed: _onFollowPressed,
-                icon: Icon(
-                  rel.following ? Icons.person_remove : Icons.person_add,
-                  size: 18,
-                ),
-                label: Text(
-                  rel.following ? context.l10n.unfollow : context.l10n.follow,
-                  style: const TextStyle(
-                    fontSize: 12,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: rel.following ? Colors.grey : Colors.blue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
+              child: _buildFollowButton(rel, _onFollowPressed),
             ),
             // 通知アイコンをハッシュタグと同じに（オン時は色付き）
             IconButton(
@@ -2522,17 +2641,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
               ),
               title: Text(a.displayName),
               subtitle: Text(formatAcct(a.acct, widget.user.instanceUrl)),
-              // 「フォロワーから外す」(Mastodon 4.0+)。ブロックなしで相手の
-              // フォローだけ切るためのもので、自分のプロフィールのフォロワー
-              // タブだけで出す。古いサーバ / 派生実装は API が 404 を返す
-              // ので、その時は SnackBar で「対応していない」案内する。
-              trailing: allowRemoveFromFollowers
-                  ? IconButton(
-                      icon: const Icon(Icons.person_remove_outlined),
-                      tooltip: context.l10n.profRemoveFollower,
-                      onPressed: () => _removeFromFollowers(a),
-                    )
-                  : null,
+              // Mastodon Web と同じく、行の主アクションはフォロー / 解除。
+              // 「フォロワーから外す」は破壊的なので ⋯ メニューの中に置く。
+              trailing: _buildAccountRowTrailing(
+                a,
+                allowRemoveFromFollowers: allowRemoveFromFollowers,
+              ),
               onTap: () {
                 Navigator.push(
                   context,
@@ -2554,11 +2668,51 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     );
   }
 
+  /// フォロー中 / フォロワー一覧の行の trailing。
+  ///
+  /// - 主アクションはフォロー / フォロー解除ボタン (Mastodon Web と同じ配置)。
+  ///   自分自身の行と、relationship がまだ取れていない行では出さない。
+  /// - [allowRemoveFromFollowers] が true (= 自分のプロフィールのフォロワー
+  ///   タブ) のときだけ ⋯ メニューを出し、その中に「フォロワーから外す」を置く。
+  ///   項目が 1 つしかないので、false のときはメニューボタン自体を出さない。
+  Widget? _buildAccountRowTrailing(
+    Account a, {
+    required bool allowRemoveFromFollowers,
+  }) {
+    final rel = a.id == widget.user.id ? null : _listRels[a.id];
+    if (rel == null && !allowRemoveFromFollowers) return null;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (rel != null)
+          _buildFollowButton(rel, () => _onListFollowPressed(a)),
+        if (allowRemoveFromFollowers)
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: context.l10n.more,
+            onSelected: (value) {
+              if (value == 'remove_from_followers') _removeFromFollowers(a);
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'remove_from_followers',
+                child: ListTile(
+                  leading: const Icon(Icons.person_remove_outlined),
+                  title: Text(context.l10n.profRemoveFollower),
+                  dense: true,
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
   /// フォロワーから指定アカウントを外す (確認ダイアログ + API + ローカル状態
   /// 同期)。
   ///
   /// 呼び出し元は 2 つ:
-  ///  1. 自分のプロフィールのフォロワータブの IconButton (一覧の各行)
+  ///  1. 自分のプロフィールのフォロワータブの ⋯ メニュー (一覧の各行)
   ///  2. 相手のプロフィールページの「…」メニュー (`rel.followedBy == true`
   ///     のとき表示)
   ///
@@ -2595,6 +2749,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       if (!mounted) return;
       setState(() {
         _followers = _followers.where((a) => a.id != follower.id).toList();
+        // 一覧側の relationship キャッシュも更新しておく (フォロー中タブに
+        // 同じ人が残っている場合に、そちらのボタン状態が古いままにならない)。
+        _listRels[follower.id] = updated;
         // 表示中のプロフィール = いま外したフォロワー、なら rel も差し替え。
         // これでメニュー項目「フォロワーから外す」が followedBy=false で
         // 自動的に消える。

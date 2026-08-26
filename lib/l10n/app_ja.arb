@@ -1681,6 +1681,9 @@
   "profEditTooltip": "プロフィールを編集",
   "profAddToCollection": "コレクションに追加",
   "profRemoveFollower": "フォロワーから外す",
+  "profFollowRequested": "リクエスト中",
+  "profCancelFollowRequest": "フォローリクエストを取り消す",
+  "profCancelFollowRequestConfirm": "フォローリクエストを取り消しますか？",
   "profDomainBlockAction": "{domain}をドメインブロック",
   "@profDomainBlockAction": {
     "placeholders": {

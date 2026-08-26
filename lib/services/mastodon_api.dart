@@ -1595,22 +1595,65 @@ Future<Relationship> fetchRelationship({
   required String accessToken,
   required String accountId,
 }) async {
-  // クエリパラメータは id[] です（ids[] では動きません）
-  final uri = Uri.parse(
-    '$instanceUrl/api/v1/accounts/relationships?id[]=$accountId',
+  final map = await fetchRelationships(
+    instanceUrl: instanceUrl,
+    accessToken: accessToken,
+    accountIds: [accountId],
   );
-  final res = await httpClient.get(
-    uri,
-    headers: {'Authorization': 'Bearer $accessToken'},
-  );
-  if (res.statusCode == 200) {
-    final List<dynamic> arr = jsonDecode(res.body) as List<dynamic>;
-    if (arr.isEmpty) {
-      throw Exception(l10n.apiRelationshipEmpty);
-    }
-    return Relationship.fromJson(arr.first as Map<String, dynamic>);
+  final rel = map[accountId];
+  if (rel == null) {
+    throw Exception(l10n.apiRelationshipEmpty);
   }
-  throw Exception(l10n.apiRelationshipFailed(res.statusCode));
+  return rel;
+}
+
+/// `/accounts/relationships` 1 リクエストあたりに載せる id の数。
+/// Mastodon 側に上限があるので、これを超える分は複数リクエストに分ける。
+const int _relationshipChunkSize = 40;
+
+/// 複数アカウントとのリレーションシップをまとめて取得し、accountId をキーにした
+/// Map で返す。
+///
+/// フォロー / フォロワー一覧の各行にフォローボタンを出すために使う。1 件ずつ
+/// [fetchRelationship] を呼ぶと N+1 になるので、一覧ではこちらを使うこと。
+Future<Map<String, Relationship>> fetchRelationships({
+  required String instanceUrl,
+  required String accessToken,
+  required List<String> accountIds,
+}) async {
+  if (accountIds.isEmpty) return {};
+  final result = <String, Relationship>{};
+  for (var i = 0; i < accountIds.length; i += _relationshipChunkSize) {
+    final end = i + _relationshipChunkSize;
+    final chunk = accountIds.sublist(
+      i,
+      end > accountIds.length ? accountIds.length : end,
+    );
+    // クエリパラメータは id[] です（ids[] では動きません）。
+    // List<String> を渡すと `id[]=a&id[]=b` の形に展開される。
+    final uri = Uri.parse('$instanceUrl/api/v1/accounts/relationships')
+        .replace(queryParameters: {'id[]': chunk});
+    final res = await httpClient.get(
+      uri,
+      headers: {'Authorization': 'Bearer $accessToken'},
+    );
+    if (res.statusCode != 200) {
+      throw Exception(l10n.apiRelationshipFailed(res.statusCode));
+    }
+    final arr = jsonDecode(res.body) as List<dynamic>;
+    for (var j = 0; j < arr.length; j++) {
+      final rel = Relationship.fromJson(arr[j] as Map<String, dynamic>);
+      // 通常は返ってきた id をキーにする。id を返さない派生実装向けに、
+      // 「返却順 = 要求順」とみなす位置フォールバックを持たせておく
+      // (ここで拾えないと単数取得の fetchRelationship が throw して
+      // プロフィール表示ごと失敗する)。
+      final key = rel.id.isNotEmpty
+          ? rel.id
+          : (j < chunk.length ? chunk[j] : '');
+      if (key.isNotEmpty) result[key] = rel;
+    }
+  }
+  return result;
 }
 
 /// フォロー／アンフォロー
