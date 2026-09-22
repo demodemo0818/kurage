@@ -187,7 +187,7 @@ Future<AuthAccount> _loginDesktop({
             as String;
 
     // 6) アカウント情報を取得
-    return _fetchUserAccount(instanceUrl, accessToken);
+    return await _fetchUserAccount(instanceUrl, accessToken);
   } finally {
     await server.close(force: true);
   }

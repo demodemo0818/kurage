@@ -18,9 +18,10 @@ pluginManagement {
 
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
-    // share_plus 12+ / package_info_plus 9+ が AGP >=8.12.1 / Kotlin 2.2.0 を要求
+    // share_plus 12+ / package_info_plus 9+ が AGP >=8.12.1 / Kotlin 2.2.0 を要求。
+    // Flutter 3.47 の Gradle プラグインは Kotlin >=2.2.20 / Gradle >=8.14 未満だとビルドを止める。
     id("com.android.application") version "8.12.1" apply false
-    id("org.jetbrains.kotlin.android") version "2.2.0" apply false
+    id("org.jetbrains.kotlin.android") version "2.2.21" apply false
     id("com.google.gms.google-services") version "4.4.2" apply false
     id("com.google.firebase.crashlytics") version "3.0.3" apply false
 }

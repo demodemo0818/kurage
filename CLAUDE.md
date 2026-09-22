@@ -12,9 +12,9 @@ Flutter 製の Mastodon クライアント **Kurage** （pubspec name: `kurage`�
 
 ## ツールチェーン要件
 
-- **Flutter SDK ≧ 3.41**（Dart ≧ 3.11）。`intl: ^0.20.2` が `flutter_localizations` 経由で要求するため。古い Flutter（3.29 等）では依存解決失敗。
+- **Flutter SDK ≧ 3.47**（Dart ≧ 3.13）。CI (`ci.yml` / `release-windows.yml`) は **3.47.5** に pin しており、開発機 (Windows / Mac) も同じ版に揃える。`ReorderableListView.onReorderItem` (3.41 より後に追加) を使っているので 3.41 以前ではビルド不可。上げる時は CI 2 ファイル・このセクション・README の「必要なもの」を同時に更新する。
 - **Android NDK 28.2.13676358**（[android/app/build.gradle.kts](android/app/build.gradle.kts) で固定）。Firebase / Crashlytics ほか native コードを持つプラグインが要求する最大バージョンに揃えてある。プラグイン更新で「different Android NDK version」エラーが出たら、要求された最大値に追従して上げる。
-- **AGP ≧ 8.12.1 / Kotlin 2.2.0**（[android/settings.gradle.kts](android/settings.gradle.kts)）。share_plus 12+ / package_info_plus 9+ が要求する (Kotlin 2.2 でコンパイルされた AAR を含むため、古い Kotlin だと metadata 非互換でビルド失敗する)。Gradle wrapper は 8.13。
+- **AGP 8.12.1 / Kotlin 2.2.21 / Gradle wrapper 8.14.4**（[android/settings.gradle.kts](android/settings.gradle.kts)、[gradle-wrapper.properties](android/gradle/wrapper/gradle-wrapper.properties)）。AGP ≧ 8.12.1 と Kotlin 2.2 系は share_plus 12+ / package_info_plus 9+ の要求 (Kotlin 2.2 でコンパイルされた AAR を含むため、古い Kotlin だと metadata 非互換でビルド失敗する)。Flutter 3.47 の Gradle プラグインは **Gradle < 8.14 / Kotlin < 2.2.20 / AGP < 8.11.1 だと `Failed to apply plugin 'dev.flutter.flutter-gradle-plugin'` でビルドを止める** (flutter_tools は「AGP 9 の新 DSL」の案内を出すが、真因は Gradle ログの `DependencyValidationException`)。AGP 9 系へは未移行 — `android/gradle.properties` の `android.builtInKotlin=false` / `android.newDsl=false` は Flutter の migrator が自動で足した AGP 9 向けのオプトアウトなので、移行するまで消さない。
 - **Core library desugaring 有効**（同 build.gradle.kts、`desugar_jdk_libs:2.0.4`）。`flutter_local_notifications` の Java 8+ API 用。
 
 ## 主要コマンド

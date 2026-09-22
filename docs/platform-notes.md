@@ -11,6 +11,7 @@
 - `JavaCompile` で `-Xlint:-options,-Xlint:-deprecation` を抑制（古い API 利用時の警告除去）
 - 通知用に `POST_NOTIFICATIONS` 権限を `AndroidManifest.xml` で宣言済み (Android 13+ ランタイム要求は `PushNotificationService.initialize()` 内で実行)
 - `MainActivity.kt` は **`FlutterFragmentActivity` 継承** (アプリロックの `local_auth` が要求)。`USE_BIOMETRIC` 権限あり。
+- **release の AAB ビルドには Android SDK の cmdline-tools が必須** (Flutter 3.47 時点)。ビルド後に `cmdline-tools/latest/bin/apkanalyzer` で「libflutter.so / libapp.so のデバッグシンボルが除去されたか」を検査し、cmdline-tools が無いと Gradle は成功しているのに `Release app bundle failed to strip debug symbols from native libraries.` で失敗する。`flutter doctor` の「cmdline-tools component is missing」が出ていたらこれ。Android Studio の SDK Manager → SDK Tools →「Android SDK Command-line Tools (latest)」で入れる (Windows 機は 2026-09-22 に導入済み)
 - **アダプティブアイコン** ([mipmap-anydpi-v26/ic_launcher.xml](../android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml)): 背景色 `#0A0620` ([colors.xml](../android/app/src/main/res/values/colors.xml)) + 前景画像。`pubspec.yaml` の `flutter_icons` で `adaptive_icon_foreground` には **元画像と異なる別ファイル** [assets/icon/kurage_icon_foreground.png](../assets/icon/kurage_icon_foreground.png) を指定 (元の `kurage_icon.png` をそのまま使うと安全ゾーンを超えてマスクで端が切られる)。foreground は元画像を 70% に縮小し同色の余白を足したもの。元画像を差し替えたら foreground 用画像も再生成が必要。
 
 ## Web

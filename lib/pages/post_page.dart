@@ -4165,9 +4165,10 @@ class _PostPageState extends ConsumerState<PostPage> {
                               padding: const EdgeInsets.only(right: 8),
                               child: _buildMediaThumbnail(i),
                             ),
-                            onReorder: (oldIndex, newIndex) {
+                            // onReorderItem の newIndex は oldIndex の要素を
+                            // 取り除いた後の位置 (旧 onReorder の -1 補正は不要)。
+                            onReorderItem: (oldIndex, newIndex) {
                               setState(() {
-                                if (newIndex > oldIndex) newIndex -= 1;
                                 final item = _mediaItems.removeAt(oldIndex);
                                 _mediaItems.insert(newIndex, item);
                               });

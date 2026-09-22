@@ -39,7 +39,7 @@ Android / Web / Windows を中心に、iOS / macOS / Linux もビルドできま
 
 ## ビルド方法
 
-必要なもの: **Flutter SDK 3.41 以上** (Dart 3.11 以上)
+必要なもの: **Flutter SDK 3.47 以上** (Dart 3.13 以上)
 
 ```bash
 git clone https://github.com/demodemo0818/kurage.git

@@ -36,7 +36,7 @@ Targets Android / Web / Windows primarily; iOS / macOS / Linux are also buildabl
 
 ## Building
 
-Requires: **Flutter SDK 3.41 or later** (Dart 3.11 or later)
+Requires: **Flutter SDK 3.47 or later** (Dart 3.13 or later)
 
 ```bash
 git clone https://github.com/demodemo0818/kurage.git
