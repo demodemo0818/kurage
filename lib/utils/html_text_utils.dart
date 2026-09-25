@@ -101,3 +101,37 @@ String _extractPlainText(List<dom.Node> nodes) {
   }
   return buf.toString();
 }
+
+/// 半角の濁点・半濁点 (U+FF9E `ﾞ` / U+FF9F `ﾟ`) を、直前の文字と別の書記素
+/// クラスタに分ける。直前が半角カナ以外のときだけ、間に WORD JOINER (U+2060)
+/// を挟む。
+///
+/// `ﾞ` `ﾟ` は結合文字ではない (幅を持つ独立したグリフ) が、Unicode の書記素
+/// クラスタ規則では直前の文字にくっつく (Grapheme_Cluster_Break=Extend)。
+/// Flutter (SkParagraph) のフォントフォールバックはクラスタ単位で「全文字を
+/// 描けるフォント」を探すため、`ᤖﾞ` (リンブ文字 + 半角濁点。「ズ」に見せる
+/// 表示名の定番の当て字) のように両方を収録したフォントが無い組み合わせだと、
+/// どちらのフォントも採用されず 2 文字とも豆腐になる (issue #11)。ブラウザは
+/// 文字ごとにフォールバックするので Mastodon Web では普通に見える。
+///
+/// WORD JOINER は幅ゼロの不可視文字 (Control) なのでクラスタが切れ、各文字が
+/// それぞれのフォントで描かれる。改行位置も変えない (ZERO WIDTH SPACE と違い
+/// 改行機会を作らない)。半角カナ同士 (`ｶﾞ`) は同じフォントで描けるので触らない。
+String separateHalfwidthSoundMarks(String text) {
+  StringBuffer? out;
+  var copiedUntil = 0;
+  for (var i = 1; i < text.length; i++) {
+    final c = text.codeUnitAt(i);
+    if (c != 0xFF9E && c != 0xFF9F) continue;
+    final prev = text.codeUnitAt(i - 1);
+    // 半角カナ (中黒 U+FF65 〜 半濁点 U+FF9F) の後ろ、または既に分離済み。
+    if ((prev >= 0xFF65 && prev <= 0xFF9F) || prev == 0x2060) continue;
+    (out ??= StringBuffer())
+      ..write(text.substring(copiedUntil, i))
+      ..writeCharCode(0x2060);
+    copiedUntil = i;
+  }
+  if (out == null) return text;
+  out.write(text.substring(copiedUntil));
+  return out.toString();
+}

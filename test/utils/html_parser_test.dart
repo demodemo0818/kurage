@@ -336,4 +336,26 @@ void main() {
       expect(_flatText(_parse('<p>A &amp; B &lt;tag&gt;</p>')), 'A & B <tag>');
     });
   });
+
+  group('豆腐対策 (issue #11)', () {
+    final wj = String.fromCharCode(0x2060); // WORD JOINER
+    final limbuRa = String.fromCharCode(0x1916); // ᤖ
+    final dakuten = String.fromCharCode(0xFF9E); // ﾞ
+
+    test('平文中の「半角カナ以外 + 半角濁点」は WORD JOINER で分ける', () {
+      expect(
+        _flatText(_parse('ミ$limbuRa$dakuten', enableInlineLinks: false)),
+        contains('ミ$limbuRa$wj$dakuten'),
+      );
+      expect(
+        _flatText(_parse('<p>ミ$limbuRa$dakuten</p>')),
+        'ミ$limbuRa$wj$dakuten',
+      );
+    });
+
+    test('ハッシュタグの中身には挟まない (検出後の平文部分だけに掛ける)', () {
+      final text = _flatText(_parse('#$limbuRa$dakuten'));
+      expect(text, '#$limbuRa$dakuten');
+    });
+  });
 }

@@ -1039,7 +1039,7 @@ class _SearchResultsPageState extends ConsumerState<SearchResultsPage> {
             url: account.avatarStatic ?? '',
             radius: 20,
           ),
-          title: Text(account.displayName ?? ''),
+          title: Text(separateHalfwidthSoundMarks(account.displayName ?? '')),
           // `acct` はローカル `user` / リモート `user@host` の webfinger 形式。
           subtitle: Text('@${account.acct}'),
           onTap: () => _navigateToProfile(account),

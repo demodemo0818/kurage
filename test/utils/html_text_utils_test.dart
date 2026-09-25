@@ -126,4 +126,49 @@ void main() {
       );
     });
   });
+
+  group('separateHalfwidthSoundMarks', () {
+    // ソースに不可視文字・紛らわしい文字を埋め込まないよう fromCharCode で生成する。
+    final wj = String.fromCharCode(0x2060); // WORD JOINER
+    final dakuten = String.fromCharCode(0xFF9E); // ﾞ
+    final handakuten = String.fromCharCode(0xFF9F); // ﾟ
+    final limbuRa = String.fromCharCode(0x1916); // ᤖ
+    final kharoshthiVa = String.fromCharCode(0x10A2C); // 𐨬 (サロゲートペア)
+
+    test('半角カナ以外の文字 + 半角濁点の間に WORD JOINER を挟む (issue #11)', () {
+      // 「ミᤖﾞ𐨬ォッባᤖ」の「ᤖﾞ」
+      expect(
+        separateHalfwidthSoundMarks('ミ$limbuRa$dakuten'),
+        'ミ$limbuRa$wj$dakuten',
+      );
+    });
+
+    test('半濁点やサロゲートペアの直後も分ける', () {
+      expect(
+        separateHalfwidthSoundMarks('$kharoshthiVa$handakuten'),
+        '$kharoshthiVa$wj$handakuten',
+      );
+    });
+
+    test('半角カナ + 濁点 (ｶﾞ) や連続した濁点には挟まない', () {
+      final ka = String.fromCharCode(0xFF76); // ｶ
+      expect(separateHalfwidthSoundMarks('$ka$dakuten'), '$ka$dakuten');
+      expect(
+        separateHalfwidthSoundMarks('$limbuRa$dakuten$dakuten'),
+        '$limbuRa$wj$dakuten$dakuten',
+      );
+    });
+
+    test('冪等 (2 回掛けても WORD JOINER が増えない)', () {
+      final once = separateHalfwidthSoundMarks('$limbuRa$dakuten');
+      expect(separateHalfwidthSoundMarks(once), once);
+    });
+
+    test('該当文字を含まない / 先頭が濁点の文字列はそのまま返す', () {
+      const plain = 'Kurage くらげ 🪼';
+      expect(identical(separateHalfwidthSoundMarks(plain), plain), isTrue);
+      expect(separateHalfwidthSoundMarks(dakuten), dakuten);
+      expect(separateHalfwidthSoundMarks(''), '');
+    });
+  });
 }

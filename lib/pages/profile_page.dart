@@ -2639,7 +2639,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
                 url: a.avatarUrl,
                 radius: 20,
               ),
-              title: Text(a.displayName),
+              title: Text(separateHalfwidthSoundMarks(a.displayName)),
               subtitle: Text(formatAcct(a.acct, widget.user.instanceUrl)),
               // Mastodon Web と同じく、行の主アクションはフォロー / 解除。
               // 「フォロワーから外す」は破壊的なので ⋯ メニューの中に置く。

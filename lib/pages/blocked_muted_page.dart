@@ -23,6 +23,7 @@ import '../models/account.dart';
 import '../models/auth_account.dart';
 import '../providers/auth_provider.dart';
 import '../services/mastodon_api.dart';
+import '../utils/html_text_utils.dart';
 import '../utils/open_profile.dart';
 import '../utils/snackbar_helpers.dart';
 import '../widgets/network_image_x.dart';
@@ -141,7 +142,8 @@ class _BlockedMutedPageState extends ConsumerState<BlockedMutedPage> {
                                 TextSpan(
                                   children: [
                                     TextSpan(
-                                      text: acc.displayName,
+                                      text: separateHalfwidthSoundMarks(
+                                          acc.displayName),
                                       style: const TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,

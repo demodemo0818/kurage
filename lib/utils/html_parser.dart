@@ -40,7 +40,8 @@ import 'open_profile.dart';
 // 純粋なテキスト処理 (plain text 抽出) は html_text_utils.dart に分離した。
 // 既存呼び出し元が `html_parser.dart` から import している API は re-export
 // して互換を保つ。
-export 'html_text_utils.dart' show parseHtmlToPlainText;
+export 'html_text_utils.dart'
+    show parseHtmlToPlainText, separateHalfwidthSoundMarks;
 
 // 正規表現はモジュールレベルで一度だけコンパイル
 final _urlRegex = RegExp(r'https?://[^\s<>"{}|\\^`\[\]]+');
@@ -374,6 +375,9 @@ List<InlineSpan> _scanTextForInlineMatches(String text, _Ctx ctx) {
     ],
   ]..sort((a, b) => a.match.start.compareTo(b.match.start));
 
+  // 平文部分は豆腐対策 (separateHalfwidthSoundMarks、issue #11) を通す。
+  // 検出前の text に掛けると WORD JOINER がハッシュタグ等を途中で切るので、
+  // マッチ以外の部分にだけ掛ける。
   final spans = <InlineSpan>[];
   int cursor = 0;
   for (final entry in all) {
@@ -381,7 +385,7 @@ List<InlineSpan> _scanTextForInlineMatches(String text, _Ctx ctx) {
     if (match.start < cursor) continue; // 既に処理済み範囲とオーバーラップ
     if (match.start > cursor) {
       spans.add(TextSpan(
-        text: text.substring(cursor, match.start),
+        text: separateHalfwidthSoundMarks(text.substring(cursor, match.start)),
         style: ctx.currentStyle,
       ));
     }
@@ -403,7 +407,7 @@ List<InlineSpan> _scanTextForInlineMatches(String text, _Ctx ctx) {
   }
   if (cursor < text.length) {
     spans.add(TextSpan(
-      text: text.substring(cursor),
+      text: separateHalfwidthSoundMarks(text.substring(cursor)),
       style: ctx.currentStyle,
     ));
   }
