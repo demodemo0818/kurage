@@ -72,4 +72,23 @@ void main() {
       );
     });
   });
+
+  group('androidSaveDirectoryFor', () {
+    test('画像・動画は Pictures、音声は Music (Pictures だと EPERM、issue #10)', () {
+      expect(androidSaveDirectoryFor('jpg'), 'Pictures');
+      expect(androidSaveDirectoryFor('gif'), 'Pictures');
+      expect(androidSaveDirectoryFor('mp4'), 'Pictures');
+      expect(androidSaveDirectoryFor('mov'), 'Pictures');
+      expect(androidSaveDirectoryFor('mp3'), 'Music');
+      expect(androidSaveDirectoryFor('m4a'), 'Music');
+      expect(androidSaveDirectoryFor('ogg'), 'Music');
+      expect(androidSaveDirectoryFor('wav'), 'Music');
+      expect(androidSaveDirectoryFor('flac'), 'Music');
+    });
+
+    test('どれでもなければ Download', () {
+      expect(androidSaveDirectoryFor('pdf'), 'Download');
+      expect(androidSaveDirectoryFor('xyz'), 'Download');
+    });
+  });
 }

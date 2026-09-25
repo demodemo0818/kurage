@@ -188,9 +188,12 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
         if (savedPath == null) return; // 保存ダイアログをキャンセル
         _showToast(l10n.savedTo(savedPath));
       } else {
-        // モバイル: Android = Pictures + media scanner、iOS 等 = サンドボックス。
+        // モバイル: Android = 共有ストレージ + media scanner、iOS 等 = サンドボックス。
+        // Android の保存先は種類で振り分ける (音声は Pictures に置けない。
+        // androidSaveDirectoryFor 参照)。
         final saveDir = Platform.isAndroid
-            ? Directory('/storage/emulated/0/Pictures')
+            ? Directory(
+                '/storage/emulated/0/${androidSaveDirectoryFor(ext)}')
             : await getApplicationDocumentsDirectory();
         if (!await saveDir.exists()) {
           await saveDir.create(recursive: true);
@@ -296,19 +299,31 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
     }
     final isVideo = (attachment?.isVideo ?? false) && animatedImageUrl == null;
     final isGif = attachment?.isGif ?? false;
+    // 音声も動画プレイヤーで再生する (video_player は映像の無いファイルも
+    // 再生できる)。画像経路に流すと音声ファイルを画像としてデコードして
+    // 壊れた画像になる (issue #10)。
+    final isAudio = attachment?.isAudio ?? false;
 
-    if (isVideo) {
-      final video = Center(
-        child: VideoPlayerWidget(
-          videoUrl: widget.imageUrls[i],
-          autoPlay: true,
-          // gifv は GIF と同じ感覚で扱いたいのでループ再生 + 無音、コントロールも
-          // 要らない。通常の video はユーザーが制御したいので従来どおり。
-          showControls: !isGif,
-          muted: isGif,
-          looping: isGif,
-        ),
+    if (isVideo || isAudio) {
+      Widget player = VideoPlayerWidget(
+        videoUrl: widget.imageUrls[i],
+        autoPlay: true,
+        // gifv は GIF と同じ感覚で扱いたいのでループ再生 + 無音、コントロールも
+        // 要らない。通常の video はユーザーが制御したいので従来どおり。
+        showControls: !isGif,
+        muted: isGif,
+        looping: isGif,
+        isAudio: isAudio,
+        audioCoverUrl: attachment?.audioCoverUrl,
       );
+      if (isAudio) {
+        // 映像が無いので画面いっぱいには広げず、カバー画像の正方形に収める。
+        player = ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480, maxHeight: 480),
+          child: player,
+        );
+      }
+      final video = Center(child: player);
       if (allowDragDismiss) {
         return GestureDetector(
           onVerticalDragUpdate: _onDragUpdate,

@@ -3854,6 +3854,26 @@ class _ServerInfoDialog extends StatelessWidget {
 // RepaintBoundary でレイヤー境界を作り、近傍 (本文・アクションバー等)
 // の repaint も切り離す。
 
+/// カバー画像の無い音声添付のサムネイル。音声ファイルを画像として
+/// デコードさせないための代替表示 (issue #10)。
+class _AudioThumbnail extends StatelessWidget {
+  final double width;
+  final double height;
+  const _AudioThumbnail({required this.width, required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      color: Colors.blueGrey.shade800,
+      padding: const EdgeInsets.all(6),
+      alignment: Alignment.topLeft,
+      child: const Icon(Icons.audiotrack, color: Colors.white70, size: 18),
+    );
+  }
+}
+
 /// gifv サムネイルに重ねる "GIF" 文字バッジ。再生中ではないことと
 /// アニメーション付きであることを同時に伝える。
 class _GifBadge extends StatelessWidget {
@@ -4284,10 +4304,17 @@ class _PostMediaGalleryState extends State<_PostMediaGallery> {
       ),
     );
 
-    if (media.isVideo) {
+    // カバー画像の無い音声は previewUrls に音声ファイルそのものの url が
+    // 入っているので、画像としてデコードせず専用のタイルを出す (issue #10)。
+    if (media.isAudio && media.audioCoverUrl == null) {
+      thumbnail = _AudioThumbnail(width: width, height: height);
+    }
+
+    if (media.isVideo || media.isAudio) {
       // gifv (GIF→mp4) も通常の video もタイムラインでは静止プレビューに
       // 留める。タイムラインで多数の VideoPlayer を立ち上げると ExoPlayer
       // のデコーダー上限を超えて native クラッシュにつながるため。
+      // 音声も同じくタップで全画面のプレーヤーを開くので再生アイコンを出す。
       final overlayLabel = media.isGif
           ? const _GifBadge()
           : Icon(
@@ -5837,6 +5864,11 @@ class _QuotedPostCardState extends State<_QuotedPostCard> {
     required double height,
     required double dpr,
   }) {
+    // カバー画像の無い音声は画像としてデコードしない (issue #10)。
+    if (media.isAudio && media.audioCoverUrl == null) {
+      return _AudioThumbnail(width: width, height: height);
+    }
+
     final aspect = media.aspectRatio;
     final boxAspect = width / height;
     final int cacheW;

@@ -15,7 +15,8 @@ class MediaAttachment {
   final String? remoteUrl;
 
   /// 元画像のアスペクト比 (width / height)。
-  /// 取得できなかった場合は 1.0 (正方形) にフォールバック。
+  /// 取得できなかった場合は 1.0 (正方形) にフォールバック (音声は
+  /// [_audioAspectRatio])。
   /// Mastodon の `meta.original.aspect` または `meta.original.width/height` から算出。
   final double aspectRatio;
 
@@ -39,22 +40,28 @@ class MediaAttachment {
     // 表示側は空 URL を「読み込めないメディア」として扱う。
     final url =
         (json['url'] as String?) ?? (json['remote_url'] as String?) ?? '';
+    final type = json['type'] as String? ?? 'unknown';
     return MediaAttachment(
       id: asIdString(json['id']),
-      type: json['type'] as String? ?? 'unknown',
+      type: type,
       url: url,
       previewUrl: (json['preview_url'] as String?) ?? url,
       remoteUrl: json['remote_url'] as String?,
-      aspectRatio: _extractAspectRatio(json),
+      aspectRatio: _extractAspectRatio(json) ??
+          (type == 'audio' ? _audioAspectRatio : 1.0),
       description: json['description'] as String?,
     );
   }
 
-  static double _extractAspectRatio(Map<String, dynamic> json) {
+  /// 音声の表示枠のアスペクト比。音声は `meta.original` に width/height が
+  /// 無いので、1.0 のままだとタイムラインで正方形の大きな枠を取ってしまう。
+  static const double _audioAspectRatio = 16 / 9;
+
+  static double? _extractAspectRatio(Map<String, dynamic> json) {
     final meta = json['meta'] as Map<String, dynamic>?;
-    if (meta == null) return 1.0;
+    if (meta == null) return null;
     final original = meta['original'] as Map<String, dynamic>?;
-    if (original == null) return 1.0;
+    if (original == null) return null;
     // aspect が直接ある場合 (Mastodon は画像/動画で返してくる)
     final aspect = original['aspect'];
     if (aspect is num) {
@@ -68,7 +75,7 @@ class MediaAttachment {
       final v = w / h;
       if (v.isFinite && v > 0) return v;
     }
-    return 1.0;
+    return null;
   }
 
   /// メディアが動画かどうかを判定 (gifv も含む)
@@ -111,4 +118,16 @@ class MediaAttachment {
 
   /// メディアが音声かどうかを判定
   bool get isAudio => type == 'audio';
+
+  /// 音声のカバー画像 (アルバムアート等) の URL。音声でない、またはカバーが
+  /// 無ければ null。
+  ///
+  /// カバーの無い音声は `preview_url` が null で、[previewUrl] には音声ファイル
+  /// そのものの url が入っている。これを画像としてデコードすると壊れた画像に
+  /// なる (issue #10) ので、表示側はこの getter で「画像として出せるか」を判定する。
+  String? get audioCoverUrl {
+    if (!isAudio) return null;
+    if (previewUrl.isEmpty || previewUrl == url) return null;
+    return previewUrl;
+  }
 }

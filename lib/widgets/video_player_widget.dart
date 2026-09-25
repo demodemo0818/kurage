@@ -7,6 +7,7 @@ import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 
 import '../l10n/l10n.dart';
+import 'network_image_x.dart';
 
 class VideoPlayerWidget extends StatefulWidget {
   final String videoUrl;
@@ -20,6 +21,13 @@ class VideoPlayerWidget extends StatefulWidget {
   /// Mastodon の gifv (GIF を mp4 化したもの) はループ再生されるべきなので true で渡す。
   final bool looping;
 
+  /// 音声ファイルとして再生する。映像が無いので、映像の代わりにカバー画像
+  /// ([audioCoverUrl]、無ければ音符アイコン) を出し、コントロールを出したままにする。
+  final bool isAudio;
+
+  /// 音声のカバー画像 (アルバムアート等) の URL。[isAudio] のときだけ使う。
+  final String? audioCoverUrl;
+
   const VideoPlayerWidget({
     super.key,
     required this.videoUrl,
@@ -29,6 +37,8 @@ class VideoPlayerWidget extends StatefulWidget {
     this.showControls = true,
     this.muted = true,
     this.looping = false,
+    this.isAudio = false,
+    this.audioCoverUrl,
   });
 
   @override
@@ -134,7 +144,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           autoPlay: widget.autoPlay,
           looping: widget.looping,
           showControls: widget.showControls,
-          aspectRatio: _videoPlayerController!.value.aspectRatio,
+          // 音声は映像サイズが 0 なので正方形 (カバー画像の枠) にする。
+          aspectRatio: widget.isAudio
+              ? 1.0
+              : _videoPlayerController!.value.aspectRatio,
+          overlay: widget.isAudio ? _buildAudioCover() : null,
+          // 音声は見るものが無いので、コントロールを自動で隠さない。
+          hideControlsTimer: widget.isAudio
+              ? const Duration(days: 1)
+              : ChewieController.defaultHideControlsTimer,
           errorBuilder: (context, errorMessage) {
             return Container(
               color: Colors.black,
@@ -261,12 +279,15 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Center(
-            child: AspectRatio(
-              aspectRatio: controller.value.aspectRatio,
-              child: VideoPlayer(controller),
+          if (widget.isAudio)
+            _buildAudioCover()
+          else
+            Center(
+              child: AspectRatio(
+                aspectRatio: controller.value.aspectRatio,
+                child: VideoPlayer(controller),
+              ),
             ),
-          ),
           const DecoratedBox(
             decoration: BoxDecoration(
               color: Colors.black54,
@@ -281,6 +302,28 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
           ),
         ],
       ),
+    );
+  }
+
+  /// 音声の「映像」代わりに出すカバー。カバー画像が無い / 読めない時は音符アイコン。
+  /// Chewie は overlay を Stack の直下に置くので、枠いっぱいに広げて返す。
+  Widget _buildAudioCover() {
+    const fallback = ColoredBox(
+      color: Colors.black,
+      child: Center(
+        child: Icon(Icons.audiotrack, color: Colors.white54, size: 96),
+      ),
+    );
+    final coverUrl = widget.audioCoverUrl;
+    return SizedBox.expand(
+      child: coverUrl == null
+          ? fallback
+          : KurageNetworkImage(
+              imageUrl: coverUrl,
+              fit: BoxFit.contain,
+              placeholder: (_, _) => fallback,
+              errorWidget: (_, _, _) => fallback,
+            ),
     );
   }
 }

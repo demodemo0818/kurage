@@ -103,6 +103,23 @@ void main() {
     });
   });
 
+  test('サイズ情報の無い音声は 16:9 (正方形の大きな枠にしない)', () {
+    expect(
+      MediaAttachment.fromJson(_mediaJson(
+        type: 'audio',
+        meta: {
+          'original': {'duration': 15.0, 'bitrate': 128000},
+        },
+      )).aspectRatio,
+      16 / 9,
+    );
+    expect(MediaAttachment.fromJson(_mediaJson(type: 'audio')).aspectRatio,
+        16 / 9);
+    // 画像は従来どおり 1.0 にフォールバック
+    expect(MediaAttachment.fromJson(_mediaJson(type: 'image')).aspectRatio,
+        1.0);
+  });
+
   group('種別判定 getter', () {
     test('isVideo は video と gifv の両方で true', () {
       expect(MediaAttachment.fromJson(_mediaJson(type: 'video')).isVideo, true);
@@ -120,6 +137,24 @@ void main() {
       expect(MediaAttachment.fromJson(_mediaJson(type: 'image')).isImage, true);
       expect(MediaAttachment.fromJson(_mediaJson(type: 'audio')).isAudio, true);
       expect(MediaAttachment.fromJson(_mediaJson(type: 'image')).isAudio, false);
+    });
+
+    // カバーの無い音声は preview_url が null で、previewUrl に音声ファイルの
+    // url が入る。これを画像としてデコードすると壊れた画像になる (issue #10)。
+    test('audioCoverUrl: カバー付き音声だけ preview_url を返す', () {
+      expect(
+        MediaAttachment.fromJson(_mediaJson(type: 'audio')).audioCoverUrl,
+        'https://example.com/preview.png',
+      );
+      expect(
+        MediaAttachment.fromJson(_mediaJson(type: 'audio', previewUrl: null))
+            .audioCoverUrl,
+        isNull,
+      );
+      expect(
+        MediaAttachment.fromJson(_mediaJson(type: 'image')).audioCoverUrl,
+        isNull,
+      );
     });
 
     // Misskey は GIF を mp4 に変換せず type だけ gifv で返す (URL は .gif の

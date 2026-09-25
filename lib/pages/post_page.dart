@@ -2826,9 +2826,19 @@ class _PostPageState extends ConsumerState<PostPage> {
         ? (file.mimeType ?? lookupMimeType(file.name) ?? '')
         : (lookupMimeType(mediaItem.remotePreviewUrl ?? '') ?? '');
     final isVideo = mimeType.startsWith('video/');
+    final isAudio = mimeType.startsWith('audio/');
 
     final Widget previewChild;
-    if (isVideo) {
+    if (isAudio) {
+      // 音声は画像としてデコードできない (壊れた画像になる) ので、アイコンだけ
+      // 出す (issue #10)。
+      previewChild = Container(
+        width: 84,
+        height: 84,
+        color: Colors.black87,
+        child: const Icon(Icons.audiotrack, color: Colors.white, size: 32),
+      );
+    } else if (isVideo) {
       previewChild = Stack(
         children: [
           Container(

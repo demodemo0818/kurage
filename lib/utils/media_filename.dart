@@ -4,6 +4,8 @@
 // 拡張子を .jpg 決め打ちにしていたため動画が JPG として保存されていた
 // (Issue #5) 回帰を防ぐため、ここに切り出して unit test を付けている。
 
+import 'package:mime/mime.dart';
+
 /// Content-Type の MIME から拡張子を導出する。
 /// サブタイプがそのまま拡張子にならないもの (image/jpeg, video/quicktime 等)
 /// だけ明示マッピングし、残りはサブタイプをそのまま使う。
@@ -48,4 +50,17 @@ String resolveMediaExtension(String url, String? contentType) {
     if (RegExp(r'^[a-z0-9]{1,5}$').hasMatch(ext)) return ext;
   }
   return 'jpg';
+}
+
+/// Android で保存に使う共有ストレージのディレクトリ名 (`/storage/emulated/0/` 直下)。
+///
+/// Android の共有ストレージは MediaProvider が MIME の種類ごとに置ける
+/// ディレクトリを制限していて、音声を Pictures/ に書こうとすると EPERM で
+/// 弾かれる (Issue #10)。画像・動画は従来どおり Pictures/、音声は Music/、
+/// どちらでもないものはどの種類でも置ける Download/ に振り分ける。
+String androidSaveDirectoryFor(String extension) {
+  final mime = lookupMimeType('file.$extension') ?? '';
+  if (mime.startsWith('image/') || mime.startsWith('video/')) return 'Pictures';
+  if (mime.startsWith('audio/')) return 'Music';
+  return 'Download';
 }
