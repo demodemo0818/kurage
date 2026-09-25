@@ -45,7 +45,7 @@ jobs:
           cp android/app/google-services.json.example android/app/google-services.json
 
       # Android ビルドに必要な JDK。build.gradle.kts は jvmTarget=11 だが
-      # Gradle 8 系は JDK 17 で動かすのが標準。
+      # Gradle 9 / AGP 9 は JDK 17 以上が必須。
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
