@@ -189,3 +189,5 @@ Firebase Cloud Messaging + 自前の Cloudflare Worker リレー経由で動作�
 - **Android の共有ストレージは種類ごとに置き場所が決まっている** (音声を `Pictures/` に書くと EPERM) → `androidSaveDirectoryFor` で振り分ける
 - **フォントのフォールバックは書記素クラスタ単位** (`ᤖﾞ` のような組み合わせは両方豆腐) → `separateHalfwidthSoundMarks` で WORD JOINER を挟む
 - **`ACTION_SEND` の intent-filter を `MainActivity` に直付けしない** (共有 Intent がタスクに保存され、次回起動時に投稿済みの内容で投稿画面が再表示される) → `taskAffinity=""` + `noHistory` の `ShareActivity` に分離
+- **並列にキックした Future を順に `await` しない** (前の await 中に後ろが失敗すると unhandled error として fatal 報告される) → 先に `Future.wait` で全部にハンドラを付けるか、キック時に `.catchError` を付ける
+- **Crashlytics の通信断判定 `_isTransientNetworkError` は型名の完全一致** (`_ClientSocketException` 等のサブクラスは個別に列挙しないと fatal 扱いになる)

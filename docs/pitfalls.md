@@ -182,3 +182,18 @@ Flutter (SkParagraph) のフォールバックは**書記素クラスタ単位**
 - **対策**: [html_text_utils.dart](../lib/utils/html_text_utils.dart) の `separateHalfwidthSoundMarks` が、直前が半角カナ以外の `ﾞ` `ﾟ` の前に WORD JOINER (U+2060) を挟んでクラスタを切る。`parseContentWithEmojis` の平文部分と、表示名を素の `Text` で出している一覧 (検索結果・フォロー一覧・ブロック/ミュート一覧) に掛けている。
 - ZERO WIDTH SPACE ではなく WORD JOINER を使うのは改行機会を作らないため。ハッシュタグ等の検出より**前**に掛けると WORD JOINER がタグを途中で切るので、検出後の平文部分にだけ掛ける。
 - 結合文字 (U+3099 等の Mn) はクラスタを切るとマークの位置決め (GPOS) が壊れうるので対象にしていない。
+
+## 並列にキックした Future を順に `await` すると、後ろの失敗が unhandled error になる
+
+複数の API を並列に走らせるため Future を先に全部作り、あとで 1 本ずつ `await` する形 (`final a = fetchA(); final b = fetchB(); await a; await b;`) は危ない。**`a` を待っている間に `b` が失敗すると、その時点で `b` にはハンドラが付いていないので unhandled error として即座に報告される**。後で `await b` して try/catch で受けても手遅れで、画面側は正しくエラー表示しているのに、同じエラーが `PlatformDispatcher.onError` 経由で Crashlytics に **fatal** として積まれる (プロフィールのフォロー一覧・固定投稿などがサーバの 500 や通信断で失敗するケース。Crashlytics 94bb281 / 725c215 / 7f85a44 / 9cbd35e)。
+
+- **対策**: まとめて待つなら先に `await Future.wait<Object?>([a, b, ...])` で全部にハンドラを付けてから個別に取り出す ([profile_page.dart](../lib/pages/profile_page.dart) `_reloadAll`)。失敗を個別に既定値へ倒したいなら、**キックした時点で** `.catchError(...)` を付ける (同 `_loadFromRemote` の `orEmpty`)。
+- `Future.timeout` は元の Future にハンドラを付けるので、`f.timeout(...)` を作った時点で `f` 側は安全になる。
+
+## Crashlytics の通信断判定は型名文字列の完全一致 (サブクラスは個別に列挙する)
+
+[main.dart](../lib/main.dart) の `_isTransientNetworkError` は、dart:io を import すると Web ビルドが落ちるため `runtimeType.toString()` の文字列で一過性の通信断を判定し、fatal / 非致命を振り分けている。**完全一致なのでサブクラスは拾えない**。
+
+- package:http の IOClient は SocketException を `_ClientSocketException` (ClientException の非公開サブクラス。`toString` は "ClientException with SocketException: …") に包んで投げる。列挙していなかったため DNS 失敗・経路なし等が fatal 扱いになっていた。
+- cached_network_image (flutter_cache_manager) の HTTP エラー応答 ("Invalid statusCode: 404") は `HttpExceptionWithStatus` (dart:io `HttpException` のサブクラス)。
+- 画像パイプライン (`details.library == 'image resource service'`) の通信断は Crashlytics に送らない。連合先のメディアサーバの消滅や 404 は日常的に起き、アプリ側で直せない (送ると非致命 issue の大半を占める)。
