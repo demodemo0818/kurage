@@ -117,6 +117,7 @@ class PostPage extends ConsumerStatefulWidget {
   final String? replyToStatusId;
   final String? replyToUsername;
   final String? replyToVisibility;
+  final String? replyToSpoilerText; // 返信先の CW。公式 Web UI と同じく返信に引き継ぐ
   final String? initialText; // ハッシュタグ投稿用の初期テキスト
   final String? initialVisibility; // 編集・下書き復元用の初期公開範囲
   final String? initialSpoilerText; // 「削除して下書きに戻す」用の CW 文字列
@@ -183,6 +184,7 @@ class PostPage extends ConsumerStatefulWidget {
     this.replyToStatusId,
     this.replyToUsername,
     this.replyToVisibility,
+    this.replyToSpoilerText,
     this.initialText,
     this.initialVisibility,
     this.initialSpoilerText,
@@ -321,6 +323,12 @@ class _PostPageState extends ConsumerState<PostPage> {
     // 編集・下書き復元時の公開範囲をセット
     if (widget.initialVisibility != null) {
       _visibility = widget.initialVisibility!;
+    }
+    // CW 付き投稿への返信は CW を引き継ぐ (公式 Web UI と同じく文言そのまま)。
+    if (widget.replyToSpoilerText != null &&
+        widget.replyToSpoilerText!.isNotEmpty) {
+      _spoilerController.text = widget.replyToSpoilerText!;
+      _showSpoilerField = true;
     }
     // 「削除して下書きに戻す」フローからの CW / NSFW 復元 (編集モード時は
     // _restoreFromEditTarget が後から上書きする想定なので問題なし)。言語は
@@ -1014,8 +1022,11 @@ class _PostPageState extends ConsumerState<PostPage> {
         widget.initialText != null || widget.replyToUsername != null;
     if (isPrefilledLaunch) {
       final bodyAuthored = body.isNotEmpty && body != _initialPrefillBody;
+      // 返信先から引き継いだ CW も本文の @メンションと同じくプリフィル扱い。
+      final spoilerAuthored =
+          spoiler.isNotEmpty && spoiler != (widget.replyToSpoilerText ?? '');
       final anyExtra =
-          spoiler.isNotEmpty || pollData != null || scheduledIso != null;
+          spoilerAuthored || pollData != null || scheduledIso != null;
       if (!bodyAuthored && !anyExtra) return;
     }
 

@@ -1305,6 +1305,7 @@ class _RootPageState extends ConsumerState<RootPage> with WidgetsBindingObserver
       replyToStatusId: req.replyToStatusId,
       replyToUsername: req.replyToUsername,
       replyToVisibility: req.replyToVisibility,
+      replyToSpoilerText: req.replyToSpoilerText,
       initialText: req.initialText,
       initialVisibility: req.initialVisibility,
       quotedStatus: req.quotedStatus,

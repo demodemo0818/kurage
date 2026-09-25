@@ -30,6 +30,7 @@ void openCompose(
   String? replyToStatusId,
   String? replyToUsername,
   String? replyToVisibility,
+  String? replyToSpoilerText,
   String? initialText,
   String? initialVisibility,
   Status? quotedStatus,
@@ -54,6 +55,7 @@ void openCompose(
         statusId: replyToStatusId,
         username: replyToUsername,
         visibility: replyToVisibility,
+        spoilerText: replyToSpoilerText,
         accountIds: initialAccountIds,
       );
     } else if (quotedStatus != null) {
@@ -77,6 +79,7 @@ void openCompose(
         replyToStatusId: replyToStatusId,
         replyToUsername: replyToUsername,
         replyToVisibility: replyToVisibility,
+        replyToSpoilerText: replyToSpoilerText,
         initialText: initialText,
         initialVisibility: initialVisibility,
         quotedStatus: quotedStatus,

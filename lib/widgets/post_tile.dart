@@ -3171,6 +3171,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
           ref,
           replyToUsername: display.account.acct,
           replyToVisibility: display.visibility,
+          replyToSpoilerText: display.spoilerText,
           initialAccountIds: [account.id],
           initialText: '@${display.account.acct} ', // メンション付きで開始
         );
@@ -3187,6 +3188,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
         replyToStatusId: resolvedStatusId,
         replyToUsername: display.account.acct,
         replyToVisibility: display.visibility,
+        replyToSpoilerText: display.spoilerText,
         initialAccountIds: [account.id],
       );
     } catch (e) {
@@ -3197,6 +3199,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
         ref,
         replyToUsername: display.account.acct,
         replyToVisibility: display.visibility,
+        replyToSpoilerText: display.spoilerText,
         initialAccountIds: [account.id],
         initialText: '@${display.account.acct} ',
       );
@@ -5036,6 +5039,7 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
           replyToStatusId: d.id,
           replyToUsername: d.account.acct,
           replyToVisibility: d.visibility,
+          replyToSpoilerText: d.spoilerText,
           initialAccountIds:
               widget.accountId != null ? [widget.accountId!] : null,
         );

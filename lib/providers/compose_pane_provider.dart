@@ -13,6 +13,7 @@ class ComposeRequest {
   final String? replyToStatusId;
   final String? replyToUsername;
   final String? replyToVisibility;
+  final String? replyToSpoilerText;
   final String? initialText;
   final String? initialVisibility;
   final Status? quotedStatus;
@@ -34,6 +35,7 @@ class ComposeRequest {
     this.replyToStatusId,
     this.replyToUsername,
     this.replyToVisibility,
+    this.replyToSpoilerText,
     this.initialText,
     this.initialVisibility,
     this.quotedStatus,
@@ -109,6 +111,7 @@ class ComposePaneNotifier extends StateNotifier<ComposePaneState> {
     required String statusId,
     String? username,
     String? visibility,
+    String? spoilerText,
     List<String>? accountIds,
   }) {
     state = ComposePaneState(
@@ -118,6 +121,7 @@ class ComposePaneNotifier extends StateNotifier<ComposePaneState> {
         replyToStatusId: statusId,
         replyToUsername: username,
         replyToVisibility: visibility,
+        replyToSpoilerText: spoilerText,
         initialAccountIds: accountIds,
       ),
     );
