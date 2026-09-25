@@ -1037,6 +1037,8 @@
   "postShowAction": "Show",
   "postSectionAuthor": "Author",
   "postHideMedia": "Hide media",
+  "postMediaScrollPrev": "Previous media",
+  "postMediaScrollNext": "Next media",
   "postRevealAction": "Show",
   "postUnpinFailed": "Failed to unpin: {error}",
   "postPinNotAllowed": "Can't pin. Only up to 5 of your own public/unlisted posts can be pinned.",

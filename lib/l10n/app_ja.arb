@@ -2023,6 +2023,8 @@
   "postShowAction": "表示",
   "postSectionAuthor": "投稿主",
   "postHideMedia": "メディアを隠す",
+  "postMediaScrollPrev": "前のメディアへ",
+  "postMediaScrollNext": "次のメディアへ",
   "postRevealAction": "表示する",
   "postUnpinFailed": "ピン留め解除に失敗しました: {error}",
   "@postUnpinFailed": {

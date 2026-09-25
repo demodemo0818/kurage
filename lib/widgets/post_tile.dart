@@ -35,6 +35,7 @@ import '../utils/html_parser.dart'; // parseContentWithEmojis
 import '../utils/instance_utils.dart';
 import '../utils/snackbar_helpers.dart';
 import '../utils/bounded_collections.dart';
+import '../utils/platform.dart';
 import '../providers/settings_provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/link_preview.dart';
@@ -141,6 +142,12 @@ const double _kPostHorizPad = 12.0;
 /// `headerSection` の `SizedBox(width: 12)` と合わせる。本文の左端 (= avatar
 /// の右端 + spacer) を計算するのに使う。
 const double _kAvatarBodySpacer = 12.0;
+
+/// メディア領域に重ねる丸ボタン (「隠す」/ 横スクロールの矢印) の直径。
+const double _kHideMediaButtonSize = 30.0;
+
+/// 横スクロール表示のサムネイル間隔。
+const double _kStripGap = 8.0;
 
 /// リモート由来 status をホームサーバー上の ID に解決できなかった時の
 /// 共通メッセージ (`_boostAsAccount` 等の既存文言と揃える)。
@@ -3983,6 +3990,48 @@ class _HideMediaButton extends StatelessWidget {
   }
 }
 
+/// 横スクロール表示のメディア列に重ねる左右の矢印ボタン (Web / デスクトップのみ)。
+/// 見た目は [_HideMediaButton] に揃える。
+class _MediaScrollArrowButton extends StatelessWidget {
+  final bool forward;
+  final double size;
+  final VoidCallback onTap;
+  const _MediaScrollArrowButton({
+    required this.forward,
+    required this.size,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Tooltip(
+          message: forward
+              ? context.l10n.postMediaScrollNext
+              : context.l10n.postMediaScrollPrev,
+          child: Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.55),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              forward ? Icons.chevron_right : Icons.chevron_left,
+              color: Colors.white,
+              size: size * 0.8,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// 添付メディアの ALT 文 (description) を全文表示するダイアログ。
 /// タイムラインの ALT バッジ / フルスクリーンビューア両方から呼ばれる。
 void showAltTextDialog(BuildContext context, String description) {
@@ -4088,8 +4137,61 @@ class _PostMediaGalleryState extends State<_PostMediaGallery> {
     return true; // 非 sensitive / ぼかし無効: 常に表示中
   }
 
+  /// 横スクロール表示のコントローラ。Web / デスクトップの矢印ボタンが
+  /// スクロール位置を読み書きするために持つ (grid 表示では attach されない)。
+  final ScrollController _stripController = ScrollController();
+
+  /// マウスがメディア領域上にあるか。矢印ボタンはホバー中だけ出す。
+  /// ギャラリー全体を rebuild させないよう ValueNotifier で矢印部分だけ更新する。
+  final ValueNotifier<bool> _hovering = ValueNotifier(false);
+
+  @override
+  void dispose() {
+    _stripController.dispose();
+    _hovering.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final horizontal = widget.layout == MediaLayout.horizontal;
+    // 横スクロール表示はスマホならスワイプで送れるが、Flutter のデフォルト
+    // dragDevices に mouse が含まれないため Web / デスクトップのマウスでは
+    // 送れない。マウス前提の環境ではホバー中に左右の矢印ボタンを出す。
+    // (mouse を dragDevices に足す方式は、クリック時の数 px のブレでドラッグ
+    // 判定になりサムネイルのタップ = 全画面表示が不発になるため採らない)
+    final showScrollArrows = horizontal && isWebOrDesktop();
+
+    Widget gallery = Stack(
+      children: [
+        horizontal
+            ? _buildHorizontalLayout(context)
+            : _buildGridLayout(context),
+        // 「隠す」ボタンより下に積む (小さいサムネイル設定で重なった時は
+        // 「隠す」を優先)。
+        if (showScrollArrows) _buildScrollArrows(),
+        // 公式 Web UI と同じく「隠す」ボタンはメディア領域に 1 つだけ (右上)。
+        // タップで投稿の全メディアを隠す。
+        if (_showHideButton)
+          Positioned(
+            top: 6,
+            right: 6,
+            child: _HideMediaButton(
+              size: _kHideMediaButtonSize,
+              onTap: () => setState(() => _manuallyHidden = true),
+            ),
+          ),
+      ],
+    );
+    if (showScrollArrows) {
+      // 「隠す」ボタン上に乗っても矢印が消えないよう、Stack 全体を覆う。
+      gallery = MouseRegion(
+        onEnter: (_) => _hovering.value = true,
+        onExit: (_) => _hovering.value = false,
+        child: gallery,
+      );
+    }
+
     return RepaintBoundary(
       child: Padding(
         // right はヘッダーの horizontal padding (12) と揃えて視覚的に整列。
@@ -4100,30 +4202,22 @@ class _PostMediaGalleryState extends State<_PostMediaGallery> {
           top: 4.0,
           bottom: 6.0,
         ),
-        child: Stack(
-          children: [
-            widget.layout == MediaLayout.grid
-                ? _buildGridLayout(context)
-                : _buildHorizontalLayout(context),
-            // 公式 Web UI と同じく「隠す」ボタンはメディア領域に 1 つだけ (右上)。
-            // タップで投稿の全メディアを隠す。
-            if (_showHideButton)
-              Positioned(
-                top: 6,
-                right: 6,
-                child: _HideMediaButton(
-                  size: 30,
-                  onTap: () => setState(() => _manuallyHidden = true),
-                ),
-              ),
-          ],
-        ),
+        child: gallery,
       ),
     );
   }
 
+  /// 横スクロール表示のタイル幅。横長は元のアスペクト比に合わせて幅を広げる
+  /// (最大 2:1 でクランプして非常識な panorama に画面を専有させない)。縦長 /
+  /// 正方形は縦に伸びすぎないよう正方形のまま (BoxFit.cover で中央トリミング)。
+  double _stripTileWidth(int index) {
+    final ms = widget.mediaSize;
+    final aspect = widget.mediaAttachments[index].aspectRatio;
+    return aspect > 1.0 ? (ms * aspect).clamp(ms, ms * 2.0).toDouble() : ms;
+  }
+
   /// 従来の横スクロール表示。1 投稿あたり高さ固定 (`mediaSize`)、横はアスペクト比
-  /// に応じて伸縮 (横長は最大 2:1 でクランプ、縦長/正方形は正方形)。
+  /// に応じて伸縮 (`_stripTileWidth`)。
   Widget _buildHorizontalLayout(BuildContext context) {
     final ms = widget.mediaSize;
     final dpr = MediaQuery.devicePixelRatioOf(context);
@@ -4131,29 +4225,123 @@ class _PostMediaGalleryState extends State<_PostMediaGallery> {
     return SizedBox(
       height: ms,
       child: ListView.separated(
+        controller: _stripController,
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         itemCount: widget.previewUrls.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (_, i) {
-          final media = widget.mediaAttachments[i];
-          // 横長は元のアスペクト比に合わせて幅を広げる (最大 2:1 でクランプ
-          // して非常識な panorama に画面を専有させない)。縦長 / 正方形は
-          // 縦に伸びすぎないよう正方形のまま (BoxFit.cover で中央トリミング)。
-          final aspect = media.aspectRatio;
-          final tw = aspect > 1.0
-              ? (ms * aspect).clamp(ms, ms * 2.0).toDouble()
-              : ms;
-          return _buildMediaTile(
-            index: i,
-            width: tw,
-            height: ms,
-            dpr: dpr,
-            borderRadius: 8,
-            overlayBadge: null,
+        separatorBuilder: (_, _) => const SizedBox(width: _kStripGap),
+        itemBuilder: (_, i) => _buildMediaTile(
+          index: i,
+          width: _stripTileWidth(i),
+          height: ms,
+          dpr: dpr,
+          borderRadius: 8,
+          overlayBadge: null,
+        ),
+      ),
+    );
+  }
+
+  /// 横スクロール表示に重ねる左右の矢印ボタン (Web / デスクトップのみ)。
+  /// ホバー中かつその方向にまだ送れる時だけ出す。
+  Widget _buildScrollArrows() {
+    return Positioned.fill(
+      child: ListenableBuilder(
+        listenable: Listenable.merge([_hovering, _stripController]),
+        builder: (context, _) {
+          if (!_hovering.value || !_stripController.hasClients) {
+            return const SizedBox.shrink();
+          }
+          final pos = _stripController.position;
+          if (!pos.hasContentDimensions) return const SizedBox.shrink();
+          final canBack = pos.pixels > pos.minScrollExtent + 0.5;
+          final canForward = pos.pixels < pos.maxScrollExtent - 0.5;
+          if (!canBack && !canForward) return const SizedBox.shrink();
+
+          const size = _kHideMediaButtonSize;
+          final ms = widget.mediaSize;
+          // 基本は縦中央。右上の「隠す」ボタン (top 6) と重なる高さなら
+          // その下まで下げ、枠からははみ出させない。左右で高さは揃える。
+          var top = (ms - size) / 2;
+          const belowHideButton = 6 + size + 4;
+          if (_showHideButton && top < belowHideButton) top = belowHideButton;
+          if (top > ms - size) top = ms - size;
+
+          return Stack(
+            children: [
+              if (canBack)
+                Positioned(
+                  left: 6,
+                  top: top,
+                  child: _MediaScrollArrowButton(
+                    forward: false,
+                    size: size,
+                    onTap: () => _scrollStrip(forward: false),
+                  ),
+                ),
+              if (canForward)
+                Positioned(
+                  right: 6,
+                  top: top,
+                  child: _MediaScrollArrowButton(
+                    forward: true,
+                    size: size,
+                    onTap: () => _scrollStrip(forward: true),
+                  ),
+                ),
+            ],
           );
         },
       ),
+    );
+  }
+
+  /// 矢印ボタンでの送り。次 (前) に見切れているメディアが端に揃う位置まで送る
+  /// (= 見切れていた 1 枚が丸ごと見える)。1 枚が表示幅より広くて進まない時は
+  /// 表示幅ぶん送る。
+  void _scrollStrip({required bool forward}) {
+    if (!_stripController.hasClients) return;
+    final pos = _stripController.position;
+    final viewStart = pos.pixels;
+    final viewEnd = pos.pixels + pos.viewportDimension;
+
+    double? target;
+    var left = 0.0;
+    final lefts = <double>[];
+    final widths = <double>[];
+    for (var i = 0; i < widget.previewUrls.length; i++) {
+      final w = _stripTileWidth(i);
+      lefts.add(left);
+      widths.add(w);
+      left += w + _kStripGap;
+    }
+
+    if (forward) {
+      // 右端で見切れている最初の 1 枚を左端に揃える。
+      for (var i = 0; i < widths.length; i++) {
+        if (lefts[i] + widths[i] > viewEnd + 0.5) {
+          target = lefts[i];
+          break;
+        }
+      }
+      if (target == null || target <= viewStart + 0.5) target = viewEnd;
+    } else {
+      // 左端で見切れている最後の 1 枚を右端に揃える。
+      for (var i = widths.length - 1; i >= 0; i--) {
+        if (lefts[i] < viewStart - 0.5) {
+          target = lefts[i] + widths[i] - pos.viewportDimension;
+          break;
+        }
+      }
+      if (target == null || target >= viewStart - 0.5) {
+        target = viewStart - pos.viewportDimension;
+      }
+    }
+
+    _stripController.animateTo(
+      target.clamp(pos.minScrollExtent, pos.maxScrollExtent),
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
     );
   }
 
