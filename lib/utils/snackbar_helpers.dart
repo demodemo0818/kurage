@@ -37,9 +37,12 @@ void showCenteredToast(
       icon: icon,
       duration: duration,
       onDismiss: () {
-        if (identical(_activeToast, entry)) {
-          _activeToast = null;
-        }
+        // active でなくなっている = 次のトーストに置き換えられた時点で撤去済み。
+        // 撤去から State 破棄 (次フレームの rebuild) までの間にフェードアウトが
+        // 終わるとここに来るので、もう一度 remove すると null check で落ちる
+        // (Crashlytics f3836ec)。
+        if (!identical(_activeToast, entry)) return;
+        _activeToast = null;
         entry.remove();
       },
     ),

@@ -105,7 +105,8 @@ class _HashtagPageState extends ConsumerState<HashtagPage> {
         hashtag: widget.hashtag,
         limit: 20,
       );
-      
+      // 取得中に戻るで閉じられることがある (Crashlytics e8b3bbc)。
+      if (!mounted) return;
       setState(() {
         _posts = posts;
         if (posts.isNotEmpty) {
@@ -120,7 +121,7 @@ class _HashtagPageState extends ConsumerState<HashtagPage> {
         );
       }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -138,7 +139,7 @@ class _HashtagPageState extends ConsumerState<HashtagPage> {
         maxId: _maxId,
         limit: 20,
       );
-      
+      if (!mounted) return;
       setState(() {
         _posts.addAll(morePosts);
         if (morePosts.isNotEmpty) {
@@ -148,7 +149,7 @@ class _HashtagPageState extends ConsumerState<HashtagPage> {
     } catch (e) {
       debugPrint('Error loading more hashtag posts: $e');
     } finally {
-      setState(() => _isLoadingMore = false);
+      if (mounted) setState(() => _isLoadingMore = false);
     }
   }
 
@@ -160,6 +161,7 @@ class _HashtagPageState extends ConsumerState<HashtagPage> {
         accessToken: auth.accessToken,
         hashtag: widget.hashtag,
       );
+      if (!mounted) return;
       setState(() => _isFollowing = following);
     } catch (e) {
       debugPrint('Error checking hashtag follow status: $e');

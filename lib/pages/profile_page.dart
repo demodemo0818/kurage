@@ -471,6 +471,23 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       // 全部キックした後に gather する。await の順番が結果の到着順と
       // 一致しなくても問題ない (どれかが先に完了したら次の await まで
       // 待機なしで済むだけ、最終的には全 Future が解決して setState に到達)。
+      //
+      // ただし個別 await だけだと、前の await を待っている間に後ろの Future が
+      // 失敗した場合、その時点でハンドラが付いていないため unhandled error と
+      // して報告される (後で await しても手遅れ)。サーバの 500 や通信断で
+      // フォロー一覧・固定投稿などが落ちるとクラッシュ扱いになっていた
+      // (Crashlytics 94bb281 / 725c215 / 7f85a44 / 9cbd35e ほか)。
+      // 先に Future.wait で全部にハンドラを付けてから取り出す。
+      await Future.wait<Object?>([
+        relFuture,
+        pinnedFuture,
+        fetchedFuture,
+        mediaFetchedFuture,
+        followingFuture,
+        followersFuture,
+        familiarFollowersFuture,
+        supportsV46Future,
+      ]);
       final rel = await relFuture;
       final pinned = await pinnedFuture;
       final fetched = await fetchedFuture;
@@ -479,6 +496,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       final followers = await followersFuture;
       final familiarFollowers = await familiarFollowersFuture;
       final supportsV46 = await supportsV46Future;
+      if (!mounted) return;
 
       setState(() {
         _account      = acct;
@@ -1146,46 +1164,36 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         acct: username,
       ).timeout(timeout);
       final id = remoteAcct.id;
-      // 互いに独立なので並列にキックして gather する (_reloadAll と同方針)。
-      final statusesFuture = fetchAccountStatuses(
-        instanceUrl: remoteBase,
-        accessToken: null,
-        accountId: id,
-        excludeDirect: true,
-      );
-      final mediaFuture = fetchAccountStatuses(
-        instanceUrl: remoteBase,
-        accessToken: null,
-        accountId: id,
-        onlyMedia: true,
-      );
-      final pinnedFuture = fetchPinnedStatuses(
-        instanceUrl: remoteBase,
-        accessToken: null,
-        accountId: id,
-      );
       // lookup さえ成功すれば「正確なカウント / bio」は得られる。投稿系は
       // インスタンスが認証なしアクセスを制限していると失敗しうる (例: vivaldi)
       // が、それで全体を倒すとカウントすら見られないので、投稿系の失敗は
       // 各々空に倒して非致命扱いにする (lookup の失敗だけが致命)。
-      List<Status> statuses;
-      try {
-        statuses = await statusesFuture.timeout(timeout);
-      } catch (_) {
-        statuses = const [];
-      }
-      List<Status> media;
-      try {
-        media = await mediaFuture.timeout(timeout);
-      } catch (_) {
-        media = const [];
-      }
-      List<Status> pinned;
-      try {
-        pinned = await pinnedFuture.timeout(timeout);
-      } catch (_) {
-        pinned = const [];
-      }
+      // 空に倒す処理はキックした時点で付ける。後で順に try/await する形だと、
+      // 前の await を待っている間に後ろの Future が失敗した時点でハンドラが
+      // 無く unhandled error として報告される (_reloadAll の Future.wait と同じ理由)。
+      Future<List<Status>> orEmpty(Future<List<Status>> f) =>
+          f.timeout(timeout).catchError((Object _) => const <Status>[]);
+      // 互いに独立なので並列にキックして gather する (_reloadAll と同方針)。
+      final statusesFuture = orEmpty(fetchAccountStatuses(
+        instanceUrl: remoteBase,
+        accessToken: null,
+        accountId: id,
+        excludeDirect: true,
+      ));
+      final mediaFuture = orEmpty(fetchAccountStatuses(
+        instanceUrl: remoteBase,
+        accessToken: null,
+        accountId: id,
+        onlyMedia: true,
+      ));
+      final pinnedFuture = orEmpty(fetchPinnedStatuses(
+        instanceUrl: remoteBase,
+        accessToken: null,
+        accountId: id,
+      ));
+      final statuses = await statusesFuture;
+      final media = await mediaFuture;
+      final pinned = await pinnedFuture;
 
       closeProgress();
       if (!mounted) return;

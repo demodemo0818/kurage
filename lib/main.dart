@@ -62,13 +62,21 @@ final _container = ProviderContainer();
 /// を判定する。これらは本質的に致命的ではないため Crashlytics には fatal:false で記録し、
 /// 「Fatal 件数」を実際のクラッシュ用に温存する。
 /// dart:io を import すると web ビルドが落ちるので型名文字列で判定する。
+/// 型名の完全一致なのでサブクラスは個別に列挙する必要がある。
 bool _isTransientNetworkError(Object error) {
   switch (error.runtimeType.toString()) {
     case 'ClientException': // package:http (IOClient.send の "Connection closed while receiving data" 等)
+    // package:http の IOClient が SocketException を包んで投げる非公開サブクラス
+    // ("ClientException with SocketException: Failed host lookup" 等)。
+    // 列挙漏れで通信断が fatal 扱いになっていた (Crashlytics 9cbd35e)。
+    case '_ClientSocketException':
     case 'SocketException': // dart:io
     case 'HandshakeException': // dart:io (TLS)
     case 'TlsException': // dart:io
     case 'HttpException': // dart:io
+    // flutter_cache_manager (cached_network_image) の HTTP エラー応答
+    // ("Invalid statusCode: 404" 等)。dart:io HttpException のサブクラス。
+    case 'HttpExceptionWithStatus':
     case 'WebSocketException': // dart:io
     case 'TimeoutException': // dart:async
       return true;
@@ -210,6 +218,13 @@ Future<void> main() async {
           // ("Decoded image has been disposed") はアプリを落とさないノイズなので
           // 非致命で記録する (Crashlytics 48d4ad1 / ceb14bd)。
           final isImagePipeline = details.library == 'image resource service';
+          // 画像の取得失敗 (配信元サーバの消滅・DNS 失敗・404・通信断) は
+          // 連合先のメディアを表示する以上日常的に起きる外部要因で、アプリ側で
+          // 直せるものが無い。非致命でも記録すると非致命 issue の大半を占めて
+          // 本物の問題が埋もれる (Crashlytics 3d61a0a) ので送らない。
+          if (isImagePipeline && _isTransientNetworkError(details.exception)) {
+            return;
+          }
           if (isImagePipeline || _isTransientNetworkError(details.exception)) {
             FirebaseCrashlytics.instance
                 .recordFlutterError(details); // 非致命扱い

@@ -1038,6 +1038,10 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
 
   /// 現在のアカウントから投稿を検索して開く
   Future<void> _searchAndOpenPost(String url) async {
+    // 引用元ダイアログを開いている間に、SSE の新着やスクロールでこの tile が
+    // 破棄されていることがある。破棄後は context も ref も使えないので何もしない
+    // (Crashlytics df863a5)。_openInApp / _openOnOriginServer も同じ。
+    if (!mounted) return;
     // ダイアログは root navigator に積まれるので、pop も同じ navigator で行う。
     // await 前に捕捉しておくことで、検索中に tile がスクロールで unmount
     // されてもローディングダイアログを確実に閉じられる。
@@ -1172,6 +1176,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
 
   /// アプリ内でThreadPageを開く
   void _openInApp(Status quotedStatus) {
+    if (!mounted) return;
     openDeckPage(
       context,
       (onDeckBack) => ThreadPage(
@@ -1198,6 +1203,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
   /// その投稿を保持していなくても（連合していない等）閲覧できる。
   /// Mastodon 形式の URL のみ対応。それ以外はブラウザにフォールバックする。
   void _openOnOriginServer(String url) {
+    if (!mounted) return;
     final uri = Uri.tryParse(url);
     final statusId = _originStatusId(url);
     if (uri == null || statusId == null) {
@@ -1441,8 +1447,12 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     
     // この投稿のアカウントIDから適切なアカウントを取得
     final auth = ref.read(authProvider);
+    // 全アカウントをログアウトした直後、まだ残っているタイムライン等が
+    // rebuild されることがある (Crashlytics 77fb008)。表示に使うアカウントが
+    // 無いので何も描かない。
+    if (auth.accounts.isEmpty) return const SizedBox.shrink();
     final targetAccountId = widget.accountId;
-    final acct = targetAccountId != null 
+    final acct = targetAccountId != null
         ? auth.accounts.firstWhere(
             (a) => a.id == targetAccountId,
             orElse: () => auth.accounts.first,

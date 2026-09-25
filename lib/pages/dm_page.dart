@@ -123,7 +123,9 @@ class _DmPageState extends ConsumerState<DmPage> {
                 ref
                     .read(conversationsProvider.notifier)
                     .loadMore()
-                    .whenComplete(() => setState(() => _loadingMore = false));
+                    .whenComplete(() {
+                  if (mounted) setState(() => _loadingMore = false);
+                });
               }
               return false;
             },
@@ -150,9 +152,13 @@ class _DmPageState extends ConsumerState<DmPage> {
   }
 
   Widget _buildConversationItem(Conversation conversation, List<AuthAccount> accounts) {
+    // 全アカウントをログアウトしても conversationsProvider は取得済みの会話を
+    // 保持したままなので、accounts が空のまま build することがある
+    // (Crashlytics 9316150)。表示に使うアカウントが無いので何も描かない。
+    if (accounts.isEmpty) return const SizedBox.shrink();
     final sourceAccount = accounts.firstWhere(
       (a) => a.id == conversation.sourceAccountId,
-      orElse: () => accounts.isNotEmpty ? accounts.first : throw StateError('No accounts available'),
+      orElse: () => accounts.first,
     );
 
     final lastMessage = conversation.lastStatus;

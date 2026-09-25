@@ -989,11 +989,10 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
         newer.status.createdAt.difference(older.status.createdAt);
     if (timeDiff.inMinutes <= 30) return null;
 
-    final sources = widget.column['sources'] as List;
-    final source = sources.firstWhere(
-      (s) => s['accountId'] == newer.accountId,
-      orElse: () => sources.first,
-    );
+    // firstWhere(orElse: () => sources.first) は sources が typed List のとき
+    // closure の型チェックで TypeError になる (Crashlytics a108f7d)。
+    final source = _findSourceForAccount(newer.accountId) ??
+        (widget.column['sources'] as List).first;
     final timelineType = (source['timelineType'] ?? 'home') as String;
 
     // バッチ内の連続 2 投稿の時間ギャップは、検出方法の都合上「同一ソース内」
@@ -1540,6 +1539,8 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
       });
 
       final results = await Future.wait(futures);
+      // 取得中にカラム削除などで破棄されていたら何もしない (Crashlytics 3171c27)。
+      if (!mounted) return;
       perSourceResults.addAll(results);
 
       // ストリーミングで既に取り込んだ投稿とバッファ内の投稿の両方に
@@ -1980,6 +1981,7 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
     });
     
     final results = await Future.wait(futures);
+    if (!mounted) return;
     for (final result in results) {
       olderPosts.addAll(result);
     }

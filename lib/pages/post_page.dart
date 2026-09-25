@@ -1232,6 +1232,7 @@ class _PostPageState extends ConsumerState<PostPage> {
       file: file,
       failures: failures,
     );
+    if (!mounted) return;
 
     if (ids.isEmpty) {
       // 全アカウント失敗時のみエラー表示。1 件でも成功していれば
@@ -1297,6 +1298,9 @@ class _PostPageState extends ConsumerState<PostPage> {
     final newItems = <MediaItem>[];
     final perFileFailures = <String, Map<String, Object>>{}; // filename -> failures
     for (final x in xfiles) {
+      // 前のファイルのアップロード中に投稿画面が閉じられたら残りは上げない
+      // (破棄後に ref を読むと StateError。Crashlytics 814cf01)。
+      if (!mounted) return;
       final failures = <String, Object>{};
       final ids = await _uploadOneFileToAllSelectedAccounts(
         file: x,
@@ -1380,6 +1384,7 @@ class _PostPageState extends ConsumerState<PostPage> {
       final newItems = <MediaItem>[];
       final perFileFailures = <String, Map<String, Object>>{};
       for (final x in media) {
+        if (!mounted) return; // _attachPickedFiles と同じ
         final failures = <String, Object>{};
         final ids = await _uploadOneFileToAllSelectedAccounts(
           file: x,
@@ -1857,7 +1862,7 @@ class _PostPageState extends ConsumerState<PostPage> {
             SnackBar(content: Text(l10n.composeExtraUploadFailed('$e'))),
           );
         }
-        setState(() => _isPosting = false);
+        if (mounted) setState(() => _isPosting = false);
         return;
       }
 
@@ -2052,7 +2057,8 @@ class _PostPageState extends ConsumerState<PostPage> {
         ).showSnackBar(SnackBar(content: Text(l10n.composePostFailed('$e'))));
       }
     } finally {
-      setState(() => _isPosting = false);
+      // 投稿中に画面が閉じられることがある (Crashlytics 1baa1b8)。
+      if (mounted) setState(() => _isPosting = false);
     }
   }
 

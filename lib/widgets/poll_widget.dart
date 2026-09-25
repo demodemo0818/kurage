@@ -65,6 +65,8 @@ class _PollWidgetState extends State<PollWidget> {
         accessToken: widget.accessToken,
         pollId: _poll.id,
       );
+      // 投票中にスクロールで tile が破棄されることがある (Crashlytics 9a50b96)。
+      if (!mounted) return;
 
       setState(() {
         _poll = updatedPoll;
@@ -78,7 +80,7 @@ class _PollWidgetState extends State<PollWidget> {
         );
       }
     } finally {
-      setState(() => _isVoting = false);
+      if (mounted) setState(() => _isVoting = false);
     }
   }
 

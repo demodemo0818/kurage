@@ -180,6 +180,8 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
     if (!_hasInitialized && accounts.isNotEmpty) {
       _hasInitialized = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        // 初回フレーム直後にタブ切替等で破棄されていることがある (Crashlytics abcac5c)。
+        if (!mounted) return;
         setState(() {
           // 保存されたアカウント選択がない場合は全アカウントを選択
           if (_selectedAccountIds.isEmpty) {
@@ -259,7 +261,10 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
               ref
                   .read(notificationsProvider.notifier)
                   .loadMore()
-                  .whenComplete(() => setState(() => _loadingMore = false));
+                  .whenComplete(() {
+                // 読み込み中にタブ切替等で破棄されることがある (Crashlytics 69a7d8f)。
+                if (mounted) setState(() => _loadingMore = false);
+              });
             }
             return false;
           },
@@ -347,11 +352,13 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
   Widget _buildNotificationItem(NotificationGroup g, TextStyle baseStyle,
       double emojiSizeDisplayName, double emojiSizeContent,
       List<AuthAccount> accounts) {
+    // 全アカウントをログアウトしても notificationsProvider は取得済みの通知を
+    // 保持したままなので、accounts が空のまま通知を build することがある
+    // (Crashlytics 2d03fa8)。表示に使うアカウントが無いので何も描かない。
+    if (accounts.isEmpty) return const SizedBox.shrink();
     final sourceAccount = accounts.firstWhere(
       (a) => a.id == g.sourceAccountId,
-      orElse: () => accounts.isNotEmpty
-          ? accounts.first
-          : throw StateError('No accounts available'),
+      orElse: () => accounts.first,
     );
 
     // 投稿系の通知（いいね、ブースト、リアクション、メンション、返信、投票）
