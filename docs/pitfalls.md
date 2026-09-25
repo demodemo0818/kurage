@@ -8,6 +8,8 @@ Flutter Gradle プラグインは release ビルドで R8 minify + resource shri
 
 対策は **`android/app/src/main/res/raw/keep.xml` の `tools:keep="@drawable/ic_stat_kurage"`** + AndroidManifest の `com.google.firebase.messaging.default_notification_icon` meta-data (静的参照の保険)。同種のリソースを増やす時は keep.xml に追記し、`flutter build appbundle --release` 後に `unzip -l app-release.aab | grep <名前>` で base に残っていることを確認する。
 
+v1.3.0 の次のリリースから `android/gradle.properties` の `android.r8.optimizedResourceShrinking=true` で R8 の最適化リソース削除を有効にしている (Play Console の推奨対応。AGP 9 ではデフォルト)。コードの到達可能性まで見て削るので従来より多く消える (Google サインインボタン画像、minSdk 24 未満向けの通知テンプレート、androidx.browser の `image_share_filepaths.xml` など、いずれも未使用)。`tools:keep` は従来どおり効くが、**keep 指定の XML ファイル自体 (`raw/firebase_*_keep.xml` 等) は AAB から消えるのが正常**。残っているべきかは XML ファイルの有無ではなく、keep 対象のリソース名 (`google_app_id` 等) が `base/resources.pb` に残っているかで判断する。
+
 なお AAB の density config split はリソース**ファイル実体**を分割するだけでリソーステーブルは常に base に入るため、「density split で getIdentifier が 0 になる」ことは原理的に無い (過去の誤診断)。修飾なし `drawable/` にも置いておく運用 (`tool/gen_notification_icon.dart` 対応済み) は害が無いので継続。
 
 ## `scrollable_positioned_list` の State 再生成
