@@ -375,11 +375,37 @@ List<String>? _notoSansJpFallback() {
   );
 }
 
-class MyApp extends ConsumerWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // 'system' 設定の locale は build 時に端末ロケールを読んで MaterialApp.locale に
+  // 固定している。起動中に端末の言語が変わったら build し直さないと、
+  // 再起動するまで旧言語のまま残る (MaterialApp 自身の追従は locale 固定で効かない)。
+  @override
+  void didChangeLocales(List<Locale>? locales) {
+    super.didChangeLocales(locales);
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
 
     // 表示言語の決定。BuildContext の無い層 (services / 例外メッセージ) が
