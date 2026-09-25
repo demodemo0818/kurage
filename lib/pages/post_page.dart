@@ -32,6 +32,7 @@ import '../services/sound_service.dart';
 import '../services/local_post_bus.dart';
 import '../services/local_status_event_bus.dart';
 import '../services/clipboard_image.dart';
+import '../services/image_transcode.dart';
 import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
 import '../utils/snackbar_helpers.dart';
@@ -1222,10 +1223,52 @@ class _PostPageState extends ConsumerState<PostPage> {
     return Map.fromEntries(results);
   }
 
+  /// 添付候補 [file] をサーバが受け付ける形式に整える。HEIC / HEIF / AVIF は
+  /// JPEG に変換する (Mastodon 4.7.2 で受け付けなくなった。image_transcode.dart)。
+  /// この環境で変換できなければ null を返すので、呼び出し側は件数を数えて
+  /// [_showHeifConvertFailed] で知らせる。
+  ///
+  /// `previewBytes` は変換した場合は JPEG、しなかった場合は引数の
+  /// [previewBytes] (クリップボード画像の元バイト列) をそのまま返す。
+  Future<({XFile file, Uint8List? previewBytes})?> _prepareUpload(
+    XFile file, {
+    Uint8List? previewBytes,
+  }) async {
+    try {
+      final converted = await convertHeifFamilyToJpeg(file);
+      if (converted == null) return (file: file, previewBytes: previewBytes);
+      return (file: converted.file, previewBytes: converted.bytes);
+    } on ImageTranscodeException catch (e) {
+      debugPrint('HEIF の JPEG 変換に失敗 (${file.name}): $e');
+      return null;
+    }
+  }
+
+  /// HEIC / HEIF / AVIF を変換できず添付を見送ったことを知らせる。トーストは
+  /// 後から出したものに置き換わるので、完了トーストの代わりにこれを出す
+  /// (添付できた分は一覧に並ぶので分かる)。
+  void _showHeifConvertFailed(int count) {
+    if (!mounted) return;
+    showCenteredToast(
+      context,
+      l10n.composeHeifConvertFailed(count),
+      icon: Icons.error_outline,
+      duration: const Duration(seconds: 5),
+    );
+  }
+
   /// 画像ファイルをアップロード (image_picker 経由パス)。
   /// 選択中の全アカウントに対して並行アップロードして MediaItem を構築する。
-  Future<void> _uploadImageFile(XFile file) async {
+  Future<void> _uploadImageFile(XFile picked) async {
     if (_selectedAccountIds.isEmpty) return;
+
+    final src = await _prepareUpload(picked);
+    if (!mounted) return;
+    if (src == null) {
+      _showHeifConvertFailed(1);
+      return;
+    }
+    final file = src.file;
 
     final failures = <String, Object>{};
     final ids = await _uploadOneFileToAllSelectedAccounts(
@@ -1244,7 +1287,11 @@ class _PostPageState extends ConsumerState<PostPage> {
     }
 
     setState(() {
-      _mediaItems.add(MediaItem(file: file, mediaIdsByAccount: ids));
+      _mediaItems.add(MediaItem(
+        file: file,
+        mediaIdsByAccount: ids,
+        localBytes: src.previewBytes,
+      ));
     });
 
     if (failures.isEmpty) {
@@ -1297,10 +1344,17 @@ class _PostPageState extends ConsumerState<PostPage> {
   Future<void> _attachPickedFiles(List<XFile> xfiles) async {
     final newItems = <MediaItem>[];
     final perFileFailures = <String, Map<String, Object>>{}; // filename -> failures
-    for (final x in xfiles) {
+    var heifFailed = 0;
+    for (final picked in xfiles) {
+      final src = await _prepareUpload(picked);
       // 前のファイルのアップロード中に投稿画面が閉じられたら残りは上げない
       // (破棄後に ref を読むと StateError。Crashlytics 814cf01)。
       if (!mounted) return;
+      if (src == null) {
+        heifFailed++;
+        continue;
+      }
+      final x = src.file;
       final failures = <String, Object>{};
       final ids = await _uploadOneFileToAllSelectedAccounts(
         file: x,
@@ -1311,14 +1365,20 @@ class _PostPageState extends ConsumerState<PostPage> {
         perFileFailures[x.name] = failures;
         continue;
       }
-      newItems.add(MediaItem(file: x, mediaIdsByAccount: ids));
+      newItems.add(MediaItem(
+        file: x,
+        mediaIdsByAccount: ids,
+        localBytes: src.previewBytes,
+      ));
       if (failures.isNotEmpty) perFileFailures[x.name] = failures;
     }
     if (!mounted) return;
     setState(() {
       _mediaItems.addAll(newItems);
     });
-    if (newItems.isNotEmpty) {
+    if (heifFailed > 0) {
+      _showHeifConvertFailed(heifFailed);
+    } else if (newItems.isNotEmpty) {
       final msg = perFileFailures.isEmpty
           ? l10n.composeMediaUploadedCount(newItems.length)
           : l10n.composeMediaUploadedPartial(
@@ -1349,7 +1409,7 @@ class _PostPageState extends ConsumerState<PostPage> {
   /// 添付として受け付けるメディアの拡張子 (ドロップ / Android のファイル選択の
   /// 軽いフィルタ)。
   static const Set<String> _attachableMediaExtensions = {
-    'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'bmp', // 画像
+    'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'avif', 'bmp', // 画像
     'mp4', 'mov', 'm4v', 'webm', // 動画
     'mp3', 'ogg', 'oga', 'wav', 'flac', 'm4a', // 音声
   };
@@ -1383,8 +1443,15 @@ class _PostPageState extends ConsumerState<PostPage> {
     try {
       final newItems = <MediaItem>[];
       final perFileFailures = <String, Map<String, Object>>{};
-      for (final x in media) {
+      var heifFailed = 0;
+      for (final dropped in media) {
+        final src = await _prepareUpload(dropped);
         if (!mounted) return; // _attachPickedFiles と同じ
+        if (src == null) {
+          heifFailed++;
+          continue;
+        }
+        final x = src.file;
         final failures = <String, Object>{};
         final ids = await _uploadOneFileToAllSelectedAccounts(
           file: x,
@@ -1394,13 +1461,19 @@ class _PostPageState extends ConsumerState<PostPage> {
           perFileFailures[x.name] = failures;
           continue;
         }
-        newItems.add(MediaItem(file: x, mediaIdsByAccount: ids));
+        newItems.add(MediaItem(
+          file: x,
+          mediaIdsByAccount: ids,
+          localBytes: src.previewBytes,
+        ));
         if (failures.isNotEmpty) perFileFailures[x.name] = failures;
       }
       if (mounted) {
         setState(() => _mediaItems.addAll(newItems));
       }
-      if (newItems.isNotEmpty) {
+      if (heifFailed > 0) {
+        _showHeifConvertFailed(heifFailed);
+      } else if (newItems.isNotEmpty) {
         _showPostPageSnackBar(
           perFileFailures.isEmpty
               ? l10n.composeMediaAttachedCount(newItems.length)
@@ -1462,8 +1535,21 @@ class _PostPageState extends ConsumerState<PostPage> {
     try {
       final newItems = <MediaItem>[];
       final perFileFailures = <String, Map<String, Object>>{};
+      var heifFailed = 0;
       for (final img in images) {
-        final x = _clipboardImageToXFile(img);
+        // クリップボード画像は XFile.fromData 由来で実ファイル path を持たない
+        // ため、プレビュー用に元バイト列 (JPEG に変換したらその結果) を
+        // MediaItem に持たせる。
+        final src = await _prepareUpload(
+          _clipboardImageToXFile(img),
+          previewBytes: img.bytes,
+        );
+        if (!mounted) return; // _attachPickedFiles と同じ
+        if (src == null) {
+          heifFailed++;
+          continue;
+        }
+        final x = src.file;
         final failures = <String, Object>{};
         final ids = await _uploadOneFileToAllSelectedAccounts(
           file: x,
@@ -1473,19 +1559,19 @@ class _PostPageState extends ConsumerState<PostPage> {
           perFileFailures[x.name] = failures;
           continue;
         }
-        // クリップボード画像は XFile.fromData 由来で実ファイル path を持たない
-        // ため、プレビュー用に元バイト列を MediaItem に持たせる。
         newItems.add(MediaItem(
           file: x,
           mediaIdsByAccount: ids,
-          localBytes: img.bytes,
+          localBytes: src.previewBytes,
         ));
         if (failures.isNotEmpty) perFileFailures[x.name] = failures;
       }
       if (mounted) {
         setState(() => _mediaItems.addAll(newItems));
       }
-      if (newItems.isNotEmpty) {
+      if (heifFailed > 0) {
+        _showHeifConvertFailed(heifFailed);
+      } else if (newItems.isNotEmpty) {
         _showPostPageSnackBar(
           perFileFailures.isEmpty
               ? l10n.composeImagePastedCount(newItems.length)

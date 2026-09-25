@@ -1365,6 +1365,12 @@
   "composeSelectAccountFirst": "先に投稿アカウントを選択してください",
   "composeDropMediaOnly": "画像・動画・音声ファイルをドロップしてください",
   "composePickMediaOnly": "画像・動画・音声以外のファイルは添付できません",
+  "composeHeifConvertFailed": "この環境では HEIC/HEIF/AVIF 画像を JPEG に変換できないため、{count} 件を添付できませんでした。JPEG や PNG に変換してから添付してください",
+  "@composeHeifConvertFailed": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "composeMediaAttachedCount": "{count} 件のメディアを添付しました",
   "@composeMediaAttachedCount": {
     "placeholders": {

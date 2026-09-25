@@ -750,6 +750,7 @@
   "composeSelectAccountFirst": "Select an account to post from first",
   "composeDropMediaOnly": "Drop image, video or audio files",
   "composePickMediaOnly": "Only image, video and audio files can be attached",
+  "composeHeifConvertFailed": "{count, plural, =1{1 HEIC/HEIF/AVIF image couldn't be converted to JPEG on this device and wasn't attached} other{{count} HEIC/HEIF/AVIF images couldn't be converted to JPEG on this device and weren't attached}}. Please convert to JPEG or PNG before attaching.",
   "composeMediaAttachedCount": "{count, plural, =1{Attached 1 media file} other{Attached {count} media files}}",
   "composeMediaAttachedPartial": "{count} attached ({failed} failed on some accounts)",
   "composeMediaAttachFailed": "Failed to attach media",

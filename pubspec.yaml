@@ -124,6 +124,10 @@ dependencies:
   # 引っ張って更新の 3 イベントで assets/sounds/ の短い音を鳴らす
   # (lib/services/sound_service.dart)。全 6 プラットフォーム公式対応。
   audioplayers: ^6.1.0
+  # HEIC / HEIF / AVIF をアップロード前に JPEG へ変換する時のエンコーダ
+  # (lib/services/image_transcode.dart)。tool/gen_windows_icon.dart の .ico
+  # 生成にも使う。
+  image: ^4.9.1
 
 dev_dependencies:
   flutter_test:
@@ -136,9 +140,6 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
-  # tool/gen_windows_icon.dart が Windows 用 .ico を生成するのに使う
-  # (flutter_launcher_icons は Windows 非対応のため)。
-  image: ^4.9.1
   # Web のソースマップを Sentry にアップロードする (`dart run sentry_dart_plugin`)。
   # 設定は末尾の `sentry:` セクション。
   sentry_dart_plugin: ^3.4.0

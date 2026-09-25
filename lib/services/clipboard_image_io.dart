@@ -14,6 +14,7 @@ import 'dart:ui' as ui;
 import 'package:pasteboard/pasteboard.dart';
 
 import 'clipboard_image.dart' show ClipboardImage;
+import 'image_transcode.dart' show isHeifFamilyImage;
 
 bool get clipboardPullSupported =>
     Platform.isWindows || Platform.isMacOS || Platform.isLinux;
@@ -60,14 +61,21 @@ Future<List<ClipboardImage>> readClipboardImages() async {
 }
 
 /// 生バイト列 1 枚分を Mastodon が受け付ける [ClipboardImage] に整える。
-/// Mastodon は BMP を受け付けない (png/jpeg/gif/webp/heic のみ) ので、解釈
+/// Mastodon は BMP を受け付けない (png/jpeg/gif/webp のみ) ので、解釈
 /// できないフォーマット (Windows クリップボードの BMP や未知) は dart:ui で
 /// PNG に変換する。デコード不能なら null。
+///
+/// HEIC / HEIF / AVIF はここでは変換せずそのまま渡し、投稿画面のアップロード前
+/// 変換 (image_transcode.dart) で JPEG にする。写真を PNG にすると 16MB の上限を
+/// 超えやすいうえ、変換できない環境 (Windows 等) でも「画像が無い」ではなく
+/// HEIF を変換できない旨を案内できる。
 Future<ClipboardImage?> _clipboardImageFromBytes(
   Uint8List raw, {
   String? sourcePath,
 }) async {
-  final knownMime = _sniffMime(raw);
+  // AVIF も image/heic 扱い (直後に JPEG 化されるので区別は要らない)。
+  final knownMime =
+      _sniffMime(raw) ?? (isHeifFamilyImage(raw) ? 'image/heic' : null);
   Uint8List bytes;
   String mime;
   if (knownMime != null) {
@@ -104,6 +112,7 @@ bool _looksLikeImagePath(String path) {
     '.bmp',
     '.heic',
     '.heif',
+    '.avif',
   ];
   for (final e in exts) {
     if (lower.endsWith(e)) return true;
@@ -188,6 +197,8 @@ String _extForMime(String mime) {
       return 'gif';
     case 'image/webp':
       return 'webp';
+    case 'image/heic':
+      return 'heic';
     case 'image/png':
     default:
       return 'png';
