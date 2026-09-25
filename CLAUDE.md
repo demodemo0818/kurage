@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクト概要
 
-Flutter 製の Mastodon クライアント **Kurage** （pubspec name: `kurage`、Android applicationId: `jp.demo2.kurage`）。Android / iOS / Web / Windows / macOS / Linux 対応。日本語 UI。**英語対応 (gen_l10n) へ段階移行中** — 新規のユーザー可視文言は日本語ハードコード禁止で、`lib/l10n/app_ja.arb` + `app_en.arb` に両方追加して `context.l10n.key` (context が無い層はグローバル `l10n`) で参照する。未翻訳キーは CI が fail させる。言語切替の解放は全訳完了後 v1.1.0 予定。詳細・移行状況は [docs/i18n.md](docs/i18n.md) 必読。
+Flutter 製の Mastodon クライアント **Kurage** （pubspec name: `kurage`、Android applicationId: `jp.demo2.kurage`）。Android / iOS / Web / Windows / macOS / Linux 対応。UI は日本語 / 英語 (gen_l10n、設定 → 外観設定 → 表示言語で切替)。新規のユーザー可視文言は日本語ハードコード禁止で、`lib/l10n/app_ja.arb` + `app_en.arb` に両方追加して `context.l10n.key` (context が無い層はグローバル `l10n`) で参照する。未翻訳キーは CI が fail させる。詳細は [docs/i18n.md](docs/i18n.md) 必読。
 
 **v1.0.0 正式版リリース済み・OSS 公開済み** (Apache-2.0、https://github.com/demodemo0818/kurage )。バージョン番号・タグ・リリース手順のルールは [RELEASING.md](RELEASING.md) を参照。`pubspec.yaml` の `version:` を編集する時は必ず同ドキュメントに従う（特に `+BUILD` は monotonic 通し番号で必ず +1）。「Kurage」の名称とアプリアイコンは Apache-2.0 の許諾対象外（README 参照）。
 
@@ -31,7 +31,7 @@ flutter run -d windows                  # Windows デスクトップで実行
 flutter analyze                         # 静的解析
 flutter test                            # 純粋ロジック (models / utils) の unit test
 flutter clean                           # ビルドキャッシュ削除（Flutter SDK アップグレード後やアセット変更後に推奨）
-flutter build apk                       # Android リリースビルド
+flutter build appbundle --release       # Android リリースビルド (Google Play 用 AAB)
 dart run flutter_launcher_icons         # アプリアイコン再生成 (pubspec.yaml の設定キーは 0.13+ の `flutter_launcher_icons:`)
 ```
 
@@ -135,7 +135,7 @@ Firebase Cloud Messaging + 自前の Cloudflare Worker リレー経由で動作�
 - SSE 新着は 150ms バッチング + スクロール中はフラッシュ延期 (`_isUserScrolling`)。`Status.fromJson` はフラッシュまで遅延し、`_onStreamUpdate` では正規表現で id 抽出のみ行う (ホットパスに重い処理を足さない)
 - `_items` を変更したら必ず `_invalidateKnownIds()`、`_unreadIds` を変更したら必ず `_syncUnreadCount()`、ストリームバナー状態を変えたら必ず `_syncStreamBanner()`
 - `_items` を投稿ベースで全再構築する経路は必ず既存 `GapItem` を `_rebuildItemsWithGaps` で挿し直す (素通しはギャップボタン消失の回帰)
-- スクロール位置の復元は必ず `_restoreScrollAnchor` 経由 (生 `jumpTo` 禁止)。**refresh 系に「atTop ならピン留め」を足さない** (アプリ復帰時に位置を失う回帰。fd6b1ed で一度発生し撤回済み)。atTop ピン留めは SSE フラッシュだけが行う
+- スクロール位置の復元は必ず `_restoreScrollAnchor` 経由 (生 `jumpTo` 禁止)。**refresh 系に「atTop ならピン留め」を足さない** (アプリ復帰時に位置を失う回帰。過去に一度入れて撤回済み)。atTop ピン留めは SSE フラッシュだけが行う
 - 非表示タブは SSE 購読しない (`isActive`)。未読セマンティクスは「アンカーより上にある新着」
 - PostTile はパース結果を `_cachedParseSpans` でメモ化し、画像は表示サイズ相当でデコードする (詳細は同ドキュメント「PostTile のレンダリングコスト」)
 
@@ -157,7 +157,7 @@ Firebase Cloud Messaging + 自前の Cloudflare Worker リレー経由で動作�
 
 - **マルチアカウント**: `AuthState.accounts` のみが正。「current」概念は廃止 (上記参照)。新機能で「このアカウントで操作する」が必要な場面では、画面のローカル state + 永続化、または明示的な `accountId` パラメタで対処する。`auth.current` を復活させない。
 - **API は全てトップレベル関数**: 新規エンドポイントは `mastodon_api.dart` 末尾に追加するのが既存パターン。
-- **UI 文言は .arb (ja/en 両方) に追加して l10n 経由で参照** (上記「英語対応」参照)。コードコメント・内部ログ (debugPrint) は日本語のまま。
+- **UI 文言は .arb (ja/en 両方) に追加して l10n 経由で参照** (上記「プロジェクト概要」参照)。コードコメント・内部ログ (debugPrint) は日本語のまま。
 - **ファイル粒度**: `post_tile.dart` 等が肥大化している（3000+ 行）。**新機能追加時は無理に押し込まず別 widget に切り出す** のが望ましい（が、既存パターンとしては集約する側）。`_PostMediaGallery` / `_PostActionBar` のような切り出しが既にいくつかある。
 - **`_lints`**: `flutter_lints` の推奨ルール（`analysis_options.yaml`）。プロジェクト独自カスタマイズ無し。**`flutter analyze` は 0 issues を維持する** (2026-06 に deprecation 警告を全て解消済み。新規コードで警告を増やさないこと)。
 
