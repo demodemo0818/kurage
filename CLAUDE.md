@@ -183,5 +183,9 @@ Firebase Cloud Messaging + 自前の Cloudflare Worker リレー経由で動作�
 - **Windows 配布 zip の同梱 CRT がビルド時ツールセットより古いと起動はするのに機能単位で落ちる** (ローカルでは再現しない CI 固有の壊れ方) → `package_windows.ps1` はバージョン降順で選び、古ければ throw する
 - **`Theme.of(context).primaryColor` はダーク時に `grey[900]` を返す** (M2 互換プロパティ。テーマカラー指定でも直らない) → アクセント色は `colorScheme.primary` を使う
 - **メディア保存のファイル名で拡張子を決め打ちしない** (動画が .jpg で保存される) → `resolveMediaExtension` に一本化、`XTypeGroup` も実拡張子に合わせる
-- **常時表示スクロールバーのトラックはホイール入力を横取りする** (カラム下端でホイールが縦でなく横に動く) → コンテンツと重ねず `kDeckScrollbarReserve` ぶん余白を取る
+- **常時表示スクロールバーのトラックはホイール入力を横取りする** (カラム下端でホイールが効かない) → コンテンツと重ねず `kDeckScrollbarReserve` ぶん余白を取る
+- **Windows で Shift が押しっぱなし扱いで残る Flutter のバグ** (ホイールが横スクロールしかしなくなる、再起動まで直らない) → `StaleModifierKeyGuard` がマウス移動時に解除する。消さない
+- **Android の file_selector `openFiles` はファイル全体を Java ヒープに読む** (大きな動画で OOM クラッシュ) → Android のファイル選択は image_picker の ACTION_GET_CONTENT 経路、アップロードは `openRead` のストリーム
+- **Android の共有ストレージは種類ごとに置き場所が決まっている** (音声を `Pictures/` に書くと EPERM) → `androidSaveDirectoryFor` で振り分ける
+- **フォントのフォールバックは書記素クラスタ単位** (`ᤖﾞ` のような組み合わせは両方豆腐) → `separateHalfwidthSoundMarks` で WORD JOINER を挟む
 - **`ACTION_SEND` の intent-filter を `MainActivity` に直付けしない** (共有 Intent がタスクに保存され、次回起動時に投稿済みの内容で投稿画面が再表示される) → `taskAffinity=""` + `noHistory` の `ShareActivity` に分離

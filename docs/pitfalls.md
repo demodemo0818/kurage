@@ -65,7 +65,7 @@ Windows (`video_player_win` = Media Foundation) で通常動画を最後まで�
 
 ## Web で `dart:io` Platform / File は実行時 throw
 
-`dart:io` は Web でも import は通るが、`Platform.isAndroid` / `File('...')` / `Directory` / `getApplicationDocumentsDirectory()` などは実行時に `MissingPluginException` や `UnsupportedError` を投げる。同期 throw が `runApp` 前に出ると真っ白画面になる。**dart:io を import している実装は `kIsWeb` で短絡** すること。ファイル/メディア系の cross-platform 抽象は `cross_file` の `XFile` を使い、`MultipartFile.fromPath` ではなく `XFile.readAsBytes()` + `fromBytes` で組む (`mastodon_api.dart::uploadMedia` / `updateProfile` がこのパターン)。`Image.file` / `FileImage` も Web で使えないので、`kIsWeb` 分岐で `Image.network(xfile.path)` / `NetworkImage(xfile.path)` に切り替える (blob URL がそのまま読める)。
+`dart:io` は Web でも import は通るが、`Platform.isAndroid` / `File('...')` / `Directory` / `getApplicationDocumentsDirectory()` などは実行時に `MissingPluginException` や `UnsupportedError` を投げる。同期 throw が `runApp` 前に出ると真っ白画面になる。**dart:io を import している実装は `kIsWeb` で短絡** すること。ファイル/メディア系の cross-platform 抽象は `cross_file` の `XFile` を使い、`MultipartFile.fromPath` ではなく `XFile.readAsBytes()` + `fromBytes` (`updateProfile`) か、`XFile.openRead()` のストリーム + 長さで組む (`uploadMedia`。大きな動画を全量メモリに載せないため)。`Image.file` / `FileImage` も Web で使えないので、`kIsWeb` 分岐で `Image.network(xfile.path)` / `NetworkImage(xfile.path)` に切り替える (blob URL がそのまま読める)。
 
 ## `XFile.fromData` は io 実装で `name` を無視する → 空 filename で 422
 
@@ -120,13 +120,26 @@ Material 3 (`useMaterial3: true`) でも `ThemeData` の `primaryColor` は M2 �
 
 ## スクロールバーのトラックはホイール入力を横取りする (コンテンツに重ねない)
 
-Flutter の `RawScrollbar` は、**トラックの上にカーソルがある間、ホイール入力を自分の軸のスクロールに回す** (`_receivedPointerSignal` が `scrollbarPainter.hitTest(event.localPosition)` で判定し、pointerSignalResolver に先に登録する)。マウスの場合の当たり判定は `_trackRect` そのもので、水平バーなら viewport 下端の **thickness 8 + crossAxisMargin 2×2 = 12px の帯**全体が対象になる。
+Flutter の `RawScrollbar` は、**トラックの上にカーソルがある間、ホイール入力を自分で受け取り、下のコンテンツには渡さない**。`foregroundPainter` の `hitTest` がトラック上で true を返すと `RenderCustomPaint` は子の hit test をしないので、下にあるタイムラインの `Scrollable` はイベントを受け取れない。マウスの場合の当たり判定は `_trackRect` そのもので、水平バーなら viewport 下端の **thickness 8 + crossAxisMargin 2×2 = 12px の帯**全体が対象になる。バー自身は自分の軸の成分 (水平バーなら `scrollDelta.dx`) しか見ないので、縦ホイールはこの帯の上では**何も動かさない** (デッドゾーンになる)。
 
-Deck (ワイドレイアウト) の横スクロールバーは `thumbVisibility: true` で常時表示しており、この帯がタイムラインの上に重なっていた。そのため **カラム下端でホイールを回すと、そのカラムが縦に動かず横スクロールしてしまう** ([Issue #7](https://github.com/demodemo0818/kurage/issues/7))。横スクロールバーをドラッグした直後はカーソルがバーの上に残るため、「横に動かして戻すとホイールがおかしくなり、別の操作をすると直る」という再現しにくい形で顔を出す。
+Deck (ワイドレイアウト) の横スクロールバーは `thumbVisibility: true` で常時表示しており、この帯がタイムラインの上に重なっていたため、カラム下端でホイールを回しても縦に動かなかった ([Issue #7](https://github.com/demodemo0818/kurage/issues/7) の調査中に発見)。
+
+> 注: Issue #7 の「ホイールがどこで回しても横スクロールになり、再起動まで直らない」症状の真因はこれではなく、次項の **Shift の押しっぱなし誤認** だった。v1.3.0 ではこの項の対策だけを入れて直ったと判断してしまった。
 
 - **対策**: バーとコンテンツを重ねない。`SingleChildScrollView` に `padding: EdgeInsets.only(bottom: kDeckScrollbarReserve)` ([lib/utils/breakpoints.dart](../lib/utils/breakpoints.dart)) を渡してカラムをトラックのぶん短くする。バーが出ない時 (全カラムが画面に収まる `fits` の時) は余白を取らない。
 - `interactive: false` や `ignorePointer: true` で黙らせてはいけない。ホイールの横取りは止まるが、バーのドラッグ自体もできなくなる。
 - 常時表示のスクロールバーを新しく足す時は、**トラックが乗る帯の下に何を置いているか**を必ず確認する。同じ理由でタップ/ドラッグも吸われる。
+
+## Windows: Shift が押しっぱなし扱いで残り、ホイールが横スクロールしかしなくなる
+
+Windows 版で、使っているうちに **縦ホイールがどこで回しても Deck の横スクロールになり、カラムが縦に動かなくなる** ([Issue #7](https://github.com/demodemo0818/kurage/issues/7))。カーソルを動かしても直らず、再起動で直る。TextField のクリックが範囲選択になる・Tab が逆向きに移動する、も同じ状態の症状。Flutter 本体の未修正の不具合 ([flutter/flutter#181907](https://github.com/flutter/flutter/issues/181907))。
+
+- **仕組み**: `Scrollable` は `HardwareKeyboard.logicalKeysPressed` に Shift があるとマウスホイールの軸を反転する (`ScrollBehavior.pointerAxisModifiers`)。縦のタイムラインは dx (= 0) を見て何もせず、外側の横 `SingleChildScrollView` が dy を拾って横に動く。
+- **Shift が残る理由**: IME 使用中などに Windows が Shift の extended フラグを誤って報告すると、エンジンはスキャンコードを標準の物理キーに対応付けられず、`0x16_0000_0000 | scancode` (例 `0x1600000036`) の**非標準の物理キー**で KeyDown を送る。対になる KeyUp が同じ物理キーで届かないと残り続ける。エンジンは WM_MOUSEMOVE の `MK_SHIFT` / `MK_CONTROL` で修飾キーを OS と同期する (`SyncModifiersIfNeeded`) が、**同期対象は標準の ShiftLeft/Right・ControlLeft/Right だけ**なので、非標準の物理キーは永久に解除されない。
+- **対策**: [lib/services/stale_modifier_key_guard.dart](../lib/services/stale_modifier_key_guard.dart) の `StaleModifierKeyGuard` (Windows のみ、`main()` で install)。マウス移動のポインタイベント時点ではエンジンが標準の物理キーを OS の実状態に同期済みなので、「標準の物理キーは離されているのに、非標準の物理キーが Shift/Ctrl として押下中」を取り残しとみなし、合成の `KeyUpEvent` を `HardwareKeyboard.handleKeyEvent` に流して解除する。
+- `pointerAxisModifiers` を空にして Shift+ホイールの横スクロールごと殺す対処は取らない (機能が減るうえ、範囲選択・Tab 逆走の症状は残る)。
+- `HardwareKeyboard.clearState()` は `@visibleForTesting` で、しかもハンドラまで消すので使わない。
+- ホイールイベントではエンジンが同期しないので、ガードは hover / move でだけ判定する。マウスを少しでも動かせば解除される。
 
 ## `ACTION_SEND` の intent-filter をメイン Activity に直付けすると、共有 Intent が再配達される
 
@@ -137,3 +150,28 @@ Deck (ワイドレイアウト) の横スクロールバーは `thumbVisibility:
 - `FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY` や `savedInstanceState != null` のガードで大半は防げるが、タスクリセット等の経路を取りこぼす。
 - **対策**: SEND は `MainActivity` で受けず、専用の中継 Activity ([android/app/src/main/kotlin/jp/demo2/kurage/ShareActivity.kt](../android/app/src/main/kotlin/jp/demo2/kurage/ShareActivity.kt)) に分離する。`taskAffinity=""` + `noHistory` + `excludeFromRecents` でタスクに一切残らないようにし、テキストだけプロセス内の `ShareIntake` に移して `MainActivity` を起動して即 `finish()` する。メインタスクの Intent は常に MAIN/LAUNCHER のままになり、再配達が起きなくなる。
 - Flutter 側は `MainActivity` 起動後の post-frame と、`AppLifecycleState.resumed` のたびに `consumePendingSharedText` を叩いているので、コールド / ウォームどちらの経路でも中継 Activity 経由で拾える (Dart 側は無改修)。
+
+## Android: file_selector の `openFiles` は選んだファイル全体を Java ヒープに読む (大きな動画で OOM)
+
+`file_selector_android` は選択されたファイルを `new byte[size]` に丸ごと読み込み、Pigeon でバイト列として Dart に渡す (`FileSelectorApiImpl.toFileResponse`)。100MB 級の動画を選ぶと Java ヒープ (heapgrowthlimit) を超えて **`OutOfMemoryError` でアプリごと落ちる** ([Issue #9](https://github.com/demodemo0818/kurage/issues/9))。onActivityResult 内の Java 側で落ちるので Dart の try/catch では拾えず、サイズの事前チェックもできない。
+
+- **対策**: Android の「ファイルを選択」は `image_picker` の `pickMultipleMedia` を `useAndroidPhotoPicker = false` で呼ぶ (ACTION_GET_CONTENT)。こちらはキャッシュへストリームでコピーして path を返すのでメモリに全量が載らない。種類では絞り込めないので、選択後に拡張子で弾く ([post_page.dart](../lib/pages/post_page.dart) `_pickMedia`)。デスクトップ / Web は従来どおり file_selector。
+- 「ギャラリーから選択」は `pickMultiImage` だと**画像しか出ない**。`pickMultipleMedia` + `useAndroidPhotoPicker = true` (OS 標準フォトピッカー、画像 + 動画) を使う。`useAndroidPhotoPicker` は**既定 false** なので明示しないとフォトピッカーにならない。
+- アップロードも `readAsBytes` で全量を読まず、`XFile.openRead()` を `http.MultipartFile` に流す ([mastodon_api.dart](../lib/services/mastodon_api.dart) `uploadMedia`)。選択中の全アカウントへ並行アップロードするので、全量読みだとアカウント数ぶんメモリに載る。
+
+## Android: 音声を `Pictures/` に保存しようとすると EPERM (共有ストレージは種類ごとに置き場所が決まっている)
+
+Android の共有ストレージは MediaProvider が MIME の種類ごとに置けるディレクトリを制限している。画像・動画は `Pictures/` に置けるが、**音声を `Pictures/` に `File.writeAsBytes` すると EPERM** で「保存に失敗」になる ([Issue #10](https://github.com/demodemo0818/kurage/issues/10))。Web は Blob ダウンロードなので種類を問わず通り、Android だけ壊れる。
+
+- **対策**: 保存先は [media_filename.dart](../lib/utils/media_filename.dart) の `androidSaveDirectoryFor(ext)` で振り分ける (画像・動画 → `Pictures`、音声 → `Music`、その他 → どの種類でも置ける `Download`)。
+- 同 Issue の「音声が再生できない」は、音声添付を画像として扱っていたのが原因。カバー画像の無い音声は `preview_url` が null で、`previewUrl` に**音声ファイルそのものの url** が入る (`MediaAttachment.fromJson` のフォールバック)。画像としてデコードさせないよう `MediaAttachment.audioCoverUrl` で判定し、再生は `VideoPlayerWidget(isAudio: true)` (video_player は映像の無いファイルも再生できる) に流す。
+- 音声は `meta.original` に width/height が無いので、`aspectRatio` が既定の 1.0 だとタイムラインで正方形の大きな枠を取る。`MediaAttachment.fromJson` で音声だけ 16:9 に倒している。投稿画面の添付プレビューも MIME が audio なら画像デコードせずアイコンを出す。
+- Mastodon (4.7 時点) は mp3 の埋め込みカバーを抽出しない。`preview_url` が付くのは `/api/v2/media` に `thumbnail` を明示して上げた時だけ。
+
+## フォントのフォールバックは書記素クラスタ単位 (「両方の文字を持つフォント」が無いと両方豆腐)
+
+Flutter (SkParagraph) のフォールバックは**書記素クラスタ単位**で「クラスタの全文字を描けるフォント」を探す。半角濁点 `ﾞ` (U+FF9E) / 半濁点 `ﾟ` (U+FF9F) は結合文字ではない (幅を持つ独立グリフ) のに Grapheme_Cluster_Break=Extend で直前の文字にくっつくため、`ᤖﾞ` (リンブ文字 + 半角濁点。「ズ」に見せる表示名の当て字) のように両方を収録したフォントが無い組み合わせだと**どちらのフォントも採用されず 2 文字とも豆腐**になる ([Issue #11](https://github.com/demodemo0818/kurage/issues/11))。ブラウザは文字単位でフォールバックするので Mastodon Web では普通に見える。
+
+- **対策**: [html_text_utils.dart](../lib/utils/html_text_utils.dart) の `separateHalfwidthSoundMarks` が、直前が半角カナ以外の `ﾞ` `ﾟ` の前に WORD JOINER (U+2060) を挟んでクラスタを切る。`parseContentWithEmojis` の平文部分と、表示名を素の `Text` で出している一覧 (検索結果・フォロー一覧・ブロック/ミュート一覧) に掛けている。
+- ZERO WIDTH SPACE ではなく WORD JOINER を使うのは改行機会を作らないため。ハッシュタグ等の検出より**前**に掛けると WORD JOINER がタグを途中で切るので、検出後の平文部分にだけ掛ける。
+- 結合文字 (U+3099 等の Mn) はクラスタを切るとマークの位置決め (GPOS) が壊れうるので対象にしていない。
