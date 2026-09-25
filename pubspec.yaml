@@ -139,6 +139,9 @@ dev_dependencies:
   # tool/gen_windows_icon.dart が Windows 用 .ico を生成するのに使う
   # (flutter_launcher_icons は Windows 非対応のため)。
   image: ^4.9.1
+  # Web のソースマップを Sentry にアップロードする (`dart run sentry_dart_plugin`)。
+  # 設定は末尾の `sentry:` セクション。
+  sentry_dart_plugin: ^3.4.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -192,3 +195,33 @@ flutter_launcher_icons:
   adaptive_icon_background: "#0A0620"
   adaptive_icon_foreground: "assets/icon/kurage_icon_foreground.png"
   min_sdk_android: 21
+
+# sentry_dart_plugin の設定 (Web のソースマップを Sentry にアップロードする)。
+# Web は dart2js で関数名が minify されるため、ソースマップを上げないと Sentry の
+# スタックトレースがソースに対応付かない。リリース時は
+# `flutter build web --release --source-maps` の後、デプロイ**前**に
+# `dart run sentry_dart_plugin` を実行する (build/web の .js に debug ID を
+# 書き込むので、その書き換え後のファイルをデプロイする必要がある)。
+# - release / dist は pubspec の name@version から自動で決まり (kurage@X.Y.Z+BUILD /
+#   BUILD)、Web の SDK が送る値と一致する。
+# - Android は Crashlytics、Windows は難読化していないので Sentry 上でそのまま読める。
+#   よってネイティブのデバッグシンボルは上げない。
+# - トークンは環境変数 SENTRY_AUTH_TOKEN で渡す (ここには書かない)。
+sentry:
+  org: demodemo
+  project: kurage
+  upload_debug_symbols: false
+  upload_source_maps: true
+  upload_sources: true
+  # upload_sources を有効にすると、プラグインは build/web に加えてプロジェクト
+  # 直下 (./) も .dart / .js / .map で走査する。build/ 配下の Android/iOS の
+  # 中間生成物や firebase のサンプルコード、build/web の重複まで上がってしまう
+  # ので、lib/ 以外で該当ファイルを含むディレクトリは除外する
+  # (worker/ は Windows 機だと node_modules を含む)。
+  ignore_web_source_paths:
+    - .dart_tool
+    - build
+    - test
+    - tool
+    - worker
+  commits: false
