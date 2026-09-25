@@ -39,9 +39,9 @@ const double kDeckPopupMaxWidth = 520;
 /// Deck (ワイド) の横スクロールバーを置くために、カラム下端に空けておく高さ。
 ///
 /// Flutter の Scrollbar は「トラックの上にカーソルがある間、ホイール入力を
-/// 自分の軸のスクロールに横取りする」実装 (`RawScrollbar._receivedPointerSignal`
-/// が `scrollbarPainter.hitTest` で判定)。バーをタイムライン本体に重ねたままだと
-/// カラム下端でホイールを回しても縦に動かず横に動いてしまう (issue #7)。
+/// 自分で受け取り下のコンテンツに渡さない」実装 (`foregroundPainter.hitTest` が
+/// true だと子を hit test しない)。水平バーは dx しか見ないので、バーを
+/// タイムライン本体に重ねたままだとカラム下端で縦ホイールが効かなくなる。
 /// カラムをこの高さぶん短くしてバーとの重なりをなくす。
 ///
 /// 値は Material の水平スクロールバーのトラック高 (thickness 8 + crossAxisMargin

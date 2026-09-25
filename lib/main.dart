@@ -46,6 +46,7 @@ import 'services/mastodon_api.dart' show migrateCacheKeysIfNeeded;
 import 'services/wake_lock_service.dart';
 import 'services/app_lock_service.dart';
 import 'services/share_intake_service.dart';
+import 'services/stale_modifier_key_guard.dart';
 import 'l10n/l10n.dart';
 import 'l10n/safe_material_localizations.dart';
 import 'utils/app_fonts.dart';
@@ -121,6 +122,10 @@ String tabScreenName(int index) {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Windows で Shift が押しっぱなし扱いで残り、ホイールが横スクロールしか
+  // しなくなる Flutter 本体の不具合の回避 (issue #7)。Windows 以外は no-op。
+  StaleModifierKeyGuard.install();
 
   // サードパーティ素材のライセンスを Flutter 標準のライセンス一覧
   // (showLicensePage) にも登録する。効果音は OtoLogic 提供 (CC BY 4.0) で
