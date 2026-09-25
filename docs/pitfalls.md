@@ -140,6 +140,13 @@ Windows 版で、使っているうちに **縦ホイールがどこで回して
 - `pointerAxisModifiers` を空にして Shift+ホイールの横スクロールごと殺す対処は取らない (機能が減るうえ、範囲選択・Tab 逆走の症状は残る)。
 - `HardwareKeyboard.clearState()` は `@visibleForTesting` で、しかもハンドラまで消すので使わない。
 - ホイールイベントではエンジンが同期しないので、ガードは hover / move でだけ判定する。マウスを少しでも動かせば解除される。
+- **ガードが解除するのは Dart 側 (`HardwareKeyboard`) だけで、エンジン (C++) 側の押下記録は残る**。そのため次に Shift を押したとき、エンジンから同じ非標準の物理キーの合成 KeyUp が 1 回遅れて届く。Flutter 3.47 の `HardwareKeyboard` は押されていないキーの KeyUp を無視する (`debugPrintKeyboardEvents` 有効時にログを出すだけ) ので、アサートも例外も出ず害は無い (Windows 実機で確認済み)。
+- **Windows 実機での再現手順** (2026-09-25 に修正の確認で使用。回帰確認はこれで行う):
+  1. Kurage (debug ビルド) を前面にした状態で、`SendInput` で Shift の押下を送る: `wVk = VK_SHIFT`、`wScan = 0x36`、`dwFlags = KEYEVENTF_EXTENDEDKEY`。Flutter には物理 `0x1600000036`・論理 Shift Right の KeyDown として届く。`wVk = 0` でスキャンコードだけ送ると論理キーが Shift にならず再現しない。
+  2. 自前のダミーウィンドウを前面にしてから Shift の解放を送る (KeyUp を Kurage に届けないため)。Kurage に KeyUp が届くと、エンジンが同じ物理キーの合成 KeyUp を出して自分で直してしまう。
+  3. Kurage を前面に戻すと、非標準の物理キーの押下だけが残る (IME 使用中にフォーカスが外れる実際の状況を模したもの)。
+  4. マウスを動かさずに `SendInput` でホイール (`MOUSEEVENTF_WHEEL`) を送る → `HardwareKeyboard.isShiftPressed == true` で Deck が横に動く (バグの再現)。マウスを数 px 動かす → `StaleModifierKeyGuard: 取り残された修飾キーを解除 … 0x1600000036 → Shift Right` が出て、以後のホイールは縦に効く。`main()` の `install()` を外したビルドでは、マウスを動かしても横スクロールのまま戻らない。
+  - 「右 Shift を extended 付きで押し、extended なしで離す」だけでは再現しない (解放がエンジンに届いた時点で自己修復される)。フォーカスを外した状態で解放することが必須。
 
 ## `ACTION_SEND` の intent-filter をメイン Activity に直付けすると、共有 Intent が再配達される
 
