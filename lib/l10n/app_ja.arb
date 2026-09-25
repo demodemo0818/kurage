@@ -1364,6 +1364,7 @@
   "composeMediaUploadFailed": "メディアアップロードに失敗しました",
   "composeSelectAccountFirst": "先に投稿アカウントを選択してください",
   "composeDropMediaOnly": "画像・動画・音声ファイルをドロップしてください",
+  "composePickMediaOnly": "画像・動画・音声以外のファイルは添付できません",
   "composeMediaAttachedCount": "{count} 件のメディアを添付しました",
   "@composeMediaAttachedCount": {
     "placeholders": {

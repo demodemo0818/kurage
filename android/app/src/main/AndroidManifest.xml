@@ -5,8 +5,8 @@
 
     <!--
         ストレージ権限は宣言しない。画像/動画の選択は image_picker (OS 標準
-        フォトピッカー ACTION_PICK_IMAGES) と file_selector (SAF) 経由で行うため、
-        READ_MEDIA_IMAGES / READ_EXTERNAL_STORAGE / WRITE_EXTERNAL_STORAGE は
+        フォトピッカー ACTION_PICK_IMAGES / ファイル選択は ACTION_GET_CONTENT) 経由で
+        行うため、READ_MEDIA_IMAGES / READ_EXTERNAL_STORAGE / WRITE_EXTERNAL_STORAGE は
         いずれも不要。Play の「写真と動画の権限」申告も回避できる。直接 MediaStore を
         触る機能 (ギャラリー保存等) を足す場合のみ最小限の権限を追加すること。
     -->

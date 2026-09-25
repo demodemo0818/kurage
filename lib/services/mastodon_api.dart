@@ -500,8 +500,10 @@ Future<void> _waitForMediaProcessing({
 /// メディアをアップロードして media_id を返す。
 ///
 /// Web では `file.path` が `blob:` URL になるため `MultipartFile.fromPath` は
-/// 使えない。XFile.readAsBytes() でバイト列を得て `MultipartFile.fromBytes` に
-/// 渡す。mime type は XFile が image_picker / file_selector から受け取った
+/// 使えない。XFile の `openRead()` をそのまま multipart の本体に流す (Web /
+/// ネイティブ共通)。全量を `readAsBytes()` で読むと、大きな動画を複数アカウントへ
+/// 並行アップロードした時にアカウント数ぶんメモリに載る (issue #9)。
+/// mime type は XFile が image_picker / file_selector から受け取った
 /// `mimeType` を最優先、無ければ拡張子から推定、最後の砦は octet-stream。
 Future<String> uploadMedia({
   required String instanceUrl,
@@ -516,7 +518,7 @@ Future<String> uploadMedia({
       lookupMimeType(file.name) ??
       'application/octet-stream';
   final parts = mimeType.split('/');
-  final bytes = await file.readAsBytes();
+  final length = await file.length();
   // filename が空だと Mastodon (Rails) がマルチパートを「ファイル」と認識せず
   // 422 "File can't be blank" になる。cross_file の `XFile.fromData` は io
   // (Windows/デスクトップ) 実装で name を保持しない (path から導出するため、
@@ -525,9 +527,10 @@ Future<String> uploadMedia({
   final filename = file.name.isNotEmpty
       ? file.name
       : 'upload.${parts.length > 1 ? parts[1] : 'bin'}';
-  req.files.add(http.MultipartFile.fromBytes(
+  req.files.add(http.MultipartFile(
     'file',
-    bytes,
+    file.openRead(),
+    length,
     filename: filename,
     contentType: MediaType(parts[0], parts[1]),
   ));

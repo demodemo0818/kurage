@@ -749,6 +749,7 @@
   "composeMediaUploadFailed": "Media upload failed",
   "composeSelectAccountFirst": "Select an account to post from first",
   "composeDropMediaOnly": "Drop image, video or audio files",
+  "composePickMediaOnly": "Only image, video and audio files can be attached",
   "composeMediaAttachedCount": "{count, plural, =1{Attached 1 media file} other{Attached {count} media files}}",
   "composeMediaAttachedPartial": "{count} attached ({failed} failed on some accounts)",
   "composeMediaAttachFailed": "Failed to attach media",

@@ -96,6 +96,11 @@ dependencies:
   video_player_win: ^3.2.2
   chewie: ^1.14.1
   image_picker: ^1.0.4
+  # Android で image_picker に OS 標準のフォトピッカーを使わせるかの切替
+  # (`ImagePickerAndroid.useAndroidPhotoPicker`) に型として触るため明示宣言。
+  # どちらも image_picker 経由で transitive に入っているもの (post_page.dart 参照)。
+  image_picker_android: ^0.8.13+17
+  image_picker_platform_interface: ^2.11.1
   firebase_core: ^4.9.0
   firebase_messaging: ^16.2.2
   firebase_crashlytics: ^5.2.2

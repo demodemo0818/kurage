@@ -13,6 +13,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_picker_android/image_picker_android.dart'
+    show ImagePickerAndroid;
+import 'package:image_picker_platform_interface/image_picker_platform_interface.dart'
+    show ImagePickerPlatform;
 import 'package:mime/mime.dart';
 
 import '../l10n/l10n.dart';
@@ -1136,6 +1140,7 @@ class _PostPageState extends ConsumerState<PostPage> {
       final XFile? image = await picker.pickImage(source: ImageSource.camera);
 
       if (image == null) return;
+      if (!mounted) return; // _pickFromGallery と同じく、破棄後はアップロードしない。
 
       await _uploadImageFile(image);
     } finally {
@@ -1145,23 +1150,41 @@ class _PostPageState extends ConsumerState<PostPage> {
     }
   }
 
-  /// ギャラリーから画像選択
+  /// ギャラリーから画像・動画を選択
   Future<void> _pickFromGallery() async {
+    if (_selectedAccountIds.isEmpty) return;
     // _isUploading をピッカーオープン**前**にセット。投稿ボタン側は
     // `(_isPosting || _isUploading) ? null : _submit` で無効化される。
     // 「ピッカーを開いている間〜選んだ直後」までずっと無効にしたいので
     // ここで true、`finally` で false に戻す。
     setState(() => _isUploading = true);
     try {
-      final ImagePicker picker = ImagePicker();
-      final List<XFile> images = await picker.pickMultiImage();
-      if (images.isEmpty) return;
-      for (final image in images) {
-        await _uploadImageFile(image);
-      }
+      // pickMultiImage は画像専用なので、動画も選べる pickMultipleMedia を使う
+      // (issue #9)。Android は OS 標準のフォトピッカー (画像 + 動画) を出す。
+      // 選んだファイルはキャッシュへストリームでコピーされるので、大きな動画でも
+      // メモリに全量は載らない。
+      _useAndroidPhotoPicker(true);
+      final files = await ImagePicker().pickMultipleMedia();
+      if (files.isEmpty) return;
+      // ピッカーを開いている間に投稿画面が破棄されることがある (閉じられた /
+      // Activity が再生成された)。破棄後に ref を読むと StateError で落ちるうえ、
+      // 誰も使わないメディアをサーバに上げてしまうので何もしない。
+      if (!mounted) return;
+      await _attachPickedFiles(files);
+    } catch (e) {
+      debugPrint('ギャラリーからの選択に失敗: $e');
+      _showPostPageSnackBar(l10n.composeMediaAttachFailed);
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
+  }
+
+  /// Android の image_picker が OS 標準のフォトピッカーを使うかを切り替える。
+  /// true: フォトピッカー (画像・動画のみ)。false: ACTION_GET_CONTENT の
+  /// ファイル選択 (種類を問わず選べる)。Android 以外では何もしない。
+  void _useAndroidPhotoPicker(bool enabled) {
+    final picker = ImagePickerPlatform.instance;
+    if (picker is ImagePickerAndroid) picker.useAndroidPhotoPicker = enabled;
   }
 
   /// 1 ファイルを **選択中の全アカウント** に対して並行アップロードして
@@ -1237,44 +1260,68 @@ class _PostPageState extends ConsumerState<PostPage> {
     // _pickFromGallery と同様にピッカーオープン前に _isUploading=true。
     setState(() => _isUploading = true);
     try {
-      final mediaGroup = XTypeGroup(
-        label: 'media',
-        extensions: ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'mov'],
-      );
-      final xfiles = await openFiles(acceptedTypeGroups: [mediaGroup]);
-      if (xfiles.isEmpty) return;
-
-      final newItems = <MediaItem>[];
-      final perFileFailures = <String, Map<String, Object>>{}; // filename -> failures
-      for (final x in xfiles) {
-        final failures = <String, Object>{};
-        final ids = await _uploadOneFileToAllSelectedAccounts(
-          file: x,
-          failures: failures,
-        );
-        if (ids.isEmpty) {
-          // 全アカウント失敗 → このファイルは諦めて次へ
-          perFileFailures[x.name] = failures;
-          continue;
+      final List<XFile> xfiles;
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        // file_selector の Android 実装は、選んだファイル全体を Java ヒープの
+        // byte[] に読み込んでから Dart に渡す。大きな動画だと OutOfMemoryError
+        // でアプリごと落ちる (issue #9。Dart 側の try では拾えない)。Android では
+        // image_picker の ACTION_GET_CONTENT 経路を使う。こちらはキャッシュへ
+        // ストリームでコピーして path を返すのでメモリに全量が載らない。
+        // 種類で絞り込めないので、選んだ後に拡張子で弾く。
+        _useAndroidPhotoPicker(false);
+        final picked = await ImagePicker().pickMultipleMedia();
+        xfiles = picked.where((f) => _isAttachableMedia(f.name)).toList();
+        if (picked.isNotEmpty && xfiles.length < picked.length) {
+          _showPostPageSnackBar(l10n.composePickMediaOnly);
         }
-        newItems.add(MediaItem(file: x, mediaIdsByAccount: ids));
-        if (failures.isNotEmpty) perFileFailures[x.name] = failures;
-      }
-      if (!mounted) return;
-      setState(() {
-        _mediaItems.addAll(newItems);
-      });
-      if (newItems.isNotEmpty) {
-        final msg = perFileFailures.isEmpty
-            ? l10n.composeMediaUploadedCount(newItems.length)
-            : l10n.composeMediaUploadedPartial(
-                newItems.length, perFileFailures.length);
-        _showPostPageSnackBar(msg);
       } else {
-        _showPostPageSnackBar(l10n.composeMediaUploadFailed);
+        final mediaGroup = XTypeGroup(
+          label: 'media',
+          extensions: ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'mov'],
+        );
+        xfiles = await openFiles(acceptedTypeGroups: [mediaGroup]);
       }
+      if (xfiles.isEmpty) return;
+      if (!mounted) return; // _pickFromGallery と同じく、破棄後はアップロードしない。
+      await _attachPickedFiles(xfiles);
+    } catch (e) {
+      debugPrint('ファイルの選択に失敗: $e');
+      _showPostPageSnackBar(l10n.composeMediaAttachFailed);
     } finally {
       if (mounted) setState(() => _isUploading = false);
+    }
+  }
+
+  /// ピッカーで選んだファイル群を、選択中の全アカウントへアップロードして添付する。
+  Future<void> _attachPickedFiles(List<XFile> xfiles) async {
+    final newItems = <MediaItem>[];
+    final perFileFailures = <String, Map<String, Object>>{}; // filename -> failures
+    for (final x in xfiles) {
+      final failures = <String, Object>{};
+      final ids = await _uploadOneFileToAllSelectedAccounts(
+        file: x,
+        failures: failures,
+      );
+      if (ids.isEmpty) {
+        // 全アカウント失敗 → このファイルは諦めて次へ
+        perFileFailures[x.name] = failures;
+        continue;
+      }
+      newItems.add(MediaItem(file: x, mediaIdsByAccount: ids));
+      if (failures.isNotEmpty) perFileFailures[x.name] = failures;
+    }
+    if (!mounted) return;
+    setState(() {
+      _mediaItems.addAll(newItems);
+    });
+    if (newItems.isNotEmpty) {
+      final msg = perFileFailures.isEmpty
+          ? l10n.composeMediaUploadedCount(newItems.length)
+          : l10n.composeMediaUploadedPartial(
+              newItems.length, perFileFailures.length);
+      _showPostPageSnackBar(msg);
+    } else {
+      _showPostPageSnackBar(l10n.composeMediaUploadFailed);
     }
   }
 
@@ -1295,12 +1342,21 @@ class _PostPageState extends ConsumerState<PostPage> {
     }
   }
 
-  /// 添付として受け付けるメディアの拡張子 (ドロップ時の軽いフィルタ)。
-  static const Set<String> _droppableMediaExtensions = {
+  /// 添付として受け付けるメディアの拡張子 (ドロップ / Android のファイル選択の
+  /// 軽いフィルタ)。
+  static const Set<String> _attachableMediaExtensions = {
     'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'bmp', // 画像
     'mp4', 'mov', 'm4v', 'webm', // 動画
     'mp3', 'ogg', 'oga', 'wav', 'flac', 'm4a', // 音声
   };
+
+  /// ファイル名の拡張子が [_attachableMediaExtensions] に含まれるか。
+  static bool _isAttachableMedia(String fileName) {
+    final name = fileName.toLowerCase();
+    final dot = name.lastIndexOf('.');
+    if (dot < 0 || dot == name.length - 1) return false;
+    return _attachableMediaExtensions.contains(name.substring(dot + 1));
+  }
 
   /// ドラッグ&ドロップされたファイルを添付する。`DropItem` は `XFile` を継承して
   /// いるので、ファイル選択 ([_pickMedia]) と同じアップロード経路に流せる。
@@ -1312,12 +1368,7 @@ class _PostPageState extends ConsumerState<PostPage> {
     }
 
     // 画像 / 動画 / 音声のみ受け付ける (フォルダや非対応ファイルを除外)。
-    final media = files.where((f) {
-      final name = f.name.toLowerCase();
-      final dot = name.lastIndexOf('.');
-      if (dot < 0 || dot == name.length - 1) return false;
-      return _droppableMediaExtensions.contains(name.substring(dot + 1));
-    }).toList();
+    final media = files.where((f) => _isAttachableMedia(f.name)).toList();
 
     if (media.isEmpty) {
       _showPostPageSnackBar(context.l10n.composeDropMediaOnly);
