@@ -904,7 +904,10 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       'favourited': false,
       'reblogged': false,
       'bookmarked': false,
-      'sensitive': misskeyNote['cw'] != null,
+      // Misskey はノート単位ではなくファイル単位で NSFW (isSensitive) を持つ。
+      // 1 つでも NSFW なら投稿を sensitive 扱いにしてメディアをぼかす。
+      'sensitive': misskeyNote['cw'] != null ||
+          files.any((f) => f is Map && f['isSensitive'] == true),
       'spoiler_text': misskeyNote['cw']?.toString() ?? '',
       'in_reply_to_id': misskeyNote['replyId']?.toString(),
       'reblogs_count': misskeyNote['renoteCount'] as int? ?? 0,
@@ -2506,9 +2509,10 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
       useRelativeTime: settings.useRelativeTime,
       onTap: () => _handleQuotedPostTap(quotedStatus),
       isCw: hasCw,
-      // CW なしで sensitive のときだけメディアを隠す。
-      // CW ありのときは card 側の reveal トグルで制御するため hideMedia は false。
-      hideMedia: !hasCw && quotedStatus.sensitive,
+      // 本体投稿のギャラリーと同じく CW 付きも sensitive 扱い (CW を開いても
+      // メディアは個別ぼかしのまま)。
+      sensitiveMedia: hasCw || quotedStatus.sensitive,
+      disableBlur: settings.disableMediaBlur,
     );
   }
 
@@ -4057,6 +4061,82 @@ void showAltTextDialog(BuildContext context, String description) {
   );
 }
 
+/// sensitive なメディアのサムネイルを隠した表示。本体投稿のギャラリー
+/// (`_PostMediaGallery`) と引用カード (`_QuotedPostCard`) で共用する。
+///
+/// Web は CORS 回避のため、CORS 不可の画像を HTML <img> 要素として描画する
+/// (network_image_x.dart の WebHtmlElementStrategy.fallback)。<img> は Flutter
+/// canvas の「上」に別 DOM レイヤーとして合成されるため、canvas フィルタである
+/// ImageFiltered (ImageFilter.blur) ではぼかせない (ぼかしが外れて素の画像が
+/// 見えてしまう)。どの画像が canvas / <img> のどちらになるかは読み込み時まで
+/// 分からないので、Web では一律「ぼかし」ではなく「画像を読み込まず不透明
+/// カバーで隠す」方式にする (`thumbnail` はツリーに載せない)。ぼかし透けより
+/// 安全 & opt-in するまで画像 bytes を取得しない。
+Widget _buildSensitiveMediaCover(
+  BuildContext context, {
+  required Widget thumbnail,
+  required double width,
+  required double height,
+  required double fontSize,
+}) {
+  if (kIsWeb) {
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Container(
+        color: const Color(0xFF2A2A2A),
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.visibility_off,
+              color: Colors.white,
+              size: (height * 0.18).clamp(18.0, 40.0),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              context.l10n.postRevealAction,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: fontSize * 0.85,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  // sigma を固定値にするとグリッド表示の大きいタイル (1 枚モードで
+  // 投稿幅いっぱい = 数百 px 級) ではぼかしが透けて見える。タイルの
+  // 短辺に対して相対的に強さを決める。
+  final smallerDim = width < height ? width : height;
+  final blurSigma = (smallerDim / 10).clamp(10.0, 40.0);
+  return Stack(children: [
+    ImageFiltered(
+      imageFilter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+      child: thumbnail,
+    ),
+    Positioned.fill(
+      child: Center(
+        child: Container(
+          color: Colors.black26,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Text(
+            context.l10n.postRevealAction,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: fontSize * 0.8,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+    ),
+  ]);
+}
+
 class _PostMediaGallery extends StatefulWidget {
   /// 投稿 ID。`_unblurredIndices` を State 再生成を跨いで永続化するキー。
   final String statusId;
@@ -4532,74 +4612,13 @@ class _PostMediaGalleryState extends State<_PostMediaGallery> {
     }
 
     if (needsBlur) {
-      if (kIsWeb) {
-        // Web は CORS 回避のため、CORS 不可の画像を HTML <img> 要素として描画
-        // する (network_image_x.dart の WebHtmlElementStrategy.fallback)。<img>
-        // は Flutter canvas の「上」に別 DOM レイヤーとして合成されるため、
-        // canvas フィルタである ImageFiltered (ImageFilter.blur) ではぼかせない
-        // (ぼかしが外れて素の画像が見えてしまう)。どの画像が canvas / <img> の
-        // どちらになるかは読み込み時まで分からないので、Web では一律「ぼかし」
-        // ではなく「画像を読み込まず不透明カバーで隠す」方式にする。タップで
-        // _unblurredIndices に入れて表示。ぼかし透けより安全 & opt-in するまで
-        // 画像 bytes を取得しない。
-        thumbnail = SizedBox(
-          width: width,
-          height: height,
-          child: Container(
-            color: const Color(0xFF2A2A2A),
-            alignment: Alignment.center,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.visibility_off,
-                  color: Colors.white,
-                  size: (height * 0.18).clamp(18.0, 40.0),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  context.l10n.postRevealAction,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: fs * 0.85,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      } else {
-        // sigma を固定値にするとグリッド表示の大きいタイル (1 枚モードで
-        // 投稿幅いっぱい = 数百 px 級) ではぼかしが透けて見える。タイルの
-        // 短辺に対して相対的に強さを決める。
-        final smallerDim = width < height ? width : height;
-        final blurSigma = (smallerDim / 10).clamp(10.0, 40.0);
-        thumbnail = Stack(children: [
-          ImageFiltered(
-            imageFilter:
-                ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-            child: thumbnail,
-          ),
-          Positioned.fill(
-            child: Center(
-              child: Container(
-                color: Colors.black26,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Text(
-                  context.l10n.postRevealAction,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: fs * 0.8,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ]);
-      }
+      thumbnail = _buildSensitiveMediaCover(
+        context,
+        thumbnail: thumbnail,
+        width: width,
+        height: height,
+        fontSize: fs,
+      );
     }
 
     // +N 等の追加オーバーレイ (グリッド時のみ)
@@ -5893,9 +5912,10 @@ class _QuotedPostCard extends StatefulWidget {
   // CW 付き投稿の引用かどうか。true なら本文/メディアを「表示」
   // ボタンで開けるようにする。
   final bool isCw;
-  // CW なしで sensitive: true のときに true。メディアプレビューを
-  // 件数だけのプレースホルダに置き換える (こちらはインライントグル無し)。
-  final bool hideMedia;
+  // メディアを sensitive として個別ぼかしするか (sensitive フラグ または CW)。
+  final bool sensitiveMedia;
+  // グローバル設定でぼかしを無効化しているか
+  final bool disableBlur;
 
   const _QuotedPostCard({
     required this.quotedStatus,
@@ -5906,7 +5926,8 @@ class _QuotedPostCard extends StatefulWidget {
     required this.useRelativeTime,
     required this.onTap,
     required this.isCw,
-    required this.hideMedia,
+    required this.sensitiveMedia,
+    required this.disableBlur,
   });
 
   @override
@@ -5926,6 +5947,24 @@ class _QuotedPostCardState extends State<_QuotedPostCard> {
   void _toggleReveal() {
     setState(() {
       _revealedByQuotedStatusId[widget.quotedStatus.id] = !_revealed;
+    });
+  }
+
+  // sensitive メディアの個別ぼかし解除を quoted status ID で覚える
+  // (`_PostMediaGalleryState._unblurredByStatusId` と同じく State 破棄を跨ぐため)。
+  // 読み取りでは putIfAbsent しない (ぼかし中のカードで FIFO 枠を消費しない)。
+  static final BoundedMap<String, Set<int>> _unblurredByQuotedStatusId =
+      BoundedMap(_kMaxTileCache);
+
+  bool _isUnblurred(int index) =>
+      _unblurredByQuotedStatusId[widget.quotedStatus.id]?.contains(index) ??
+      false;
+
+  void _unblur(int index) {
+    setState(() {
+      _unblurredByQuotedStatusId
+          .putIfAbsent(widget.quotedStatus.id, () => <int>{})
+          .add(index);
     });
   }
 
@@ -5956,7 +5995,7 @@ class _QuotedPostCardState extends State<_QuotedPostCard> {
                 attachments[0].aspectRatio.clamp(0.8, 16 / 9).toDouble();
             final height = width / aspect;
             return _buildQuotedMediaTile(
-              media: attachments[0],
+              index: 0,
               width: width,
               height: height,
               dpr: dpr,
@@ -5971,13 +6010,13 @@ class _QuotedPostCardState extends State<_QuotedPostCard> {
             final tileW = (width - gap) / 2;
             return Row(children: [
               _buildQuotedMediaTile(
-                  media: attachments[0],
+                  index: 0,
                   width: tileW,
                   height: height,
                   dpr: dpr),
               const SizedBox(width: gap),
               _buildQuotedMediaTile(
-                  media: attachments[1],
+                  index: 1,
                   width: tileW,
                   height: height,
                   dpr: dpr),
@@ -5989,20 +6028,20 @@ class _QuotedPostCardState extends State<_QuotedPostCard> {
             final halfH = (height - gap) / 2;
             return Row(children: [
               _buildQuotedMediaTile(
-                  media: attachments[0],
+                  index: 0,
                   width: tileW,
                   height: height,
                   dpr: dpr),
               const SizedBox(width: gap),
               Column(children: [
                 _buildQuotedMediaTile(
-                    media: attachments[1],
+                    index: 1,
                     width: tileW,
                     height: halfH,
                     dpr: dpr),
                 const SizedBox(height: gap),
                 _buildQuotedMediaTile(
-                    media: attachments[2],
+                    index: 2,
                     width: tileW,
                     height: halfH,
                     dpr: dpr),
@@ -6016,13 +6055,13 @@ class _QuotedPostCardState extends State<_QuotedPostCard> {
           return Column(children: [
             Row(children: [
               _buildQuotedMediaTile(
-                  media: attachments[0],
+                  index: 0,
                   width: tileW,
                   height: tileH,
                   dpr: dpr),
               const SizedBox(width: gap),
               _buildQuotedMediaTile(
-                  media: attachments[1],
+                  index: 1,
                   width: tileW,
                   height: tileH,
                   dpr: dpr),
@@ -6030,13 +6069,13 @@ class _QuotedPostCardState extends State<_QuotedPostCard> {
             const SizedBox(height: gap),
             Row(children: [
               _buildQuotedMediaTile(
-                  media: attachments[2],
+                  index: 2,
                   width: tileW,
                   height: tileH,
                   dpr: dpr),
               const SizedBox(width: gap),
               _buildQuotedMediaTile(
-                  media: attachments[3],
+                  index: 3,
                   width: tileW,
                   height: tileH,
                   dpr: dpr),
@@ -6057,14 +6096,36 @@ class _QuotedPostCardState extends State<_QuotedPostCard> {
   /// 無視して指定サイズに歪めて decode してしまうため、アスペクト比を
   /// 計算で保つ必要がある。
   Widget _buildQuotedMediaTile({
-    required MediaAttachment media,
+    required int index,
     required double width,
     required double height,
     required double dpr,
   }) {
+    final media = widget.quotedStatus.mediaAttachments[index];
+    final needsBlur =
+        widget.sensitiveMedia && !widget.disableBlur && !_isUnblurred(index);
+    // ぼかし中のタイルはタップでそのタイルだけ解除する (本体投稿のギャラリーと
+    // 同じ)。GestureDetector 子なので親カードの onTap (引用元を開く) より内側勝ち。
+    Widget withBlur(Widget thumbnail) {
+      if (!needsBlur) return thumbnail;
+      return MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: () => _unblur(index),
+          child: _buildSensitiveMediaCover(
+            context,
+            thumbnail: thumbnail,
+            width: width,
+            height: height,
+            fontSize: widget.fontSize,
+          ),
+        ),
+      );
+    }
+
     // カバー画像の無い音声は画像としてデコードしない (issue #10)。
     if (media.isAudio && media.audioCoverUrl == null) {
-      return _AudioThumbnail(width: width, height: height);
+      return withBlur(_AudioThumbnail(width: width, height: height));
     }
 
     final aspect = media.aspectRatio;
@@ -6081,7 +6142,7 @@ class _QuotedPostCardState extends State<_QuotedPostCard> {
       cacheH = (width / aspect * dpr).round();
     }
 
-    return SizedBox(
+    return withBlur(SizedBox(
       width: width,
       height: height,
       child: KurageNetworkImage(
@@ -6101,7 +6162,7 @@ class _QuotedPostCardState extends State<_QuotedPostCard> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   @override
@@ -6110,12 +6171,10 @@ class _QuotedPostCardState extends State<_QuotedPostCard> {
     final fontSize = widget.fontSize;
     final isCw = widget.isCw;
     final revealed = _revealed;
-    // メディアを実寸で出すか:
-    //   - CW あり: トグルで開いたときのみ
-    //   - CW なし & sensitive (hideMedia=true): 出さない
-    //   - それ以外: 普通に出す
+    // メディアのサムネイルを出すか (CW ありはトグルで開いたときのみ)。
+    // sensitive なメディアはタイルごとにぼかして出す (_buildQuotedMediaTile)。
     final showActualMedia = quotedStatus.mediaAttachments.isNotEmpty &&
-        (isCw ? revealed : !widget.hideMedia);
+        (!isCw || revealed);
     final showMediaPlaceholder = quotedStatus.mediaAttachments.isNotEmpty &&
         !showActualMedia;
     // 本文を出すか:
@@ -6258,7 +6317,7 @@ class _QuotedPostCardState extends State<_QuotedPostCard> {
               // 状態になっていた。
               _buildQuotedMediaGrid(quotedStatus),
             ] else if (showMediaPlaceholder) ...[
-              // CW あり (非展開) または sensitive のときは件数だけ表示
+              // CW あり (非展開) のときは件数だけ表示
               const SizedBox(height: 8),
               Row(
                 children: [
