@@ -191,3 +191,4 @@ Firebase Cloud Messaging + 自前の Cloudflare Worker リレー経由で動作�
 - **`ACTION_SEND` の intent-filter を `MainActivity` に直付けしない** (共有 Intent がタスクに保存され、次回起動時に投稿済みの内容で投稿画面が再表示される) → `taskAffinity=""` + `noHistory` の `ShareActivity` に分離
 - **並列にキックした Future を順に `await` しない** (前の await 中に後ろが失敗すると unhandled error として fatal 報告される) → 先に `Future.wait` で全部にハンドラを付けるか、キック時に `.catchError` を付ける
 - **Crashlytics の通信断判定 `_isTransientNetworkError` は型名の完全一致** (`_ClientSocketException` 等のサブクラスは個別に列挙しないと fatal 扱いになる)
+- **Mastodon 4.7.2 以降は HEIC / HEIF / AVIF のアップロードが失敗する** (`supported_mime_types` には載ったまま) → 添付経路は必ず post_page の `_prepareUpload` を通して JPEG 化する (`image_transcode.dart`)

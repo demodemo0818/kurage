@@ -73,7 +73,7 @@ Windows (`video_player_win` = Media Foundation) で通常動画を最後まで�
 
 ## クリップボード画像貼り付け (Web/Desktop) は取得経路がプラットフォームで別物
 
-[clipboard_image.dart](../lib/services/clipboard_image.dart) が条件付き import で実装を切替。**Web** ([clipboard_image_web.dart](../lib/services/clipboard_image_web.dart)) はブラウザの `paste` イベント (push、権限不要・全ブラウザ) で画像 File を取得、**Desktop** ([clipboard_image_io.dart](../lib/services/clipboard_image_io.dart)) は `pasteboard` の `Pasteboard.image` を Ctrl/Cmd+V キー契機で pull する。`pasteboard` の Web パスは async Clipboard API 依存で実質 Chrome 限定なので Web では使わない。**Windows の `Pasteboard.image` は画像を BMP で返す** が Mastodon は BMP 非対応なので、`dart:ui` (`instantiateImageCodec` → `toByteData(png)`) で **PNG に変換してから** upload する (Mastodon 対応の png/jpeg/gif/webp はマジックバイト判定でそのまま通す)。Ctrl/Cmd+V は `CallbackShortcuts` に bind せず `Focus.onKeyEvent` で検知して **常に `KeyEventResult.ignored`** を返す (テキストペーストを壊さないため)。
+[clipboard_image.dart](../lib/services/clipboard_image.dart) が条件付き import で実装を切替。**Web** ([clipboard_image_web.dart](../lib/services/clipboard_image_web.dart)) はブラウザの `paste` イベント (push、権限不要・全ブラウザ) で画像 File を取得、**Desktop** ([clipboard_image_io.dart](../lib/services/clipboard_image_io.dart)) は `pasteboard` の `Pasteboard.image` を Ctrl/Cmd+V キー契機で pull する。`pasteboard` の Web パスは async Clipboard API 依存で実質 Chrome 限定なので Web では使わない。**Windows の `Pasteboard.image` は画像を BMP で返す** が Mastodon は BMP 非対応なので、`dart:ui` (`instantiateImageCodec` → `toByteData(png)`) で **PNG に変換してから** upload する (Mastodon 対応の png/jpeg/gif/webp はマジックバイト判定でそのまま通し、HEIC / HEIF / AVIF は PNG にせず投稿画面の JPEG 変換に回す。↓「Mastodon 4.7.2 以降は HEIC / HEIF / AVIF を受け付けない」)。Ctrl/Cmd+V は `CallbackShortcuts` に bind せず `Focus.onKeyEvent` で検知して **常に `KeyEventResult.ignored`** を返す (テキストペーストを壊さないため)。
 
 ## 日付ピッカー入力モード: 巨大な数字で ArgumentError が build に漏れ、入力欄がグレーの矩形になる
 
@@ -197,3 +197,13 @@ Flutter (SkParagraph) のフォールバックは**書記素クラスタ単位**
 - package:http の IOClient は SocketException を `_ClientSocketException` (ClientException の非公開サブクラス。`toString` は "ClientException with SocketException: …") に包んで投げる。列挙していなかったため DNS 失敗・経路なし等が fatal 扱いになっていた。
 - cached_network_image (flutter_cache_manager) の HTTP エラー応答 ("Invalid statusCode: 404") は `HttpExceptionWithStatus` (dart:io `HttpException` のサブクラス)。
 - 画像パイプライン (`details.library == 'image resource service'`) の通信断は Crashlytics に送らない。連合先のメディアサーバの消滅や 404 は日常的に起き、アプリ側で直せない (送ると非致命 issue の大半を占める)。
+
+## Mastodon 4.7.2 以降は HEIC / HEIF / AVIF を受け付けない → アップロード前に JPEG 化する
+
+Mastodon 4.7.2 (セキュリティリリース) は libvips の HEIF ローダを一時的に無効化した。AVIF も同じローダでデコードされるため、**HEIC / HEIF / AVIF のアップロードが処理段階で 500 (`Error processing thumbnail for uploaded media`)** になる。しかも 4.7.2 は `/api/v2/instance` の `supported_mime_types` に `image/heic` 等を**載せたまま** (mastodon#40541。後続の mastodon#40542 で一覧から外し、受け付け自体を拒否するようになった)。
+
+- **対策**: [image_transcode.dart](../lib/services/image_transcode.dart) `convertHeifFamilyToJpeg` で、アップロード前に**サーバを見ずに常に** JPEG へ変換する。`supported_mime_types` で判定すると 4.7.2 で失敗する。4.7.1 以前もサーバ側で JPEG に変換して保存していたので、先に変換しても投稿結果は変わらない。ついでに Mastodon のオリジナル上限 (8,294,400 px = 3840x2160 相当) まで縮小する。
+- 投稿画面の添付経路 (カメラ / ギャラリー / ファイル選択 / ドラッグ&ドロップ / 貼り付け) は全て [post_page.dart](../lib/pages/post_page.dart) `_prepareUpload` を通す。**新しい添付経路を足すときもこれを通すこと**。判定は拡張子ではなく先頭の `ftyp` ブランド (Android の image_picker はキャッシュへのコピー時に拡張子を付け直すため)。
+- デコードは dart:ui (エンジン) 任せ。**Android 9+ (AVIF は 12+) と macOS は読めるが、Windows / Linux は読めない**。**Web だけはブラウザの `<img>` + `<canvas>` で変換する** ([image_transcode_web.dart](../lib/services/image_transcode_web.dart))。dart:ui の Web デコーダは ImageDecoder API を `preferAnimation: true` 固定で呼ぶため、**Chrome では静止画 AVIF が `Failed to retrieve track metadata` で必ず失敗する** (エンコーダを問わず。Chrome 154 / Flutter 3.47.5)。`<img>` なら Chrome / Firefox は AVIF、Safari は HEIC も読める (Chrome の HEIC は読めない)。読めない環境では添付を見送り、`composeHeifConvertFailed` で JPEG / PNG への変換を案内する (元ファイルのまま上げても 4.7.2 以降は失敗するだけなので)。iOS の image_picker は自前で JPEG にして返すので、ここに HEIC は来ない。
+- 変換後の XFile は `XFile.fromData` 由来なので、io 実装では `path` にファイル名を入れて `name` を保つ (↑「`XFile.fromData` は io 実装で `name` を無視する」)。プレビューは実ファイルが無いので `MediaItem.localBytes` の JPEG で描く。
+- 変換処理のテストは [image_transcode_test.dart](../test/services/image_transcode_test.dart)。HEIC / AVIF の実デコードを伴うテストは macOS でのみ走る (CI の Linux では skip)。Web 実装は [image_transcode_web_test.dart](../test/services/image_transcode_web_test.dart) (`@TestOn('browser')`。`flutter test --platform chrome <file>` で手動実行、CI 対象外)。Android 実機での確認は手動。
