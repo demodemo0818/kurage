@@ -451,8 +451,21 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       // ボスキー (偽装モード) のゲートを Navigator より上に被せる。これにより
       // 偽装シェルがダイアログ/ポップアップ/SnackBar も含めて全面を覆い、裏の
       // 本体は Offstage で生存する。Web/デスクトップ以外では素通し。
-      builder: (context, child) =>
-          BossModeGate(child: child ?? const SizedBox.shrink()),
+      builder: (context, child) {
+        final gated = BossModeGate(child: child ?? const SizedBox.shrink());
+        if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+          return gated;
+        }
+        // Android のシステムナビゲーションバーの外観を、端末ではなくアプリの
+        // テーマに合わせて明示する。framework (AppBar) はステータスバーしか
+        // 指定しないので、未指定だと nav bar は OS 任せになる。
+        // AppBar より外側に置くので、ステータスバーは従来どおり AppBar の指定が
+        // 優先され、画面下端 (nav bar の位置) ではこちらが使われる。
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: _navigationBarStyleFor(Theme.of(context)),
+          child: gated,
+        );
+      },
       // Web では PC ユーザがマウスドラッグで投稿本文を選択 → コピー
       // できるよう SelectionArea で全体を包む。モバイル (Android/iOS) では
       // 既存の長押しジェスチャ (アクションバー展開・sensitive ぼかし解除等)
@@ -465,6 +478,24 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     );
   }
   
+  SystemUiOverlayStyle _navigationBarStyleFor(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    return SystemUiOverlayStyle(
+      // 色が効くのは edge-to-edge が強制されない Android 14 以前のみ。15 以降は
+      // OS が無視して透明にし、下に描いている BottomNavigationBar 等が透けて見える。
+      systemNavigationBarColor: theme.scaffoldBackgroundColor,
+      systemNavigationBarIconBrightness:
+          isDark ? Brightness.light : Brightness.dark,
+      // Android 15 以降の 3 ボタンナビは OS が半透明の scrim を重ねるが、その色は
+      // アプリの外観指定 (上の icon brightness) に従わない。Xiaomi 17T Pro
+      // (HyperOS 3) ではダークモードでも白っぽい scrim になった (リリース
+      // ビルドはダークでのコールドスタートでも、デバッグビルドはライトで起動 →
+      // ダークに切替えた時に再現)。scrim は切り、下に描いている
+      // BottomNavigationBar 等をそのまま見せる。
+      systemNavigationBarContrastEnforced: false,
+    );
+  }
+
   ThemeData _buildTheme(Settings settings, Brightness brightness) {
     final isDark = brightness == Brightness.dark;
 

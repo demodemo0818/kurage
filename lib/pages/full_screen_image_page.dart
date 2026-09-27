@@ -476,13 +476,25 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
       ),
     );
 
+    // 背景は常に黒なので、アプリのテーマに関係なく Android のナビゲーション
+    // バーも暗い外観にする (MyApp の builder が付けるテーマ連動の指定を、
+    // それより内側のこちらで上書きする)。
+    final page = AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        systemNavigationBarColor: Colors.black,
+        systemNavigationBarIconBrightness: Brightness.light,
+        systemNavigationBarContrastEnforced: false,
+      ),
+      child: scaffold,
+    );
+
     // キーボード (←→ / Esc) はマウス前提の環境のみ。windowed の _onKey を
     // そのまま共用する (Esc → Navigator.pop はフルスクリーン route でも正しい)。
-    if (!showDesktopNav) return scaffold;
+    if (!showDesktopNav) return page;
     return Focus(
       autofocus: true,
       onKeyEvent: _onKey,
-      child: scaffold,
+      child: page,
     );
   }
 
