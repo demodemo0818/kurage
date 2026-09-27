@@ -309,11 +309,13 @@ List<InlineSpan> _processAnchor(dom.Element el, _Ctx ctx) {
       .toSet();
   final visibleText = _visibleText(el);
 
-  // ハッシュタグ判定 (class または URL から)
+  // ハッシュタグ判定。class="hashtag" ("mention hashtag" の併記もある) が正。
+  // class を付けないサーバ向けに URL からも判定するが、`/tag/` を含む普通の
+  // リンク (GitHub のリリース `…/releases/tag/v1.3.1`、ブログのタグ一覧等) を
+  // 誤判定しないよう、表示テキストが `#` で始まる (= 見た目がハッシュタグ)
+  // ものに限る。
   final isHashtag = classes.contains('hashtag') ||
-      _isHashtagUrl(href) ||
-      // class="mention hashtag" の併記もある
-      (classes.contains('mention') && classes.contains('hashtag'));
+      (visibleText.trimLeft().startsWith('#') && _isHashtagUrl(href));
   if (isHashtag) {
     final tag = extractValidHashtagFromUrl(href) ??
         visibleText.replaceFirst(RegExp(r'^#'), '');
@@ -471,13 +473,9 @@ InlineSpan _createEmojiSpan(RegExpMatch match, _Ctx ctx) {
 
 InlineSpan _createUrlSpan(RegExpMatch match, _Ctx ctx) {
   final url = match.group(0)!;
-  // ハッシュタグ URL なら hashtag スパンへ振替
-  if (ctx.context != null) {
-    final hashtag = extractValidHashtagFromUrl(url);
-    if (hashtag != null) {
-      return _buildHashtagSpan(hashtag, '#$hashtag', ctx);
-    }
-  }
+  // `/tags/xxx` を含む URL でもハッシュタグには振り替えない。`/tag/` を含む
+  // 普通の URL まで `#xxx` に置き換わってしまうため (<a> の分類と同じく、
+  // 見た目が URL のものは URL のまま扱う)。
   return _buildUrlSpan(url, shortenUrl(url), ctx);
 }
 

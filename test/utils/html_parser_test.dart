@@ -169,12 +169,34 @@ void main() {
       expect(span.recognizer, isA<TapGestureRecognizer>());
     });
 
-    test('class が無くても /tags/ URL ならハッシュタグ扱い', () {
+    test('class が無くても表示が #tag の /tags/ URL ならハッシュタグ扱い', () {
       final spans = _parse(
           '<p><a href="https://example.com/tags/flutter">#flutter</a></p>');
       final span = _findText(spans, '#flutter');
       expect(span, isNotNull);
-      expect(span!.recognizer, isA<TapGestureRecognizer>());
+      expect(span!.style?.fontWeight, FontWeight.w600);
+      expect(span.recognizer, isA<TapGestureRecognizer>());
+    });
+
+    test('パスに /tag/ を含む普通のリンクはハッシュタグにしない', () {
+      // GitHub のリリース URL (Mastodon の URL 短縮 3 段組)。パス中の
+      // `/tag/v1.3.1` でハッシュタグと誤判定していた。
+      final spans = _parse(
+          '<p><a href="https://github.com/demodemo0818/kurage/releases/tag/v1.3.1" '
+          'target="_blank" rel="nofollow noopener" translate="no">'
+          '<span class="invisible">https://</span>'
+          '<span class="ellipsis">github.com/demodemo0818/kurage</span>'
+          '<span class="invisible">/releases/tag/v1.3.1</span></a></p>');
+      final span = _findText(spans, 'github.com/demodemo0818/kurage');
+      expect(span, isNotNull);
+      expect(span!.style?.color, _link);
+      expect(span.style?.fontWeight, isNot(FontWeight.w600));
+      expect(span.recognizer, isA<TapGestureRecognizer>());
+
+      final blog = _parse(
+          '<p><a href="https://blog.example/tag/news">blog.example/tag/news</a></p>');
+      expect(_findText(blog, 'blog.example/tag/news')!.style?.fontWeight,
+          isNot(FontWeight.w600));
     });
 
     test('通常 URL は invisible span を除いた表示テキストになる', () {
