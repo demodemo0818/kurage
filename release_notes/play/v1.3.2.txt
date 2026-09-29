@@ -1,0 +1,8 @@
+<ja-JP>
+・3 ボタンナビゲーションの端末で、ダークモードでも画面下のナビゲーションバーが白っぽく表示される問題を修正
+・URL に /tag/ を含む普通のリンクが、ハッシュタグとして表示される問題を修正
+</ja-JP>
+<en-US>
+• Fixed the navigation bar looking whitish in dark mode on devices using 3-button navigation
+• Fixed ordinary links containing /tag/ in the URL being shown as hashtags
+</en-US>
