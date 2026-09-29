@@ -220,7 +220,7 @@ $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
    PATH 区切りと衝突して効かない。keytool はフルパスで直接叩く。
 6. AAB を `dist/kurage-vX.Y.Z[-PRERELEASE].aab` にコピー。
 7. **Play Console での操作はユーザー側**: 製品版 → 新しいリリースを作成 →
-   AAB をアップロード → 公開。Claude 側はアップロードしない (`adb install` と同じ扱い)。
+   AAB をアップロード → リリースノート欄に `release_notes/play/vX.Y.Z.txt` を貼る → 公開。Claude 側はアップロードしない (`adb install` と同じ扱い)。
 
 ### Play の一回もの設定 (通常リリースでは触らない)
 
@@ -358,3 +358,14 @@ windows ランナーで `tool/package_windows.ps1` を実行し、生成した z
 - 既定 OFF の新機能は「設定でオンにする必要がある」ことを書く。
 - バグ報告・要望の導線は GitHub Issues。
 - 手順 3 のリリースコミットに含めて、タグにノートも入るようにする。
+
+### Google Play 用リリース文
+
+Play Console の「リリースノート」欄に貼る短い文面を
+**`release_notes/play/vX.Y.Z[-PRERELEASE].txt`** に保存する (コミット対象)。
+上の md を要約し、`<ja-JP>…</ja-JP>` / `<en-US>…</en-US>` の言語タグ形式で書く。
+
+- 各言語 **500 文字以内** (Play の上限)。プレーンテキストで、Markdown 記法は使わない。
+- Android ユーザーに関係する変更だけを箇条書き (`・` / `•`) で 3〜6 行程度。
+  Windows / Web 限定の変更・ビルド環境の更新・Issue 番号は書かない。
+- md と同じリリースコミットに含める。
