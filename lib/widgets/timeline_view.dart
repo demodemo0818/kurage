@@ -3,7 +3,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -23,6 +22,7 @@ import 'post_tile.dart';
 import 'gap_tile.dart';
 import 'timeline_post_decoration.dart';
 import 'timeline_splitter.dart';
+import 'web_selection.dart';
 import '../utils/snackbar_helpers.dart';
 import '../utils/timeline_item_ops.dart';
 import '../services/local_post_bus.dart';
@@ -2631,10 +2631,8 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
     // 計算が SPL の独自 viewport を通して走り、スクロール (ホイール/トラックパッド
     // 含む) が止まって『タイムラインを遡れない』不具合になる。disabled で切り離す
     // ことで SPL に選択機構が一切干渉しないようにする (TL 内テキスト選択は不可。
-    // プロフィール等 ListView ベースの他ページは root SelectionArea のまま選択可)。
-    final Widget selectable = kIsWeb
-        ? SelectionContainer.disabled(child: timelineList)
-        : timelineList;
+    // 本文の選択は本文タップで開く詳細ポップアップで行う)。
+    final Widget selectable = excludeFromWebSelection(timelineList);
     if (_isHistoryPane) return selectable;
     return _buildSplitLayout(selectable);
   }

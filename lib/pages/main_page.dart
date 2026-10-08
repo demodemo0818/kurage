@@ -21,6 +21,7 @@ import 'post_page.dart';
 import '../widgets/column_header.dart';
 import '../widgets/timeline_view.dart';
 import '../widgets/user_avatar.dart';
+import '../widgets/web_selection.dart';
 
 /// アクティブなタイムラインカラムを「j/k で 1 件送り」する関数を公開する。
 /// MainPage が現在アクティブなカラムに対応するクロージャを登録し、RootPage の
@@ -50,6 +51,13 @@ class _MainPageState extends ConsumerState<MainPage>
   /// 乗らないため)。可変モードの溢れ時 / 固定モードの両方で使い回す
   /// (同時に 2 つの ScrollView へ attach されることはない)。
   final ScrollController _deckHScrollController = ScrollController();
+
+  /// j/k 用クロージャの登録先。dispose では `ref` が使えない (Riverpod が
+  /// 'Cannot use "ref" after the widget was disposed' を throw する) ので
+  /// initState で捕まえておく。dispose での throw は Element の unmount を
+  /// 途中で止め、残りの Element が unmount されないまま残る (ワイド ⇔ ナロー
+  /// の切替 = スマホの回転で毎回起きていた。Sentry KURAGE-88)。
+  late final StateController<void Function(int delta)?> _jumpNotifier;
 
   static const _timelineTypeIcons = {
     'home': Icons.home,
@@ -202,6 +210,7 @@ class _MainPageState extends ConsumerState<MainPage>
   @override
   void initState() {
     super.initState();
+    _jumpNotifier = ref.read(timelineJumpProvider.notifier);
     // 初期化時にリスト名をプリロード。デフォルトカラムの自動生成は行わず、
     // カラム未設定時はオンボーディング画面でユーザーに明示的に作らせる。
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -210,7 +219,7 @@ class _MainPageState extends ConsumerState<MainPage>
       // するクロージャを登録。呼び出し時に最新のアクティブカラムを解決するので
       // タブ切替のたびに再登録する必要はない。
       if (kIsWeb && mounted) {
-        ref.read(timelineJumpProvider.notifier).state = _jumpActiveColumn;
+        _jumpNotifier.state = _jumpActiveColumn;
       }
     });
   }
@@ -281,11 +290,9 @@ class _MainPageState extends ConsumerState<MainPage>
   @override
   void dispose() {
     // 登録した j/k クロージャがまだ自分のものなら外す。
-    if (kIsWeb) {
-      final notifier = ref.read(timelineJumpProvider.notifier);
-      if (identical(notifier.state, _jumpActiveColumn)) {
-        notifier.state = null;
-      }
+    // メソッドの tear-off は毎回 identical とは限らないので == で比べる。
+    if (kIsWeb && _jumpNotifier.state == _jumpActiveColumn) {
+      _jumpNotifier.state = null;
     }
     _tabController?.dispose();
     _deckHScrollController.dispose();
@@ -547,6 +554,14 @@ class _MainPageState extends ConsumerState<MainPage>
 
   @override
   Widget build(BuildContext context) {
+    // ホーム (カラム群) は丸ごと Web のルート SelectionArea から外す。
+    // タイムライン本体は ColumnTimelineView 側でも外しているが、その外側の
+    // カラムヘッダー / 新着バナー / 埋め込み通知カラムも SSE で頻繁に増減し、
+    // 選択機構を壊す (理由は excludeFromWebSelection)。選択して嬉しい文字は無い。
+    return excludeFromWebSelection(_buildDeck(context));
+  }
+
+  Widget _buildDeck(BuildContext context) {
     final columns = ref.watch(columnProvider);
     final authState = ref.watch(authProvider);
 

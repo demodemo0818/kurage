@@ -18,6 +18,7 @@ import '../utils/open_profile.dart';
 import '../widgets/post_tile.dart';
 import '../widgets/timeline_post_decoration.dart';
 import '../widgets/user_avatar.dart';
+import '../widgets/web_selection.dart';
 import 'collection_detail_page.dart';
 
 class NotificationsPage extends ConsumerStatefulWidget {
@@ -150,8 +151,11 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
         // 経路 (`_recoverFromStreamReconnect`) と watchdog (5 分無音検出 →
         // 強制再接続 → reconnect refresh) と app resume 時の force reconnect
         // で面倒を見ているので、ここでは refresh を別途投げない。
+        // ref.read は使わない: unmount されずに残った (deactivate 済みの)
+        // Element でもこの listener は生きていて、ref.read が
+        // 'No ProviderScope found' で落ちる (Sentry KURAGE-8C)。
         if (next == 1 && prev != 1) {
-          ref.read(notificationsProvider.notifier).markAsRead();
+          _notificationsNotifier.markAsRead();
         }
       });
     } else {
@@ -244,7 +248,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
       ],
     );
 
-    final Widget body = asyncList.when(
+    final Widget list = asyncList.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text(context.l10n.genericError('$e'))),
       data: (items) {
@@ -311,6 +315,10 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
         );
       },
     );
+    // 通知の一覧は Web のルート SelectionArea から外す。PostTile を含む項目は
+    // KeepAlive で画面外に残り、SSE でグループに人が加わる等で中身が変わると
+    // 選択機構が壊れる (理由は excludeFromWebSelection)。
+    final Widget body = excludeFromWebSelection(list);
 
     // カラム埋め込みモード: Scaffold/AppBar を持たず、コンパクトな上部バー
     // (アカウント選択 + フィルタ) + リストだけを返す。ヘッダー (種別ラベルや
