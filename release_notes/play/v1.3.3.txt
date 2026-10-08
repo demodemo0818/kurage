@@ -1,0 +1,10 @@
+<ja-JP>
+・投票したあと、新しい投稿が届くたびに未投票の表示に戻ってしまう問題を修正
+・「クリップボードにコピーしました」の表示が自動で消えない問題を修正
+・通知タブで通知を確認しても、通知領域の通知とアプリアイコンのバッジが消えない問題を修正
+</ja-JP>
+<en-US>
+• Fixed polls going back to looking unvoted whenever new posts arrived after voting
+• Fixed the confirmation message after copying to the clipboard not disappearing on its own
+• Fixed notifications in the shade and the app icon badge staying after checking the Notifications tab
+</en-US>
