@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' as ui;
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -16,6 +17,16 @@ import '../models/auth_account.dart';
 import '../services/mastodon_api.dart';
 import '../services/push_notification_style.dart';
 import '../services/push_relay_config.dart';
+
+/// プッシュ通知に付ける Android の通知 tag。宛先アカウントの識別に使う。
+///
+/// アプリ内で通知を既読にした時、そのアカウント宛てのトレイ通知だけを消す
+/// ([PushNotificationService.cancelNotificationsForAccounts]) ために付ける。
+/// Android の `getActiveNotifications` は payload を返さないので tag で判別する。
+/// tag は通知リスナー権限を持つ他アプリから読めるため、アクセストークンを
+/// そのまま入れず SHA-256 の先頭 16 桁にする。
+String pushNotificationTagForToken(String accessToken) =>
+    'acct_${sha256.convert(utf8.encode(accessToken)).toString().substring(0, 16)}';
 
 /// バックグラウンド (アプリ未起動 / 一時停止中) で FCM data メッセージを受信した
 /// 時のハンドラ。トップレベル関数である必要がある。
@@ -77,6 +88,11 @@ Future<void> _showFromData(
   final title =
       style.emoji == null ? rawTitle : '${style.emoji} $rawTitle';
   final body = data['body'] ?? '';
+  // Mastodon の Web Push payload には宛先トークンが入っている
+  final token = data['access_token'];
+  final tag = token == null || token.isEmpty
+      ? null
+      : pushNotificationTagForToken(token);
 
   // payload の icon (リアクションした人のアバター URL) を largeIcon に表示。
   // ダウンロード/デコードのどこで失敗しても null (largeIcon なし) で通知自体は
@@ -95,6 +111,7 @@ Future<void> _showFromData(
     icon: 'ic_stat_kurage',
     color: style.color,
     largeIcon: avatar,
+    tag: tag,
   );
   const iosDetails = DarwinNotificationDetails();
   final details = NotificationDetails(
@@ -125,6 +142,7 @@ Future<void> _showFromData(
         icon: '@mipmap/ic_launcher',
         color: style.color,
         largeIcon: avatar,
+        tag: tag,
       ),
       iOS: const DarwinNotificationDetails(),
     );
@@ -251,6 +269,30 @@ class PushNotificationService {
   /// 通知タップ時に呼ばれるコールバック。
   /// Widget ツリー外から Riverpod を操作するため、main.dart で注入する。
   void Function()? onTapNotification;
+
+  /// 指定トークン (= アカウント) 宛てのプッシュ通知を通知トレイから消す。
+  ///
+  /// アプリ内で通知を既読にしてもトレイの通知が残ると、ランチャーアイコンの
+  /// 通知バッジが消えない。tag ([pushNotificationTagForToken]) で宛先を判別
+  /// するので Android のみ対応 (iOS は Firebase 未構成でプッシュ自体が無い)。tag の無い
+  /// 通知 (診断のテスト通知等) には触らない。失敗しても握り潰す。
+  Future<void> cancelNotificationsForAccounts(
+      Iterable<String> accessTokens) async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+    final tags = accessTokens.map(pushNotificationTagForToken).toSet();
+    if (tags.isEmpty) return;
+    try {
+      final active = await _localNotifications.getActiveNotifications();
+      for (final n in active) {
+        final id = n.id;
+        final tag = n.tag;
+        if (id == null || tag == null || !tags.contains(tag)) continue;
+        await _localNotifications.cancel(id, tag: tag);
+      }
+    } catch (e) {
+      debugPrint('[Push] cancelNotificationsForAccounts failed: $e');
+    }
+  }
 
   /// 初期化
   ///

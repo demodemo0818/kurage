@@ -99,6 +99,7 @@ Firebase Cloud Messaging + 自前の Cloudflare Worker リレー経由で動作�
   - リレー公開鍵 / auth_secret は Worker の `/pubkey` `/auth` から取得 (セッションキャッシュ)
   - data only な FCM メッセージを受信 → `flutter_local_notifications` で通知表示。フォアグラウンド／バックグラウンド／コールドスタート全対応
   - 通知タップ → `onTapNotification` コールバック発火 → `tabStateProvider` 経由で通知タブへ遷移
+  - アプリ内で既読 (`NotificationsNotifier.markAsRead` / 通知表示中の復帰) にすると、表示中アカウント宛てのトレイ通知を消す (残るとランチャーの通知バッジが消えない)。宛先は Android の通知 tag = `pushNotificationTagForToken` (トークンの SHA-256 先頭。`getActiveNotifications` は Android で payload を返さないため) で判別する
 - **Firebase 設定**: [lib/firebase_options.dart](lib/firebase_options.dart) (手書き管理、iOS 追加時は同ファイルに追記)
   - `firebase_options.dart` と `android/app/google-services.json` は **git 管理外** (OSS 公開のため example 化)。clone 直後は各 `.example` をコピーして配置する (ダミー値のままでもビルド・起動可。CI も同方式でコピーしている)。実物はこの PC のローカルにのみ存在し、消えた場合は Firebase Console から再取得
   - `android/app/build.gradle.kts` で `com.google.gms.google-services` プラグイン適用

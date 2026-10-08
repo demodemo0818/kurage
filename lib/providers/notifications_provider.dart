@@ -1,6 +1,7 @@
 // lib/providers/notifications_provider.dart
 
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,6 +12,7 @@ import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/tab_state_provider.dart';
 import '../services/mastodon_api.dart';
+import '../services/push_notification_service.dart';
 import '../services/sound_service.dart';
 
 class NotificationsNotifier
@@ -80,12 +82,12 @@ class NotificationsNotifier
   final Set<String> _recentSseKeys = <String>{};
   static const _recentSseKeysCap = 128;
 
-  /// アプリ復帰 (resumed) を捕捉して全 SSE 接続を強制再接続する。
-  /// `WidgetsBindingObserver` を mixin する代わりに小さな delegate
+  /// アプリ復帰 (resumed) を捕捉して全 SSE 接続を強制再接続し、通知が
+  /// 表示中ならトレイのプッシュ通知を消す。`WidgetsBindingObserver` を mixin する代わりに小さな delegate
   /// オブジェクトを持って addObserver する形にしている。StateNotifier
   /// と Observer の責務をクラス本体で混ぜないため。
   late final _NotifLifecycleObserver _lifecycleObserver =
-      _NotifLifecycleObserver(onResumed: _forceReconnectAllStreams);
+      _NotifLifecycleObserver(onResumed: _onAppResumed);
 
   final List<String> _selectedAccountIds = [];
   static List<String> _savedSelectedAccountIds = [];
@@ -726,9 +728,27 @@ class NotificationsNotifier
     // 「同じデータの新インスタンス」で更新する。フィールドだけ書き換えても
     // StateNotifier は通知を発行しないので、watcher が再評価されない。
     state = AsyncValue.data(List<NotificationGroup>.from(current));
+    _clearPushNotificationsForVisibleAccounts();
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefsKeyLastReadId, _lastReadNotificationId!);
+  }
+
+  /// 通知一覧に表示しているアカウント宛てのプッシュ通知を通知トレイから消す。
+  ///
+  /// アプリ内で既読にしてもトレイに通知が残ると、ランチャーアイコンの通知
+  /// バッジが消えない (レビューで指摘)。表示対象から外しているアカウントの
+  /// 通知は見ていないので残す。Android 以外は何もしない。
+  void _clearPushNotificationsForVisibleAccounts() {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+    // 全解除中は何も表示していない (「空 = 全アカウント」扱いにしない)
+    if (_selectionCleared) return;
+    final accounts = _ref.read(authProvider).accounts;
+    final targets = _selectedAccountIds.isEmpty
+        ? accounts
+        : accounts.where((a) => _selectedAccountIds.contains(a.id));
+    unawaited(PushNotificationService()
+        .cancelNotificationsForAccounts(targets.map((a) => a.accessToken)));
   }
 
   /// 未読数を取得
@@ -992,6 +1012,16 @@ class NotificationsNotifier
       _markStreamDisconnected(conn);
       _connectStream(conn);
     }
+  }
+
+  void _onAppResumed() {
+    if (!mounted) return;
+    // 通知タブ / カラムを表示したまま復帰した場合、タブ切替が起きないので
+    // markAsRead を通らない。バックグラウンド中に溜まったトレイ通知はここで消す。
+    if (_notificationCurrentlyVisible) {
+      _clearPushNotificationsForVisibleAccounts();
+    }
+    _forceReconnectAllStreams();
   }
 
   /// アプリ復帰 (resumed) で全接続を強制再接続する。OS がバックグラウンド中に
