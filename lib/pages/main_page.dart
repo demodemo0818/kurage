@@ -50,6 +50,13 @@ class _MainPageState extends ConsumerState<MainPage>
   /// (同時に 2 つの ScrollView へ attach されることはない)。
   final ScrollController _deckHScrollController = ScrollController();
 
+  /// j/k 用クロージャの登録先。dispose では `ref` が使えない (Riverpod が
+  /// 'Cannot use "ref" after the widget was disposed' を throw する) ので
+  /// initState で捕まえておく。dispose での throw は Element の unmount を
+  /// 途中で止め、残りの Element が unmount されないまま残る (ワイド ⇔ ナロー
+  /// の切替 = スマホの回転で毎回起きていた。Sentry KURAGE-88)。
+  late final StateController<void Function(int delta)?> _jumpNotifier;
+
   static const _timelineTypeIcons = {
     'home': Icons.home,
     'local': Icons.people,
@@ -201,6 +208,7 @@ class _MainPageState extends ConsumerState<MainPage>
   @override
   void initState() {
     super.initState();
+    _jumpNotifier = ref.read(timelineJumpProvider.notifier);
     // 初期化時にリスト名をプリロード。デフォルトカラムの自動生成は行わず、
     // カラム未設定時はオンボーディング画面でユーザーに明示的に作らせる。
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -209,7 +217,7 @@ class _MainPageState extends ConsumerState<MainPage>
       // するクロージャを登録。呼び出し時に最新のアクティブカラムを解決するので
       // タブ切替のたびに再登録する必要はない。
       if (kIsWeb && mounted) {
-        ref.read(timelineJumpProvider.notifier).state = _jumpActiveColumn;
+        _jumpNotifier.state = _jumpActiveColumn;
       }
     });
   }
@@ -280,11 +288,9 @@ class _MainPageState extends ConsumerState<MainPage>
   @override
   void dispose() {
     // 登録した j/k クロージャがまだ自分のものなら外す。
-    if (kIsWeb) {
-      final notifier = ref.read(timelineJumpProvider.notifier);
-      if (identical(notifier.state, _jumpActiveColumn)) {
-        notifier.state = null;
-      }
+    // メソッドの tear-off は毎回 identical とは限らないので == で比べる。
+    if (kIsWeb && _jumpNotifier.state == _jumpActiveColumn) {
+      _jumpNotifier.state = null;
     }
     _tabController?.dispose();
     _deckHScrollController.dispose();

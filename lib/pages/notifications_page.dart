@@ -150,8 +150,11 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
         // 経路 (`_recoverFromStreamReconnect`) と watchdog (5 分無音検出 →
         // 強制再接続 → reconnect refresh) と app resume 時の force reconnect
         // で面倒を見ているので、ここでは refresh を別途投げない。
+        // ref.read は使わない: unmount されずに残った (deactivate 済みの)
+        // Element でもこの listener は生きていて、ref.read が
+        // 'No ProviderScope found' で落ちる (Sentry KURAGE-8C)。
         if (next == 1 && prev != 1) {
-          ref.read(notificationsProvider.notifier).markAsRead();
+          _notificationsNotifier.markAsRead();
         }
       });
     } else {
