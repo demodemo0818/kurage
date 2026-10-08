@@ -20,6 +20,7 @@ import 'post_page.dart';
 import '../widgets/column_header.dart';
 import '../widgets/timeline_view.dart';
 import '../widgets/user_avatar.dart';
+import '../widgets/web_selection.dart';
 
 /// アクティブなタイムラインカラムを「j/k で 1 件送り」する関数を公開する。
 /// MainPage が現在アクティブなカラムに対応するクロージャを登録し、RootPage の
@@ -522,6 +523,14 @@ class _MainPageState extends ConsumerState<MainPage>
 
   @override
   Widget build(BuildContext context) {
+    // ホーム (カラム群) は丸ごと Web のルート SelectionArea から外す。
+    // タイムライン本体は ColumnTimelineView 側でも外しているが、その外側の
+    // カラムヘッダー / 新着バナー / 埋め込み通知カラムも SSE で頻繁に増減し、
+    // 選択機構を壊す (理由は excludeFromWebSelection)。選択して嬉しい文字は無い。
+    return excludeFromWebSelection(_buildDeck(context));
+  }
+
+  Widget _buildDeck(BuildContext context) {
     final columns = ref.watch(columnProvider);
     final authState = ref.watch(authProvider);
 

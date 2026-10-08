@@ -13,6 +13,7 @@ import '../pages/thread_page.dart';
 import '../utils/open_profile.dart';
 import '../widgets/post_tile.dart';
 import '../widgets/user_avatar.dart';
+import '../widgets/web_selection.dart';
 
 class DmPage extends ConsumerStatefulWidget {
   /// Deck (ワイド) のポップアップで開かれた時に渡される戻る (←) コールバック。
@@ -82,7 +83,10 @@ class _DmPageState extends ConsumerState<DmPage> {
           child: _buildAccountSelector(accounts),
         ),
       ),
-      body: conversationsAsync.when(
+      // 会話の一覧は Web のルート SelectionArea から外す。PostTile を含む項目は
+      // KeepAlive で画面外に残り、未読状態の変化等で中身が変わると選択機構が
+      // 壊れる (理由は excludeFromWebSelection)。
+      body: excludeFromWebSelection(conversationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => Center(
           child: Column(
@@ -147,7 +151,7 @@ class _DmPageState extends ConsumerState<DmPage> {
             ),
           );
         },
-      ),
+      )),
     );
   }
 

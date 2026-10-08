@@ -43,6 +43,7 @@ import '../widgets/mute_dialog.dart';
 import '../widgets/collapsible_text.dart'; // 追加
 import '../widgets/poll_widget.dart';
 import '../widgets/add_to_list_sheet.dart';
+import '../widgets/web_selection.dart';
 import '../widgets/user_avatar.dart';
 import '../widgets/network_image_x.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -1391,6 +1392,14 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
   @override
   Widget build(BuildContext context) {
     super.build(context); // AutomaticKeepAliveClientMixin用
+    final tile = _buildTile(context);
+    // 一覧の中のタイルは Web のルート SelectionArea から外す (KeepAlive で
+    // 画面外に残ったタイルが選択機構を壊すため。理由は excludeFromWebSelection)。
+    // 詳細ポップアップ内は、本文を選択・コピーする場所なので外さない。
+    return widget.isDetailView ? tile : excludeFromWebSelection(tile);
+  }
+
+  Widget _buildTile(BuildContext context) {
     final status   = widget.status;
     // 通常のリブログの場合はreblogを表示、引用リノートの場合は元のstatusを表示
     final display  = status.reblog != null && !status.isQuoteRenote ? status.reblog! : status;
