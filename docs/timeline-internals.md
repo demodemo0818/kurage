@@ -30,6 +30,17 @@
 - **未読カウント**: 引っ張って更新やストリーム受信で得た新着の status ID を `_unreadIds` に積み、画面に入ったら順次取り除く。バッジ表示は `ValueListenableBuilder` + `_unreadCount` (`ValueNotifier<int>`) 経由で行うため、件数の増減でタイムライン本体は rebuild されない。`_unreadIds` を変更したら必ず `_syncUnreadCount()` を呼ぶこと。セマンティクスは **「未読 = 視点 (スクロールアンカー) より上にある新着」**。ソート再構築で視点より下に interleave された投稿 (統合カラムで遅れていたソースの取得分や連合遅延の SSE 投稿) を積むと上スクロールで通過せず可視判定で消えない (= バッジが減らないバグ) ため、再構築を伴う経路では `unreadIdsAboveAnchor` ([timeline_item_ops.dart](../lib/utils/timeline_item_ops.dart)) でアンカー上の id だけ積む。最上部到達時は `_onScrollPositions` が `_unreadIds` を全クリアする自己修復もある。
 - **重複取得回避**: 引っ張って更新時にストリーム受信済みの ID を除外しないと二重表示されるため、`_items` と `_pendingStreamUpdates` 両方の ID と `removeWhere` で突合する。
 
+## タイムライン分割表示 (上 = ライブ / 下 = 履歴ペイン)
+
+Fedibird の分割タイムライン (fedibird/mastodon #382〜#389) に倣った機能。カラムヘッダー (ワイド) / AppBar (モバイル) の分割ボタンで切り替える。対象は `isSplittableColumn` ([column_provider.dart](../lib/providers/column_provider.dart)) が true の時系列 TL のみ (ブックマーク / お気に入り / 通知カラムは対象外)。
+
+- **構造**: 分割すると、カラムの既存 `ColumnTimelineViewState` が描くリストがそのまま上側の **ライブペイン** になり、下側に `historySnapshot` 付きの別インスタンスの `ColumnTimelineView` (**履歴ペイン**) を生やす。分割状態の真実のソースはライブ側 State の `_historyView` で、`timelineSplitProvider` はヘッダー / AppBar のボタン表示用ミラー (更新は build 中を避けて post-frame)。分割状態は永続化しない (比率だけ `settings.timelineSplitRatio` に保存)。
+- **履歴ペインは新着を受け取らない**: 分割時点の `_items` / `_maxIds` / `_oldestDisplayedTimes` のコピーから始まり、SSE 購読・`_refresh`・アプリ復帰時の再接続・自分の投稿 bus・引っ張って更新を全て無効化して、下方向の `_loadMore` と `_fillGap` だけを行う (編集 / 削除の bus は購読して整合させる)。**`_saveToCache` も無効** — ライブ側と同じ `_columnKey` を持つので、書くと正規のカラムキャッシュをスナップショットで上書きしてしまう。新しく履歴ペインで動かしてはいけない処理を足すときは `_isHistoryPane` でガードする。
+- **ツリー形状を変えない**: ライブ側は分割していない時も `LayoutBuilder` > `Column` > `Expanded(live)` の形で描き、分割時は後ろに区切りバーと `Expanded(history)` を足すだけにする。形が変わるとライブ側リストの Element が作り直されてスクロール位置と PostTile の State を失う。履歴ペインの widget インスタンスは `_historyView` に保持して毎 build 同じものを返すので、ライブ側が SSE フラッシュで setState しても履歴ペインは rebuild されない。比率のドラッグ中は `_dragSplitRatio` (ValueNotifier) だけで組み直し、ドラッグ終了で保存する。
+- **スクロール位置の受け渡し**: 開始時はライブ側のアンカー (`_captureScrollAnchor`) を履歴ペインの `initialScrollIndex` / `initialAlignment` に渡し、ライブ側は先頭へ `jumpTo`。alignment は viewport 高さに対する比率なので、全高 ↔ 履歴ペイン高さで換算する。区切りバーの ⇊ (履歴を閉じる) はライブ側をそのまま残す。⇈ (ライブを閉じる) は履歴側の item を `mergeSplitHistory` ([timeline_item_ops.dart](../lib/utils/timeline_item_ops.dart)、unit test あり) でライブ側に統合し (履歴ペインで補完済みのギャップは復活させない)、`max_id` は古い方 (`mergeOlderMaxIds`) を採ってから、履歴ペインのアンカーへ `_restoreScrollAnchor` する。分割後にライブ側へ届いた新着はアンカーより上に入るので未読バッジに積む。
+- **refresh の atTop ピン留めの例外**: 上の「refresh 系に atTop ピン留めを足さない」の唯一の例外として、**分割中のライブペインが最上部にいる時だけ** `_runRefresh` も先頭にピン留めし未読に積まない (`pinLiveTop`)。ライブペインは最新を眺める専用で読書位置は履歴ペインが持つため、復帰時に位置を失う回帰は起きない。分割していない時の挙動は変えないこと。
+- 同じ投稿が両ペインに同時に出ることがあるが、PostTile の UI 状態 (お気に入り / アクションバー展開など) は status ID キーの静的 Map なので両方で揃う。
+
 ## PostTile のレンダリングコスト
 
 PostTile は本文 / 表示名 / CW / 引用 / 翻訳など最大 6〜8 箇所で `parseContentWithEmojis` (HTML 正規表現 + InlineSpan / TapGestureRecognizer / CachedNetworkImage 生成) を呼ぶ。ストリーミング中は親が SSE フラッシュごとに setState するため、メモ化なしだと秒間数百回の正規表現走査が発生する。

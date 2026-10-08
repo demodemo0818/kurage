@@ -50,7 +50,7 @@ UI (widget) の自動テストは現状なし (timeline_view / post_tile はサ�
 主な Provider：
 - [authProvider](lib/providers/auth_provider.dart) — マルチアカウント認証情報のリストのみ。各アカウントに `accountColor` 割当。`SharedPreferences['accounts']` に永続化。**「current アカウント (= プライマリ)」概念は廃止**。各画面が必要に応じて (a) ローカル state + SharedPreferences で「最後に使ったアカウント」を覚える (post_page の `post_last_used_accounts` / search_page の `search_last_account_id`)、(b) 明示的な `accountId` パラメタで指定する (post_tile / thread_page など)、(c) `accounts.first` フォールバックを使う、のいずれかで対処する。
 - [columnProvider](lib/providers/column_provider.dart) — マルチカラムタイムライン設定。`SharedPreferences['columns']`。
-- [settingsProvider](lib/providers/settings_provider.dart) — 外観・挙動設定（`themeMode` (light/dark/system 3 択。旧 `isDarkMode` (bool) からの後方互換読み込みあり)、テーマカラー、フォント、絵文字倍率、CW自動展開、スリープ無効、絵文字アニメ無効、デフォルト投稿言語、リアクション数表示、折りたたみ行数、`streamingEnabled` (SSE 即時更新)、`showVia` (投稿元アプリ表示)、確認ダイアログ各種 (ブースト/お気に入り/ブックマークは **実行と解除で別フラグ** に分離)、`appLockEnabled` / `appLockBiometric` / `appLockTimeoutSeconds` (アプリロック機能、↓「アプリロック」セクション参照) 等）。`appearanceSettings` キー。
+- [settingsProvider](lib/providers/settings_provider.dart) — 外観・挙動設定（`themeMode` (light/dark/system 3 択。旧 `isDarkMode` (bool) からの後方互換読み込みあり)、テーマカラー、フォント、絵文字倍率、CW自動展開、スリープ無効、絵文字アニメ無効、デフォルト投稿言語、リアクション数表示、折りたたみ行数、`streamingEnabled` (SSE 即時更新)、`showVia` (投稿元アプリ表示)、`timelineSplitRatio` (タイムライン分割表示のライブペイン比率 %)、確認ダイアログ各種 (ブースト/お気に入り/ブックマークは **実行と解除で別フラグ** に分離)、`appLockEnabled` / `appLockBiometric` / `appLockTimeoutSeconds` (アプリロック機能、↓「アプリロック」セクション参照) 等）。`appearanceSettings` キー。
 - [notificationsProvider](lib/providers/notifications_provider.dart) — 通知一覧。**マルチアカウント対応**（複数アカウントの通知をマージ）、未読カウント、SSE 購読、`unreadNotificationCountProvider` を別途公開してナビバッジに使用。通知ページを開いている最中にストリームで新着が届いたケースもバッジが消えるよう、`markAsRead` で list の identity を変えて Provider 再通知している点に注意。
 - [conversationsProvider](lib/providers/conversations_provider.dart) — DM 会話一覧。マルチアカウント対応。
 - [tabStateProvider](lib/providers/tab_state_provider.dart) — BottomNav の現在タブの真実のソース。`RootPage` がこれを `ref.watch` してレンダリング、`PushNotificationService` の通知タップコールバックからも書き換えられる。**注**: `_tabController.index` (カラム切替用) と混同しない。タブスワイプで通知ページに飛ぶバグの再発防止のため、カラム TabController からは `tabStateProvider` に書き込まないこと。
@@ -136,7 +136,8 @@ Firebase Cloud Messaging + 自前の Cloudflare Worker リレー経由で動作�
 - SSE 新着は 150ms バッチング + スクロール中はフラッシュ延期 (`_isUserScrolling`)。`Status.fromJson` はフラッシュまで遅延し、`_onStreamUpdate` では正規表現で id 抽出のみ行う (ホットパスに重い処理を足さない)
 - `_items` を変更したら必ず `_invalidateKnownIds()`、`_unreadIds` を変更したら必ず `_syncUnreadCount()`、ストリームバナー状態を変えたら必ず `_syncStreamBanner()`
 - `_items` を投稿ベースで全再構築する経路は必ず既存 `GapItem` を `_rebuildItemsWithGaps` で挿し直す (素通しはギャップボタン消失の回帰)
-- スクロール位置の復元は必ず `_restoreScrollAnchor` 経由 (生 `jumpTo` 禁止)。**refresh 系に「atTop ならピン留め」を足さない** (アプリ復帰時に位置を失う回帰。過去に一度入れて撤回済み)。atTop ピン留めは SSE フラッシュだけが行う
+- スクロール位置の復元は必ず `_restoreScrollAnchor` 経由 (生 `jumpTo` 禁止)。**refresh 系に「atTop ならピン留め」を足さない** (アプリ復帰時に位置を失う回帰。過去に一度入れて撤回済み)。atTop ピン留めは SSE フラッシュだけが行う (唯一の例外は分割表示中のライブペイン)
+- **タイムライン分割表示** (上 = ライブ / 下 = 履歴ペイン、Fedibird 由来): 履歴ペインは `historySnapshot` 付きの `ColumnTimelineView` で、SSE / refresh / `_saveToCache` を `_isHistoryPane` で止めている。ライブ側は分割していなくても `Column > Expanded` の形を保つ (形を変えるとスクロール位置を失う)。詳細は同ドキュメント「タイムライン分割表示」
 - 非表示タブは SSE 購読しない (`isActive`)。未読セマンティクスは「アンカーより上にある新着」
 - PostTile はパース結果を `_cachedParseSpans` でメモ化し、画像は表示サイズ相当でデコードする (詳細は同ドキュメント「PostTile のレンダリングコスト」)
 

@@ -13,6 +13,7 @@ Targets Android / Web / Windows primarily; iOS / macOS / Linux are also buildabl
 
 - **Multi-account / multi-column** — merge multiple accounts and timelines into a single column
 - **Streaming (SSE)** — instant updates for new posts, with disconnect detection, automatic reconnect, and gap recovery for anything missed
+- **Split timeline** — split a column into top and bottom panes: follow the latest posts on top while you read back through older ones below
 - **Push notifications** — via FCM + a self-hostable Cloudflare Worker relay ([worker/](worker/))
 - **Quote posts** — supports the official Mastodon 4.4 quote format, with a fallback compatible with Misskey / Fedibird
 - Custom emoji & reactions, post translation, filters, lists, scheduled posts, drafts
