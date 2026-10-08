@@ -84,3 +84,72 @@ Set<String> unreadIdsAboveAnchor({
   // フォールバック (上の走査結果は「アンカー不在」では使えない)。
   return candidateIds;
 }
+
+/// タイムライン分割 (上 = ライブ / 下 = 履歴ペイン) を「ライブペインを閉じて
+/// 履歴ペインを残す」形で解除するとき、ライブ側と履歴側の item を 1 本に
+/// 統合する。統合後のリストで履歴ペインのアンカーを復元するため、両者の
+/// 投稿の和集合を持つ必要がある (履歴側は分割後に下方向へ追加読み込み
+/// しているので、ライブ側に無い古い投稿を持ちうる)。
+///
+/// - 投稿は id で重複排除 (ライブ側の PostItem を優先)。`sortByTime` なら
+///   `createdAt` 降順に並べ直す (同時刻は元の並び順を保つ安定ソート)
+/// - ギャップ: 履歴側のギャップは全て維持。ライブ側のギャップは「履歴側も
+///   同じギャップを持つ」か「アンカー投稿が履歴側に無い (= 分割後に
+///   ライブ側だけで生まれた)」場合だけ維持する。アンカー投稿が履歴側に
+///   あるのにギャップが無いのは履歴ペインで補完済みということなので、
+///   残すと埋まった区間にギャップボタンが復活してしまう
+List<TimelineItem> mergeSplitHistory({
+  required List<TimelineItem> live,
+  required List<TimelineItem> history,
+  required bool sortByTime,
+}) {
+  final seen = <String>{};
+  final posts = <PostItem>[];
+  for (final it in [...live, ...history]) {
+    if (it is PostItem && seen.add(it.status.id)) posts.add(it);
+  }
+  if (sortByTime) {
+    final order = {for (var i = 0; i < posts.length; i++) posts[i]: i};
+    posts.sort((a, b) {
+      final c = b.createdAt.compareTo(a.createdAt);
+      return c != 0 ? c : order[a]!.compareTo(order[b]!);
+    });
+  }
+
+  final historyPostIds = {
+    for (final it in history)
+      if (it is PostItem) it.status.id,
+  };
+  final historyGaps = history.whereType<GapItem>().toList();
+  final historyGapIds = {for (final g in historyGaps) g.gap.id};
+  final gaps = [
+    for (final g in live.whereType<GapItem>())
+      if (historyGapIds.contains(g.gap.id) ||
+          !historyPostIds.contains(g.gap.anchorNewerStatusId))
+        g,
+    ...historyGaps,
+  ];
+  return insertGapsByAnchor(<TimelineItem>[...posts], const [], gaps);
+}
+
+/// status id 同士を比較して古い方 (= 小さい方) を返す。Mastodon の id は
+/// 桁数が揃わない数値文字列、Pleroma 系は固定長の flake id なので、
+/// 「桁数 → 辞書順」で比べれば両方で時系列順になる。
+String olderStatusId(String a, String b) {
+  if (a.length != b.length) return a.length < b.length ? a : b;
+  return a.compareTo(b) <= 0 ? a : b;
+}
+
+/// ソースごとの `max_id` (追加読み込みの起点) を統合する。両方にあるキーは
+/// より古い方を採る (= より遠くまで読み込んだ側から続きを取得する)。
+Map<String, String> mergeOlderMaxIds(
+  Map<String, String> a,
+  Map<String, String> b,
+) {
+  final result = Map<String, String>.of(a);
+  b.forEach((key, id) {
+    final cur = result[key];
+    result[key] = cur == null ? id : olderStatusId(cur, id);
+  });
+  return result;
+}

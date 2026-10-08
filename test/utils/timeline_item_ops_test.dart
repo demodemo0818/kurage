@@ -1,4 +1,5 @@
-// timeline_item_ops (insertGapsByAnchor / unreadIdsAboveAnchor) のテスト。
+// timeline_item_ops (insertGapsByAnchor / unreadIdsAboveAnchor /
+// mergeSplitHistory / olderStatusId / mergeOlderMaxIds) のテスト。
 //
 // ColumnTimelineView は `_items` を投稿ベースで全再構築する経路 (refresh /
 // SSE フラッシュのフォールバック / loadMore) で必ず insertGapsByAnchor を
@@ -17,7 +18,7 @@ import 'package:kurage/models/timeline_item.dart';
 import 'package:kurage/utils/timeline_item_ops.dart';
 
 /// id と作成日時だけ意味を持つ最小 Status で PostItem を組む。
-PostItem _post(String id, {String accountId = 'acc1'}) {
+PostItem _post(String id, {String accountId = 'acc1', DateTime? at}) {
   final account = Account(
     id: 'a1',
     username: 'alice',
@@ -40,7 +41,7 @@ PostItem _post(String id, {String accountId = 'acc1'}) {
     status: Status(
       id: id,
       content: '',
-      createdAt: DateTime(2024, 1, 1),
+      createdAt: at ?? DateTime(2024, 1, 1),
       account: account,
       visibility: 'public',
       favourited: false,
@@ -225,6 +226,97 @@ void main() {
         candidateIds: {'5', '4'},
       );
       expect(result, {'5', '4'});
+    });
+  });
+
+  group('mergeSplitHistory', () {
+    // 分単位の時刻で投稿を組む (id が大きいほど新しい)。
+    PostItem p(String id, int minute) =>
+        _post(id, at: DateTime(2024, 1, 1, 0, minute));
+
+    test('ライブ側の新着と履歴側の追加読み込み分が時系列で統合される', () {
+      // 分割時点: 5,4,3。ライブ側は新着 7,6 を受信、履歴側は古い 2,1 を追加読み込み。
+      final live = <TimelineItem>[p('7', 7), p('6', 6), p('5', 5), p('4', 4), p('3', 3)];
+      final history = <TimelineItem>[p('5', 5), p('4', 4), p('3', 3), p('2', 2), p('1', 1)];
+      final result =
+          mergeSplitHistory(live: live, history: history, sortByTime: true);
+      expect(_ids(result), ['p:7', 'p:6', 'p:5', 'p:4', 'p:3', 'p:2', 'p:1']);
+    });
+
+    test('重複投稿はライブ側の PostItem を採る', () {
+      final liveItem = p('2', 2);
+      final result = mergeSplitHistory(
+        live: [liveItem],
+        history: [p('2', 2), p('1', 1)],
+        sortByTime: true,
+      );
+      expect(identical(result.first, liveItem), isTrue);
+      expect(_ids(result), ['p:2', 'p:1']);
+    });
+
+    test('履歴側で補完済みのギャップはライブ側から復活しない', () {
+      // 分割時は 5 の下にギャップがあり、履歴ペインで補完して 4 が入った。
+      final live = <TimelineItem>[p('5', 50), _gap('gap_5_3', '5'), p('3', 3)];
+      final history = <TimelineItem>[p('5', 50), p('4', 40), p('3', 3)];
+      final result =
+          mergeSplitHistory(live: live, history: history, sortByTime: true);
+      expect(_ids(result), ['p:5', 'p:4', 'p:3']);
+    });
+
+    test('分割後にライブ側だけで生まれたギャップは維持される', () {
+      // 9 は分割後の新着 (履歴側に無い) で、その下にギャップが生まれた。
+      final live = <TimelineItem>[p('9', 90), _gap('gap_9_5', '9'), p('5', 5)];
+      final history = <TimelineItem>[p('5', 5), p('4', 4)];
+      final result =
+          mergeSplitHistory(live: live, history: history, sortByTime: true);
+      expect(_ids(result), ['p:9', 'g:gap_9_5', 'p:5', 'p:4']);
+    });
+
+    test('両方が持つギャップは 1 つだけ残る', () {
+      final live = <TimelineItem>[p('5', 50), _gap('gap_5_3', '5'), p('3', 3)];
+      final history = <TimelineItem>[p('5', 50), _gap('gap_5_3', '5'), p('3', 3)];
+      final result =
+          mergeSplitHistory(live: live, history: history, sortByTime: true);
+      expect(_ids(result), ['p:5', 'g:gap_5_3', 'p:3']);
+    });
+
+    test('sortByTime が false なら ライブ → 履歴の順に連結する', () {
+      final result = mergeSplitHistory(
+        live: [p('a', 1), p('b', 9)],
+        history: [p('b', 9), p('c', 5)],
+        sortByTime: false,
+      );
+      expect(_ids(result), ['p:a', 'p:b', 'p:c']);
+    });
+
+    test('同時刻の投稿は元の並び順を保つ', () {
+      final result = mergeSplitHistory(
+        live: [p('x', 1), p('y', 1)],
+        history: [p('z', 1)],
+        sortByTime: true,
+      );
+      expect(_ids(result), ['p:x', 'p:y', 'p:z']);
+    });
+  });
+
+  group('olderStatusId / mergeOlderMaxIds', () {
+    test('数値 id は桁数を優先して比較する', () {
+      expect(olderStatusId('999', '1000'), '999');
+      expect(olderStatusId('1000', '999'), '999');
+      expect(olderStatusId('110000000000000002', '110000000000000001'),
+          '110000000000000001');
+    });
+
+    test('同じ桁数なら辞書順 (flake id)', () {
+      expect(olderStatusId('AbC9', 'AbD0'), 'AbC9');
+    });
+
+    test('両方にあるキーは古い方、片方だけのキーはそのまま', () {
+      final result = mergeOlderMaxIds(
+        {'acc1-home': '500', 'acc2-local': '80'},
+        {'acc1-home': '300', 'acc3-home': '7'},
+      );
+      expect(result, {'acc1-home': '300', 'acc2-local': '80', 'acc3-home': '7'});
     });
   });
 }
