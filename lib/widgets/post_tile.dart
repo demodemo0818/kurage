@@ -2916,6 +2916,9 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
           ),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 3),
+          // action 付き SnackBar は persist が既定で true になり duration を
+          // 無視して出っぱなしになるため、明示的に自動で閉じさせる。
+          persist: false,
           action: SnackBarAction(
             label: l10n.postCopyConfirmAction,
             textColor: Colors.white,
