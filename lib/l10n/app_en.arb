@@ -219,6 +219,11 @@
   "timelineUnreadCount": "{count, plural, =1{1 unread} other{{count} unread}}",
   "timelineGapLoaded": "{count, plural, =1{Loaded 1 post. You can fetch the rest from the gap} other{Loaded {count} posts. You can fetch the rest from the gap}}",
   "timelineStreamReconnecting": "Reconnecting stream…",
+  "timelineSplit": "Split timeline",
+  "timelineUnsplit": "Remove timeline split",
+  "timelineSplitter": "Split position (drag to resize, double-tap to reset)",
+  "timelineCloseLivePane": "Close the live (top) pane and keep reading from the bottom pane",
+  "timelineCloseHistoryPane": "Close the history (bottom) pane",
 
   "visibilityPublic": "Public",
   "visibilityUnlisted": "Unlisted",

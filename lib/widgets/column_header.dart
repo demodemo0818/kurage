@@ -10,7 +10,7 @@ import 'user_avatar.dart';
 /// ワイドレイアウト (デスクトップ / タブレット) でカラムの上部に出すヘッダー。
 ///
 /// - アバター (複数ソースなら並べる) + タイムライン種別ラベル
-/// - 右端に 🔄 リフレッシュ + ⋮ メニュー (カラムを編集 / 削除)
+/// - 右端に (分割) + 🔄 リフレッシュ + ⋮ メニュー (カラムを編集 / 削除)
 /// - ヘッダー本体 (ボタン以外) のタップで scroll-to-top
 ///
 /// モバイル (narrow) では AppBar 側に同等情報があるためこの widget は
@@ -21,6 +21,13 @@ class ColumnHeader extends ConsumerWidget {
   final VoidCallback onScrollToTop;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+
+  /// タイムライン分割表示の切替。null ならボタンを出さない (分割できない
+  /// カラム = ブックマーク / お気に入り / 通知)。
+  final VoidCallback? onToggleSplit;
+
+  /// 分割表示中か (ボタンの表示を切り替える)。
+  final bool isSplit;
 
   /// `list_<id>` 形式の timelineType を実名に解決するための事前ロード済み
   /// マップ。`MainPage._listNames` を渡してもらう前提。マッピング無しの
@@ -35,6 +42,8 @@ class ColumnHeader extends ConsumerWidget {
     required this.onEdit,
     required this.onDelete,
     this.listNames = const {},
+    this.onToggleSplit,
+    this.isSplit = false,
   });
 
   static const _timelineTypeIcons = {
@@ -161,6 +170,26 @@ class ColumnHeader extends ConsumerWidget {
               Expanded(
                 child: Row(children: children),
               ),
+              if (onToggleSplit != null)
+                IconButton(
+                  tooltip: isSplit
+                      ? context.l10n.timelineUnsplit
+                      : context.l10n.timelineSplit,
+                  icon: Icon(
+                    isSplit
+                        ? Icons.horizontal_split
+                        : Icons.horizontal_split_outlined,
+                    color: isSplit ? theme.colorScheme.primary : null,
+                  ),
+                  iconSize: 18,
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  onPressed: onToggleSplit,
+                ),
               IconButton(
                 tooltip: context.l10n.refresh,
                 icon: const Icon(Icons.refresh),

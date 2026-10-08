@@ -24,6 +24,21 @@ bool isNotificationColumn(Map<String, dynamic> column) {
   return sources.any((s) => (s as Map)['timelineType'] == 'notifications');
 }
 
+/// このカラムでタイムライン分割表示 (上 = ライブ / 下 = 履歴ペイン) を
+/// 使えるか。ストリーミングで新着が流れてくる時系列 TL だけが対象で、
+/// 追加順に並ぶブックマーク / お気に入りと通知カラムは対象外
+/// (Fedibird も stream-backed なタイムラインだけを分割対象にしている)。
+bool isSplittableColumn(Map<String, dynamic> column) {
+  final sources = (column['sources'] as List?) ?? const [];
+  if (sources.isEmpty) return false;
+  return !sources.any((s) {
+    final type = (s as Map)['timelineType'] as String? ?? 'home';
+    return type == 'notifications' ||
+        type == 'bookmarks' ||
+        type == 'favourites';
+  });
+}
+
 /// 通知カラムを 1 つ生成する。表示用に accountId を 1 つ持たせる。
 Map<String, dynamic> buildNotificationColumn(String? accountId) => {
       'title': '',

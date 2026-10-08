@@ -421,6 +421,11 @@
     }
   },
   "timelineStreamReconnecting": "ストリーミング再接続中…",
+  "timelineSplit": "タイムラインを分割",
+  "timelineUnsplit": "タイムラインの分割を解除",
+  "timelineSplitter": "分割位置 (ドラッグで調整、ダブルタップで既定に戻す)",
+  "timelineCloseLivePane": "上 (最新) を閉じて下の位置から読み進める",
+  "timelineCloseHistoryPane": "下 (履歴) を閉じる",
 
   "visibilityPublic": "公開",
   "visibilityUnlisted": "未収載",

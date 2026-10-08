@@ -10,6 +10,7 @@ import '../providers/deck_column_settings_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/timeline_split_provider.dart';
 import '../services/mastodon_api.dart';
 import '../utils/breakpoints.dart';
 import 'account_settings_page.dart';
@@ -471,6 +472,32 @@ class _MainPageState extends ConsumerState<MainPage>
     );
   }
 
+  /// モバイル AppBar の分割ボタン (表示中タブのカラムが対象)。分割できない
+  /// カラムでは出さない。ワイドレイアウトはカラムヘッダー側に出す。
+  List<Widget> _buildSplitAction(List<dynamic> columns) {
+    final idx = _tabController?.index ?? -1;
+    if (idx < 0 || idx >= columns.length || idx >= _keys.length) {
+      return const [];
+    }
+    if (!isSplittableColumn(columns[idx] as Map<String, dynamic>)) {
+      return const [];
+    }
+    final key = _keys[idx];
+    final isSplit = ref.watch(timelineSplitProvider).contains(key);
+    return [
+      IconButton(
+        icon: Icon(
+          isSplit ? Icons.horizontal_split : Icons.horizontal_split_outlined,
+          color: isSplit ? Theme.of(context).colorScheme.primary : null,
+        ),
+        tooltip: isSplit
+            ? context.l10n.timelineUnsplit
+            : context.l10n.timelineSplit,
+        onPressed: () => key.currentState?.toggleSplit(),
+      ),
+    ];
+  }
+
   Widget _buildDesktopColumn(int i, List<dynamic> columns) {
     final column = columns[i] as Map<String, dynamic>;
     final isNotif = isNotificationColumn(column);
@@ -499,6 +526,10 @@ class _MainPageState extends ConsumerState<MainPage>
             onEdit: () =>
                 ref.read(deckColumnSettingsProvider.notifier).open(),
             onDelete: () => _confirmDeleteColumn(i),
+            onToggleSplit: isSplittableColumn(column)
+                ? () => _keys[i].currentState?.toggleSplit()
+                : null,
+            isSplit: ref.watch(timelineSplitProvider).contains(_keys[i]),
           ),
           Expanded(
             child: isNotif
@@ -688,6 +719,7 @@ class _MainPageState extends ConsumerState<MainPage>
               },
             );
           }),
+          if (!isDesktop) ..._buildSplitAction(columns),
           IconButton(
             icon: Icon(
               streamingEnabled ? Icons.podcasts : Icons.podcasts_outlined,

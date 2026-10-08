@@ -36,6 +36,17 @@ enum ColumnWidthMode { flexible, fixed }
 /// センチネル。nullable フィールド (fontFamily) を null にリセットできるようにする。
 const Object _unset = Object();
 
+/// タイムライン分割表示のライブペイン比率 (%) の既定値と範囲。Fedibird の
+/// 分割タイムライン (既定 35%、20〜80%) に揃えている。
+const double kTimelineSplitDefaultRatio = 35;
+const double kTimelineSplitMinRatio = 20;
+const double kTimelineSplitMaxRatio = 80;
+
+double clampTimelineSplitRatio(double v) {
+  if (!v.isFinite) return kTimelineSplitDefaultRatio;
+  return v.clamp(kTimelineSplitMinRatio, kTimelineSplitMaxRatio).toDouble();
+}
+
 /// アプリ全体の外観設定モデル
 class Settings {
   final bool useRelativeTime;
@@ -161,6 +172,11 @@ class Settings {
   final bool soundOnPost; // 投稿完了時
   final bool soundOnRefresh; // 引っ張って更新時
 
+  /// 追加: タイムライン分割表示 (上 = ライブ / 下 = 履歴ペイン) で上側の
+  /// ライブペインが占める高さの割合 (%)。区切りバーのドラッグで更新する。
+  /// 範囲は [kTimelineSplitMinRatio]〜[kTimelineSplitMaxRatio]。全カラム共通。
+  final double timelineSplitRatio;
+
   /// 追加: デスクトップ (Windows/macOS/Linux) で画像を保存する既定フォルダ。
   /// null / 空 = 未設定 (ダウンロードフォルダ → なければ Documents にフォールバック)。
   final String? imageSaveDirectory;
@@ -224,6 +240,7 @@ class Settings {
     required this.soundOnNotification,
     required this.soundOnPost,
     required this.soundOnRefresh,
+    required this.timelineSplitRatio,
     this.imageSaveDirectory,
     required this.confirmImageSaveLocation,
     required this.appLocale,
@@ -281,6 +298,7 @@ class Settings {
     bool? soundOnNotification,
     bool? soundOnPost,
     bool? soundOnRefresh,
+    double? timelineSplitRatio,
     // imageSaveDirectory も null (既定に戻す) を明示できるよう sentinel 方式。
     Object? imageSaveDirectory = _unset,
     bool? confirmImageSaveLocation,
@@ -340,6 +358,7 @@ class Settings {
       soundOnNotification: soundOnNotification ?? this.soundOnNotification,
       soundOnPost: soundOnPost ?? this.soundOnPost,
       soundOnRefresh: soundOnRefresh ?? this.soundOnRefresh,
+      timelineSplitRatio: timelineSplitRatio ?? this.timelineSplitRatio,
       imageSaveDirectory: identical(imageSaveDirectory, _unset)
           ? this.imageSaveDirectory
           : imageSaveDirectory as String?,
@@ -398,6 +417,7 @@ class Settings {
         'soundOnNotification': soundOnNotification,
         'soundOnPost': soundOnPost,
         'soundOnRefresh': soundOnRefresh,
+        'timelineSplitRatio': timelineSplitRatio,
         'imageSaveDirectory': imageSaveDirectory,
         'confirmImageSaveLocation': confirmImageSaveLocation,
         'appLocale': appLocale,
@@ -463,6 +483,9 @@ class Settings {
         soundOnNotification: m['soundOnNotification'] as bool? ?? false,
         soundOnPost: m['soundOnPost'] as bool? ?? false,
         soundOnRefresh: m['soundOnRefresh'] as bool? ?? false,
+        timelineSplitRatio: clampTimelineSplitRatio(
+            (m['timelineSplitRatio'] as num?)?.toDouble() ??
+                kTimelineSplitDefaultRatio),
         imageSaveDirectory: m['imageSaveDirectory'] as String?,
         confirmImageSaveLocation:
             m['confirmImageSaveLocation'] as bool? ?? false,
@@ -525,6 +548,7 @@ class SettingsNotifier extends StateNotifier<Settings> {
           soundOnNotification: false, // 効果音は既定 OFF (opt-in)
           soundOnPost: false,
           soundOnRefresh: false,
+          timelineSplitRatio: kTimelineSplitDefaultRatio,
           imageSaveDirectory: null, // 既定はダウンロードフォルダ
           confirmImageSaveLocation: false, // 既定は尋ねない (黙って保存)
           appLocale: 'system', // 既定は端末ロケール追従 (解放は v1.1.0)
@@ -830,6 +854,11 @@ class SettingsNotifier extends StateNotifier<Settings> {
 
   Future<void> setSoundOnRefresh(bool v) async {
     state = state.copyWith(soundOnRefresh: v);
+    await _save();
+  }
+
+  Future<void> setTimelineSplitRatio(double v) async {
+    state = state.copyWith(timelineSplitRatio: clampTimelineSplitRatio(v));
     await _save();
   }
 

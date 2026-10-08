@@ -13,6 +13,7 @@ import '../models/timeline_item.dart';
 import '../models/timeline_gap.dart';
 import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/timeline_split_provider.dart';
 import '../services/mastodon_api.dart'
     show
         fetchTimelineForAccount,
@@ -21,6 +22,7 @@ import '../services/mastodon_api.dart'
 import 'post_tile.dart';
 import 'gap_tile.dart';
 import 'timeline_post_decoration.dart';
+import 'timeline_splitter.dart';
 import '../utils/snackbar_helpers.dart';
 import '../utils/timeline_item_ops.dart';
 import '../services/local_post_bus.dart';
@@ -35,9 +37,38 @@ class PostWithAccount {
   PostWithAccount({required this.status, required this.accountId});
 }
 
+/// タイムライン分割表示で履歴ペインに渡す、分割時点のタイムライン状態。
+///
+/// 履歴ペインは分割時点の `_items` のコピーから始まり、以降は新着を一切
+/// 受け取らず下方向の追加読み込みとギャップ補完だけを行う (Fedibird の
+/// 一時タイムライン `home:split:*` と同じ考え方)。新着が上に積まれない
+/// ので、ライブペインの SSE 受信中でも読んでいる位置が動かない。
+class TimelineSplitSnapshot {
+  final List<TimelineItem> items;
+  final Map<String, String> maxIds;
+  final Map<String, DateTime> oldestDisplayedTimes;
+
+  /// 履歴ペインの初期スクロール位置 (`_captureScrollAnchor` 形式。alignment は
+  /// 履歴ペインの高さ基準に換算済み)。null なら先頭から。
+  final ({String id, double alignment})? anchor;
+
+  const TimelineSplitSnapshot({
+    required this.items,
+    required this.maxIds,
+    required this.oldestDisplayedTimes,
+    this.anchor,
+  });
+}
+
 /// 各カラムのタイムライン表示ウィジェット
 class ColumnTimelineView extends ConsumerStatefulWidget {
   final Map<String, dynamic> column;
+
+  /// 非 null なら「履歴ペイン」モードで動く (タイムライン分割表示の下側)。
+  /// SSE 購読・refresh・キャッシュ保存・自分の投稿 bus を一切行わず、
+  /// スナップショットの item から始めて追加読み込みとギャップ補完だけを
+  /// 行う。分割の開始 / 解除はライブ側 (= 通常モードの State) が管理する。
+  final TimelineSplitSnapshot? historySnapshot;
 
   /// 「ユーザーが今見ている」カラムか。`AutomaticKeepAliveClientMixin` で
   /// `TabBarView` の非アクティブタブも生かしっぱなしにしているため、何も
@@ -52,6 +83,7 @@ class ColumnTimelineView extends ConsumerStatefulWidget {
     super.key,
     required this.column,
     this.isActive = true,
+    this.historySnapshot,
   });
 
   @override
@@ -105,6 +137,193 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
   /// 既存の `_refresh` を呼ぶだけのラッパー (in-flight refresh が居れば
   /// それに乗る)。
   Future<void> refresh() => _refresh();
+
+  // ===== タイムライン分割表示 (上 = ライブ / 下 = 履歴ペイン) =====
+  //
+  // Fedibird の分割タイムラインに倣った機能。分割すると、この State が
+  // 描くリストが上側の「ライブペイン」(SSE で最新に追従) になり、下側に
+  // 分割時点の読書位置を引き継いだ「履歴ペイン」(`historySnapshot` 付きの
+  // 別インスタンスの ColumnTimelineView) を生やす。履歴ペインは新着を
+  // 受け取らないので、上で最新を眺めつつ下で落ち着いて遡れる。
+  // 分割状態は永続化しない (分割比率だけ settings に保存)。
+
+  /// 履歴ペインの widget。非 null = 分割中。インスタンスを保持しておき
+  /// ライブ側の build で同じインスタンスを返すことで、SSE フラッシュの
+  /// たびにライブ側が setState しても履歴ペインは rebuild されない。
+  Widget? _historyView;
+  GlobalKey<ColumnTimelineViewState>? _historyKey;
+
+  /// 区切りバーをドラッグ中の一時的な比率 (%)。ドラッグ中は settings に
+  /// 書かず、この Notifier だけを更新して分割レイアウトだけを組み直す
+  /// (タイムライン本体は rebuild しない)。ドラッグ終了で保存して null に戻す。
+  final ValueNotifier<double?> _dragSplitRatio = ValueNotifier<double?>(null);
+
+  /// 直近のレイアウトでのこの widget 全体の高さ。ドラッグ量 (px) → 比率の
+  /// 換算と、分割の開始 / 解除時のアンカー alignment の換算に使う。
+  double _layoutHeight = 0;
+
+  bool get _isHistoryPane => widget.historySnapshot != null;
+
+  /// 分割表示中か (ライブ側の State でのみ true になりうる)。
+  bool get isSplit => _historyView != null;
+
+  /// 分割できる状態か。ストリーミング対象外のカラム (ブックマーク /
+  /// お気に入り) と、まだ投稿が無い (初期ロード中 / 空) ときは分割しない。
+  bool get canSplit =>
+      !_isHistoryPane &&
+      !_hasBookmarksOrFavorites() &&
+      !_initialLoading &&
+      _items.isNotEmpty;
+
+  /// カラムヘッダー / AppBar の分割ボタン用。分割中なら履歴ペインを閉じる
+  /// (= ライブペインを残す。Fedibird のヘッダーボタンと同じ)。
+  void toggleSplit() => isSplit ? closeHistoryPane() : startSplit();
+
+  double get _currentSplitRatio =>
+      _dragSplitRatio.value ?? ref.read(settingsProvider).timelineSplitRatio;
+
+  /// 分割中の履歴ペインの高さ (px)。レイアウト前なら 0。
+  double _historyPaneHeight(double ratio) {
+    final usable = _layoutHeight - kTimelineSplitterHeight;
+    if (usable <= 0) return 0;
+    return usable * (100 - ratio) / 100;
+  }
+
+  /// 分割を開始する。今見ている位置 (アンカー) を履歴ペインに引き継ぎ、
+  /// ライブペイン (= このリスト) は最新 (先頭) へ移す。
+  void startSplit() {
+    if (!canSplit || isSplit) return;
+    final anchor = _captureScrollAnchor();
+    // alignment は viewport 高さに対する比率なので、全高 → 履歴ペインの
+    // 高さ基準に換算して「画面上の同じ投稿が履歴ペインの上端付近に来る」
+    // ようにする。
+    final historyHeight = _historyPaneHeight(_currentSplitRatio);
+    final historyAnchor = (anchor == null || historyHeight <= 0)
+        ? anchor
+        : (
+            id: anchor.id,
+            alignment: anchor.alignment * _layoutHeight / historyHeight,
+          );
+    final key = GlobalKey<ColumnTimelineViewState>();
+    setState(() {
+      _historyKey = key;
+      _historyView = ColumnTimelineView(
+        key: key,
+        column: widget.column,
+        historySnapshot: TimelineSplitSnapshot(
+          items: List.of(_items),
+          maxIds: Map.of(_maxIds),
+          oldestDisplayedTimes: Map.of(_oldestDisplayedTimes),
+          anchor: historyAnchor,
+        ),
+      );
+      // ライブペインは先頭に移るので、ここまでの未読は全て見える位置になる
+      // (読み残しは履歴ペイン側で読む)。
+      _unreadIds.clear();
+    });
+    _syncUnreadCount();
+    _publishSplitState();
+    _lastKnownAtTop = true;
+    if (_itemScrollController.isAttached) {
+      _itemScrollController.jumpTo(index: 0, alignment: 0);
+    }
+    // スクロール中で保留されていた SSE 新着をライブペインに流す
+    if (_pendingStreamUpdates.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_isUserScrolling) _flushPendingStreamUpdates();
+      });
+    }
+  }
+
+  /// 履歴ペインを閉じて分割を解除する (ライブペインをそのまま残す)。
+  void closeHistoryPane() {
+    if (!isSplit) return;
+    setState(_dropHistoryPane);
+    _publishSplitState();
+  }
+
+  void _dropHistoryPane() {
+    _historyView = null;
+    _historyKey = null;
+    // didUpdateWidget (build 中) からも呼ばれるので、不要な通知は撃たない
+    if (_dragSplitRatio.value != null) _dragSplitRatio.value = null;
+  }
+
+  /// ライブペインを閉じて分割を解除する。履歴ペインで読んでいた位置を
+  /// 引き継ぐため、履歴側の item (分割後に追加読み込みした古い投稿を含む)
+  /// をライブ側に統合してから、履歴ペインのアンカーへジャンプする。
+  /// 分割後にライブ側に届いた新着はアンカーより上に積まれるので、通常の
+  /// refresh と同じく未読バッジで知らせる。
+  void closeLivePane() {
+    final history = _historyKey?.currentState;
+    if (!isSplit || history == null) {
+      closeHistoryPane();
+      return;
+    }
+    final historyAnchor = history._captureScrollAnchor();
+    // 履歴ペインの高さ基準 → 分割解除後の全高基準に alignment を換算
+    final historyHeight = _historyPaneHeight(_currentSplitRatio);
+    final anchor = (historyAnchor == null ||
+            historyHeight <= 0 ||
+            _layoutHeight <= 0)
+        ? historyAnchor
+        : (
+            id: historyAnchor.id,
+            alignment:
+                historyAnchor.alignment * historyHeight / _layoutHeight,
+          );
+    final historyPostIds = {
+      for (final it in history._items)
+        if (it is PostItem) it.status.id,
+    };
+    final arrivedSinceSplit = {
+      for (final it in _items)
+        if (it is PostItem && !historyPostIds.contains(it.status.id))
+          it.status.id,
+    };
+    final merged = mergeSplitHistory(
+      live: _items,
+      history: history._items,
+      sortByTime: !_shouldDisableTimeSorting(),
+    );
+    final oldest = Map<String, DateTime>.of(_oldestDisplayedTimes);
+    history._oldestDisplayedTimes.forEach((key, t) {
+      final cur = oldest[key];
+      if (cur == null || t.isBefore(cur)) oldest[key] = t;
+    });
+    final maxIds = mergeOlderMaxIds(_maxIds, history._maxIds);
+
+    setState(() {
+      _items = merged;
+      _maxIds = maxIds;
+      _oldestDisplayedTimes = oldest;
+      _dropHistoryPane();
+      _unreadIds.addAll(unreadIdsAboveAnchor(
+        items: _items,
+        anchorKey: anchor?.id,
+        candidateIds: arrivedSinceSplit,
+      ));
+    });
+    _invalidateKnownIds();
+    _pruneOrphanUnreadIds();
+    _syncUnreadCount();
+    _saveToCache();
+    _publishSplitState();
+    _restoreScrollAnchor(anchor);
+  }
+
+  /// 分割状態をヘッダー / AppBar のボタン表示用 provider に反映する。
+  /// didUpdateWidget (= build 中) からも呼ばれるので、provider の更新は
+  /// post-frame に逃がす (build 中の provider 変更は Riverpod が assert で落とす)。
+  void _publishSplitState() {
+    final key = widget.key;
+    if (key == null || _isHistoryPane) return;
+    final split = isSplit;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(timelineSplitProvider.notifier).setSplit(key, split);
+    });
+  }
 
   List<TimelineItem> _items = [];
   Map<String, String> _sinceIds = {}; // 各ソースごとのsinceId
@@ -169,6 +388,11 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
   /// `widget.itemCount - 1` (= まだ旧リストの件数) にクランプされるため、
   /// 新 index がこれを超える場合は post-frame に遅延する判定に使う。
   int _lastBuiltItemCount = 0;
+
+  /// ScrollablePositionedList の初期位置。履歴ペインがスナップショットの
+  /// アンカー位置から表示を始めるためだけに使う (通常モードは常に先頭)。
+  int _initialScrollIndex = 0;
+  double _initialScrollAlignment = 0;
 
   /// アクティブなスクロール (drag / ballistic) のネスト数。0 でない間は
   /// ストリーム差分の `setState` + `jumpTo` を抑止する。フリック中に
@@ -259,10 +483,30 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _itemPositionsListener.itemPositions.addListener(_onScrollPositions);
-    // 自分の投稿即時反映用 bus は SSE 設定や `isActive` と無関係に常時購読する。
-    // 裏のタブでも投稿を取り込むことで、タブ切替時に「あれ、投稿出てない」と
-    // ならないようにする。
-    _localPostSub = localPostStream.listen(_onLocalPost);
+    final snapshot = widget.historySnapshot;
+    if (snapshot != null) {
+      // 履歴ペイン: スナップショットから即座に表示する (fetch しない)。
+      // 自分の投稿 bus は refresh を起こすだけなので購読しない (新着は
+      // ライブペインの担当)。編集 / 削除の bus は下で購読して整合させる。
+      _items = List.of(snapshot.items);
+      _maxIds = Map.of(snapshot.maxIds);
+      _oldestDisplayedTimes = Map.of(snapshot.oldestDisplayedTimes);
+      _initialLoading = false;
+      _hasStartedLoading = true;
+      final anchor = snapshot.anchor;
+      if (anchor != null) {
+        final idx = _indexOfAnchorId(anchor.id);
+        if (idx >= 0) {
+          _initialScrollIndex = idx;
+          _initialScrollAlignment = anchor.alignment;
+        }
+      }
+    } else {
+      // 自分の投稿即時反映用 bus は SSE 設定や `isActive` と無関係に常時購読する。
+      // 裏のタブでも投稿を取り込むことで、タブ切替時に「あれ、投稿出てない」と
+      // ならないようにする。
+      _localPostSub = localPostStream.listen(_onLocalPost);
+    }
     _localStatusEventSub = localStatusEventStream.listen(_onLocalStatusEvent);
     // 初期化は build メソッドで auth の状態を確認してから行う
   }
@@ -294,16 +538,19 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
         _hasStartedLoading = false;
         _allSourcesFailed = false;
         _unreadIds.clear();
+        // 履歴ペインは旧カラム設定のスナップショットなので閉じる
+        _dropHistoryPane();
       });
       _invalidateKnownIds();
       _syncUnreadCount();
+      _publishSplitState();
       // 次の build で _loadFromCacheOrInitial が走るのでここでは呼ばない。
       // (build 前に postFrame で呼んでもよいが、build 内のフックに任せた方が
       //  「_initialLoading が立っている間は spinner を出す」など UI 状態と
       //  整合が取りやすい)
     }
 
-    if (oldWidget.isActive != widget.isActive) {
+    if (oldWidget.isActive != widget.isActive && !_isHistoryPane) {
       if (widget.isActive) {
         // タブに戻ってきた → SSE 復帰 + 取りこぼし埋め
         _maybeStartStreaming();
@@ -333,6 +580,7 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
     _unsubscribeFromStreams();
     _unreadCount.dispose();
     _anyStreamDisconnected.dispose();
+    _dragSplitRatio.dispose();
     super.dispose();
   }
 
@@ -383,6 +631,7 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
   /// オフ (1s/2s/5s/10s/20s/30s) で自動再接続する。アプリの復帰時にも
   /// 全接続を作り直して OS による接続強制終了から復帰できるようにしている。
   void _subscribeToStreams() {
+    if (_isHistoryPane) return; // 履歴ペインは新着を受け取らない
     _unsubscribeFromStreams(); // 二重購読防止
 
     final authState = ref.read(authProvider);
@@ -1032,6 +1281,9 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
     // 経路が ScrollEnd 頼みのため永遠にフラッシュされなくなる。
     _scrollDepth = 0;
 
+    // 履歴ペインは SSE も refresh も持たない (新着はライブペインの担当)
+    if (_isHistoryPane) return;
+
     // ストリーミング接続は OS によって裏で切られている可能性が高いので
     // 復帰のたびに強制再接続する (バックオフはリセット)。非アクティブ
     // タブは購読そのものを持たないので no-op になる。
@@ -1116,7 +1368,7 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
 
   /// 設定が ON ならストリーミング購読を開始する。データロード完了直後に呼ぶ。
   void _maybeStartStreaming() {
-    if (!mounted) return;
+    if (!mounted || _isHistoryPane) return;
     if (!widget.isActive) return; // 非アクティブタブは購読しない
     final enabled = ref.read(settingsProvider).streamingEnabled;
     if (enabled) {
@@ -1344,6 +1596,9 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
 
   /// キャッシュに保存
   void _saveToCache() {
+    // 履歴ペインはライブ側と同じ `_columnKey` を持つので、書くと正規の
+    // カラムキャッシュを分割時点のスナップショットで上書きしてしまう。
+    if (_isHistoryPane) return;
     // キャッシュサイズ制限（最大1000件のアイテムを保持してギャップ補完に対応）
     final itemsToCache = _items.length > 1000 ? _items.take(1000).toList() : _items;
     _cachedItems[_columnKey] = List.from(itemsToCache);
@@ -1460,6 +1715,9 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
   /// など複数の呼び出し元があり、ほぼ同時に呼ばれても fetch は 1 回に
   /// まとまる。複数呼び出し元はすべて同じ Future を await できる。
   Future<void> _refresh() {
+    // 履歴ペインは新着を取り込まない (上に積むと読んでいる位置の意味が
+    // 崩れる。新着はライブペインが受け持つ)。
+    if (_isHistoryPane) return Future.value();
     return _refreshInFlight ??= _runRefresh().whenComplete(() {
       _refreshInFlight = null;
     });
@@ -1477,6 +1735,10 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
     // ピン留め」を足すと、バックグラウンド中の新着をまとめて取得する復帰時
     // refresh で読んでいた位置を失い最新へ飛ぶ回帰になる (fd6b1ed で一度発生)。
     final anchor = _captureScrollAnchor();
+    // 例外: 分割中のライブペインが最上部にいるなら、refresh の新着も先頭に
+    // ピン留めして最新を見せ続ける (ライブペインは ticker 専用で、読んで
+    // いた位置は履歴ペインが保持しているので「位置を失う」問題が起きない)。
+    final pinLiveTop = isSplit && _isAtTop();
 
     final authState = ref.read(authProvider);
     final sources = widget.column['sources'] as List;
@@ -1599,17 +1861,23 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
           // 取得分がソートで視点より下に interleave されることがあり、それを
           // 未読に積むと上スクロールで通過せず可視判定で消えない
           // (= バッジ件数が実際と合わなくなる) ため。
-          _unreadIds.addAll(unreadIdsAboveAnchor(
-            items: _items,
-            anchorKey: anchor?.id,
-            candidateIds: newPosts.map((p) => p.status.id).toSet(),
-          ));
+          if (!pinLiveTop) {
+            _unreadIds.addAll(unreadIdsAboveAnchor(
+              items: _items,
+              anchorKey: anchor?.id,
+              candidateIds: newPosts.map((p) => p.status.id).toSet(),
+            ));
+          }
         });
         _invalidateKnownIds();
         _pruneOrphanUnreadIds();
         _syncUnreadCount();
         _saveToCache(); // キャッシュ更新
-        _restoreScrollAnchor(anchor);
+        if (pinLiveTop && _itemScrollController.isAttached) {
+          _itemScrollController.jumpTo(index: 0, alignment: 0);
+        } else {
+          _restoreScrollAnchor(anchor);
+        }
       }
     }
 
@@ -2106,7 +2374,7 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
     // 他の Settings 変更で本ビルドが re-render されることはない。
     final timelineLayout =
         ref.watch(settingsProvider.select((s) => s.timelineLayout));
-    if (_lastStreamingEnabled != streamingEnabled) {
+    if (_lastStreamingEnabled != streamingEnabled && !_isHistoryPane) {
       _lastStreamingEnabled = streamingEnabled;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -2215,6 +2483,10 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
         }
         await _refresh();
       },
+      // 履歴ペインは新着を取り込まないので引っ張って更新を無効化する
+      notificationPredicate: _isHistoryPane
+          ? (_) => false
+          : defaultScrollNotificationPredicate,
       child: Stack(
         children: [
           NotificationListener<ScrollNotification>(
@@ -2268,6 +2540,8 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
               separatorBuilder: (_, _) => timelineSeparator(timelineLayout),
               itemScrollController: _itemScrollController,
               itemPositionsListener: _itemPositionsListener,
+              initialScrollIndex: _initialScrollIndex,
+              initialAlignment: _initialScrollAlignment,
             ),
           ),
           // ストリーミング切断バナー。`_anyStreamDisconnected` を個別購読
@@ -2358,9 +2632,80 @@ class ColumnTimelineViewState extends ConsumerState<ColumnTimelineView>
     // 含む) が止まって『タイムラインを遡れない』不具合になる。disabled で切り離す
     // ことで SPL に選択機構が一切干渉しないようにする (TL 内テキスト選択は不可。
     // プロフィール等 ListView ベースの他ページは root SelectionArea のまま選択可)。
-    return kIsWeb
+    final Widget selectable = kIsWeb
         ? SelectionContainer.disabled(child: timelineList)
         : timelineList;
+    if (_isHistoryPane) return selectable;
+    return _buildSplitLayout(selectable);
+  }
+
+  /// ライブ側のリストを分割レイアウトに載せる。分割していない時も
+  /// `Column` > `Expanded` の形を保ち、分割の開始 / 解除でライブ側リストの
+  /// Element (= スクロール位置や PostTile の State) が作り直されないように
+  /// する (子の型や位置が変わると Element がマッチせず破棄される)。
+  /// 比率のドラッグ中は `_dragSplitRatio` だけで組み直すので、渡された
+  /// `live` / `_historyView` は同一インスタンスのまま rebuild されない。
+  Widget _buildSplitLayout(Widget live) {
+    final savedRatio =
+        ref.watch(settingsProvider.select((s) => s.timelineSplitRatio));
+    final history = _historyView;
+    return LayoutBuilder(builder: (ctx, constraints) {
+      _layoutHeight = constraints.maxHeight;
+      return ValueListenableBuilder<double?>(
+        valueListenable: _dragSplitRatio,
+        child: live,
+        builder: (ctx, dragRatio, live) {
+          final ratio = dragRatio ?? savedRatio;
+          return Column(
+            children: [
+              Expanded(
+                key: const ValueKey('live_pane'),
+                // flex は int なので 0.1% 刻みに丸める
+                flex: history == null ? 1 : (ratio * 10).round(),
+                child: live!,
+              ),
+              if (history != null) ...[
+                TimelineSplitter(
+                  onDragUpdate: _onSplitterDrag,
+                  onDragEnd: _onSplitterDragEnd,
+                  onReset: () {
+                    _dragSplitRatio.value = null;
+                    ref
+                        .read(settingsProvider.notifier)
+                        .setTimelineSplitRatio(kTimelineSplitDefaultRatio);
+                  },
+                  onCloseLive: closeLivePane,
+                  onCloseHistory: closeHistoryPane,
+                ),
+                Expanded(
+                  key: const ValueKey('history_pane'),
+                  flex: ((100 - ratio) * 10).round(),
+                  child: history,
+                ),
+              ],
+            ],
+          );
+        },
+      );
+    });
+  }
+
+  void _onSplitterDrag(double dy) {
+    final usable = _layoutHeight - kTimelineSplitterHeight;
+    if (usable <= 0) return;
+    _dragSplitRatio.value =
+        clampTimelineSplitRatio(_currentSplitRatio + dy / usable * 100);
+  }
+
+  void _onSplitterDragEnd() {
+    final ratio = _dragSplitRatio.value;
+    if (ratio == null) return;
+    // setTimelineSplitRatio は state を同期で更新するので、この State
+    // (祖先) の rebuild で新しい savedRatio を持つ builder に差し替わってから
+    // ValueListenableBuilder が組み直される (同一フレーム内で祖先が先に
+    // build される)。一時値を即 null に戻しても元の比率に戻るちらつきは無い。
+    ref.read(settingsProvider.notifier).setTimelineSplitRatio(ratio);
+    _dragSplitRatio.value = null;
   }
 
   /// ギャップを埋める。
