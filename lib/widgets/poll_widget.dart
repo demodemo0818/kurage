@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../l10n/l10n.dart';
 import '../models/poll.dart';
 import '../services/mastodon_api.dart' as api;
+import '../utils/bounded_collections.dart';
 
 class PollWidget extends StatefulWidget {
   final Poll poll;
@@ -32,24 +33,51 @@ class PollWidget extends StatefulWidget {
 }
 
 class _PollWidgetState extends State<PollWidget> {
+  /// 投票後に再取得した最新の Poll。キーは「インスタンス + トークン
+  /// (= アカウント) + poll.id」(voted / own_votes はアカウントごとの値のため)。
+  ///
+  /// 投票しても親の `status.poll` は書き換わらないので、`scrollable_positioned_list`
+  /// がストリーミング新着等で tile の State を作り直すと未投票の状態に戻って
+  /// しまう。PostTile の `_showActionsByStatusId` と同じく static に持って
+  /// State 破棄を跨ぐ。同じ投稿が別カラムに出ている場合もこれで揃う。
+  static final BoundedMap<String, Poll> _latestPollByKey = BoundedMap(500);
+
   late Poll _poll;
   bool _isVoting = false;
   Set<int> _selectedOptions = {};
 
+  String get _cacheKey =>
+      '${widget.instanceUrl}|${widget.accessToken}|${widget.poll.id}';
+
   @override
   void initState() {
     super.initState();
-    _poll = widget.poll;
-    // 既に投票している場合は選択肢を設定
-    if (_poll.ownVotes != null) {
-      _selectedOptions = Set<int>.from(_poll.ownVotes!);
+    _applyPoll(reconcilePoll(widget.poll, _latestPollByKey[_cacheKey]));
+  }
+
+  @override
+  void didUpdateWidget(covariant PollWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.poll, widget.poll) ||
+        oldWidget.instanceUrl != widget.instanceUrl ||
+        oldWidget.accessToken != widget.accessToken) {
+      _applyPoll(reconcilePoll(widget.poll, _latestPollByKey[_cacheKey]));
     }
+  }
+
+  void _applyPoll(Poll poll) {
+    _poll = poll;
+    // 既に投票している場合は選択肢を設定
+    _selectedOptions =
+        poll.ownVotes != null ? Set<int>.from(poll.ownVotes!) : {};
   }
 
   Future<void> _vote() async {
     if (widget.readOnly || _selectedOptions.isEmpty || _isVoting) return;
 
     setState(() => _isVoting = true);
+    // 投票中に tile が破棄されても結果をキャッシュへ残せるよう先に確定させる
+    final cacheKey = _cacheKey;
 
     try {
       await api.votePoll(
@@ -65,6 +93,7 @@ class _PollWidgetState extends State<PollWidget> {
         accessToken: widget.accessToken,
         pollId: _poll.id,
       );
+      _latestPollByKey[cacheKey] = updatedPoll;
       // 投票中にスクロールで tile が破棄されることがある (Crashlytics 9a50b96)。
       if (!mounted) return;
 

@@ -121,4 +121,33 @@ void main() {
       expect(json['hide_totals'], false);
     });
   });
+
+  // 投票後にストリーミング新着で tile が作り直されても「未投票」表示に
+  // 戻らないための判定。
+  group('reconcilePoll', () {
+    final stale = Poll.fromJson(_pollJson(voted: false, ownVotes: []));
+    final votedNow = Poll.fromJson(_pollJson(voted: true, ownVotes: [1]));
+
+    test('手元の状態が無ければ incoming を使う', () {
+      expect(reconcilePoll(stale, null), same(stale));
+    });
+
+    test('手元で投票済みなら未投票の古い incoming より手元を優先する', () {
+      expect(reconcilePoll(stale, votedNow), same(votedNow));
+    });
+
+    test('voted が null (未ログイン扱い) の incoming も手元を優先する', () {
+      final unknown = Poll.fromJson(_pollJson());
+      expect(reconcilePoll(unknown, votedNow), same(votedNow));
+    });
+
+    test('incoming も投票済みならサーバの新しい状態として incoming を使う', () {
+      final refreshed = Poll.fromJson(_pollJson(voted: true, ownVotes: [1]));
+      expect(reconcilePoll(refreshed, votedNow), same(refreshed));
+    });
+
+    test('手元が未投票なら incoming を使う', () {
+      expect(reconcilePoll(votedNow, stale), same(votedNow));
+    });
+  });
 }

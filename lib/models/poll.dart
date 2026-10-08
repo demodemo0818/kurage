@@ -54,6 +54,22 @@ class Poll {
   }
 }
 
+/// タイル再生成時に表示する投票状態を決める。
+///
+/// [incoming] はタイムライン等が保持している `status.poll` (取得時点のスナップ
+/// ショット)、[known] はこのプロセス内で投票 API → 再取得して得た最新状態。
+/// 投票しても `_items` 側の Status は書き換わらないため、ストリーミングの
+/// 新着でタイルが作り直されると [incoming] (未投票) で初期化されて「まだ投票
+/// していない」表示に戻ってしまう。[known] が投票済みで [incoming] が未投票の
+/// 時だけ [known] を優先し、それ以外 (refresh で投票済みの新しい状態が来た等)
+/// は [incoming] を採る。
+Poll reconcilePoll(Poll incoming, Poll? known) {
+  if (known != null && known.voted == true && incoming.voted != true) {
+    return known;
+  }
+  return incoming;
+}
+
 class PollOption {
   final String title;
   final int? votesCount;
