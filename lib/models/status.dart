@@ -166,6 +166,61 @@ class Status {
     );
   }
 
+  /// 相手サーバーから直接取得した status 用。投稿者・ブースト元・引用元の
+  /// acct のうちドメイン無しのもの (= 取得元サーバーのローカルユーザー) に
+  /// `@domain` を補った複製を返す ([Account.withAcctDomain] 参照)。
+  /// 補う対象が無ければ自身をそのまま返す。
+  ///
+  /// 注: フィールドを全部コピーし直すので、Status にフィールドを足したら
+  /// ここにも足すこと。
+  Status withAcctDomain(String domain) {
+    final newAccount = account.withAcctDomain(domain);
+    final newReblog = reblog?.withAcctDomain(domain);
+    final q = quote;
+    final newQuoted = q?.quotedStatus?.withAcctDomain(domain);
+    if (identical(newAccount, account) &&
+        identical(newReblog, reblog) &&
+        identical(newQuoted, q?.quotedStatus)) {
+      return this;
+    }
+    return Status(
+      id: id,
+      content: content,
+      createdAt: createdAt,
+      account: newAccount,
+      reblog: newReblog,
+      mediaAttachments: mediaAttachments,
+      spoilerText: spoilerText,
+      visibility: visibility,
+      favourited: favourited,
+      reblogged: reblogged,
+      bookmarked: bookmarked,
+      pinned: pinned,
+      emojis: emojis,
+      sensitive: sensitive,
+      inReplyToId: inReplyToId,
+      poll: poll,
+      reblogsCount: reblogsCount,
+      favouritesCount: favouritesCount,
+      url: url,
+      uri: uri,
+      quote: q == null || identical(newQuoted, q.quotedStatus)
+          ? q
+          : Quote(
+              state: q.state,
+              quotedStatus: newQuoted,
+              quotedStatusId: q.quotedStatusId,
+              quotedStatusAccountId: q.quotedStatusAccountId,
+            ),
+      card: card,
+      applicationName: applicationName,
+      applicationWebsite: applicationWebsite,
+      language: language,
+      editedAt: editedAt,
+      filtered: filtered,
+    );
+  }
+
   /// このステータスに該当するフィルタのうち `filter_action == 'hide'` を
   /// 持つものがあるか。失効済みフィルタは除外。
   bool get isFilterHidden {

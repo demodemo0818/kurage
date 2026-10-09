@@ -119,6 +119,15 @@ class Account {
     );
   }
 
+  /// acct がドメイン無し (= 取得元サーバーのローカルユーザー) なら
+  /// `@domain` を補った複製を返す。相手サーバーから直接取得したアカウントは
+  /// acct がそのサーバー基準なので、そのままだと表示や返信のメンションで
+  /// home のドメインが補われ、home 上の同名ユーザー扱いになってしまう。
+  Account withAcctDomain(String domain) {
+    if (acct.isEmpty || acct.contains('@') || domain.isEmpty) return this;
+    return copyWith(acct: '$acct@$domain');
+  }
+
   String get avatarStatic => avatarUrl;
   String get avatar       => avatarUrl;
   String get displayNameOrUsername =>

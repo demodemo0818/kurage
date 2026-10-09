@@ -1367,25 +1367,14 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     });
   }
 
-  /// 指定アカウントのプロフィールページへ遷移する。アバタータップ
-  /// (`_PostAvatar`) と同じ解決ロジックで、リモートユーザーは acct の
-  /// `@instance` 部からインスタンス URL を補完する。表示名タップから使う。
+  /// 指定アカウントのプロフィールページへ遷移する。表示名タップから使う
+  /// (解決ロジックは [_openAuthorProfile] 参照)。
   void _openProfile(Account target, AuthAccount viewingAccount) {
-    String? userInstanceUrl;
-    if (target.acct.contains('@')) {
-      final parts = target.acct.split('@');
-      if (parts.length >= 2) {
-        userInstanceUrl = 'https://${parts.last}';
-      }
-    } else {
-      userInstanceUrl = viewingAccount.instanceUrl;
-    }
-    openProfile(
+    _openAuthorProfile(
       context,
-      user: viewingAccount,
-      targetAccountId: target.id,
-      targetUsername: target.username,
-      targetInstanceUrl: userInstanceUrl,
+      target: target,
+      viewingAccount: viewingAccount,
+      isRemoteSource: widget.statusSourceInstanceUrl != null,
     );
   }
 
@@ -1790,6 +1779,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
     final avatar = _PostAvatar(
       status: widget.status,
       viewingAccount: acct,
+      isRemoteSource: widget.statusSourceInstanceUrl != null,
       size: avs,
       isSquare: settings.isAvatarSquare,
       devicePixelRatio: dpr,
@@ -1820,6 +1810,7 @@ class _PostTileState extends ConsumerState<PostTile> with AutomaticKeepAliveClie
         boostAccount: status.account,
         boostAccountSpans: boostAccountSpans,
         viewingAccount: acct,
+        isRemoteSource: widget.statusSourceInstanceUrl != null,
         createdAt: status.createdAt,
         fontSize: fs,
         avatarSize: avs,
@@ -5587,6 +5578,38 @@ class _PostActionBarState extends ConsumerState<_PostActionBar> {
 // すべて StatelessWidget で、必要な span は親側 (_PostTileState) で
 // `_cachedParseSpans` 経由で生成して受け渡す。
 
+/// 投稿者 / ブーストした人のプロフィールページへ遷移する (表示名・アバター・
+/// ブースト情報バーのタップ共通)。リモートユーザーは acct の `@instance` 部
+/// からインスタンス URL を補完する。
+///
+/// `isRemoteSource` (status を相手サーバーから直接取得した) のときは
+/// `target.id` が取得元サーバー上の ID で、home で fetch すると 404 か、
+/// 偶然同じ ID の別人に当たる。ID は渡さず acct (取得時に `withAcctDomain`
+/// でドメイン補完済み) の検索で解決させる。
+void _openAuthorProfile(
+  BuildContext context, {
+  required Account target,
+  required AuthAccount viewingAccount,
+  required bool isRemoteSource,
+}) {
+  String? userInstanceUrl;
+  if (target.acct.contains('@')) {
+    final parts = target.acct.split('@');
+    if (parts.length >= 2) {
+      userInstanceUrl = 'https://${parts.last}';
+    }
+  } else {
+    userInstanceUrl = viewingAccount.instanceUrl;
+  }
+  openProfile(
+    context,
+    user: viewingAccount,
+    targetAccountId: isRemoteSource ? null : target.id,
+    targetUsername: target.username,
+    targetInstanceUrl: userInstanceUrl,
+  );
+}
+
 /// ブースト情報バー (リブログの表示。引用リノートでは出さない)。
 class _BoostInfoBar extends StatelessWidget {
   /// ブーストした人 (= 元 status.account)
@@ -5597,6 +5620,9 @@ class _BoostInfoBar extends StatelessWidget {
 
   /// プロフィール遷移時に「操作するアカウント」として渡す
   final AuthAccount viewingAccount;
+
+  /// status が相手サーバーから取得したものか ([_openAuthorProfile] 参照)
+  final bool isRemoteSource;
 
   /// ブースト時刻
   final DateTime createdAt;
@@ -5610,6 +5636,7 @@ class _BoostInfoBar extends StatelessWidget {
     required this.boostAccount,
     required this.boostAccountSpans,
     required this.viewingAccount,
+    required this.isRemoteSource,
     required this.createdAt,
     required this.fontSize,
     required this.avatarSize,
@@ -5623,27 +5650,12 @@ class _BoostInfoBar extends StatelessWidget {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-      onTap: () {
-        // ブーストした人のインスタンスURLを取得
-        String? boostUserInstanceUrl;
-        if (boostAccount.acct.contains('@')) {
-          // リモートユーザー: @username@instance.domain
-          final parts = boostAccount.acct.split('@');
-          if (parts.length >= 2) {
-            boostUserInstanceUrl = 'https://${parts.last}';
-          }
-        } else {
-          boostUserInstanceUrl = viewingAccount.instanceUrl;
-        }
-
-        openProfile(
-          context,
-          user: viewingAccount,
-          targetAccountId: boostAccount.id,
-          targetUsername: boostAccount.username,
-          targetInstanceUrl: boostUserInstanceUrl,
-        );
-      },
+      onTap: () => _openAuthorProfile(
+        context,
+        target: boostAccount,
+        viewingAccount: viewingAccount,
+        isRemoteSource: isRemoteSource,
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
         child: Row(
@@ -5717,6 +5729,7 @@ class _BoostInfoBar extends StatelessWidget {
 class _PostAvatar extends StatelessWidget {
   final Status status;
   final AuthAccount viewingAccount;
+  final bool isRemoteSource;
   final double size;
   final bool isSquare;
   final double devicePixelRatio;
@@ -5724,6 +5737,7 @@ class _PostAvatar extends StatelessWidget {
   const _PostAvatar({
     required this.status,
     required this.viewingAccount,
+    required this.isRemoteSource,
     required this.size,
     required this.isSquare,
     required this.devicePixelRatio,
@@ -5738,26 +5752,12 @@ class _PostAvatar extends StatelessWidget {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-      onTap: () {
-        // ユーザーのインスタンスURLを取得
-        String? userInstanceUrl;
-        if (d.account.acct.contains('@')) {
-          final parts = d.account.acct.split('@');
-          if (parts.length >= 2) {
-            userInstanceUrl = 'https://${parts.last}';
-          }
-        } else {
-          userInstanceUrl = viewingAccount.instanceUrl;
-        }
-
-        openProfile(
-          context,
-          user: viewingAccount,
-          targetAccountId: d.account.id,
-          targetUsername: d.account.username,
-          targetInstanceUrl: userInstanceUrl,
-        );
-      },
+      onTap: () => _openAuthorProfile(
+        context,
+        target: d.account,
+        viewingAccount: viewingAccount,
+        isRemoteSource: isRemoteSource,
+      ),
       child: isSquare
           ? ClipRRect(
               borderRadius: BorderRadius.circular(4),

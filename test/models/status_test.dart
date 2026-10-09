@@ -159,4 +159,53 @@ void main() {
       expect(() => Status.fromJson(json), throwsFormatException);
     });
   });
+  group('withAcctDomain', () {
+    Map<String, dynamic> accountJson(String id, String acct) => {
+          'id': id,
+          'username': acct.split('@').first,
+          'acct': acct,
+          'created_at': '2024-01-01T00:00:00.000Z',
+        };
+    Map<String, dynamic> statusJson(String id, Map<String, dynamic> account,
+            {Map<String, dynamic>? reblog, Map<String, dynamic>? quote}) =>
+        {
+          'id': id,
+          'content': '<p>hello</p>',
+          'created_at': '2024-01-01T00:00:00.000Z',
+          'account': account,
+          if (reblog != null) 'reblog': reblog,
+          if (quote != null) 'quote': quote,
+        };
+
+    test('投稿者・ブースト元・引用元のドメイン無し acct に補い、他は保持する', () {
+      final s = Status.fromJson(statusJson(
+        '1',
+        accountJson('10', 'booster'),
+        reblog: statusJson(
+          '2',
+          accountJson('20', 'author'),
+          quote: {
+            'state': 'accepted',
+            'quoted_status_id': '3',
+            'quoted_status': statusJson('3', accountJson('30', 'q@third.example')),
+          },
+        ),
+      ));
+      final q = s.withAcctDomain('origin.example');
+      expect(q.account.acct, 'booster@origin.example');
+      expect(q.reblog!.account.acct, 'author@origin.example');
+      // 既にドメイン付き (取得元から見たリモート) は変えない
+      expect(q.reblog!.quote!.quotedStatus!.account.acct, 'q@third.example');
+      expect(q.reblog!.quote!.quotedStatusId, '3');
+      expect(q.id, '1');
+      expect(q.reblog!.id, '2');
+      expect(q.reblog!.content, '<p>hello</p>');
+    });
+
+    test('補う対象が無ければ同一インスタンスを返す', () {
+      final s = Status.fromJson(
+          statusJson('1', accountJson('10', 'alice@other.example')));
+      expect(identical(s.withAcctDomain('origin.example'), s), isTrue);
+    });
+  });
 }

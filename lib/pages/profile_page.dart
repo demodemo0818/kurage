@@ -151,6 +151,19 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
       _remoteView ? _remoteMediaStatuses : _mediaStatuses;
   List<Status> get _displayPinned => _remoteView ? _remotePinned : _pinned;
 
+  /// 相手サーバーのローカルユーザー (acct がドメイン無し) に補うドメイン。
+  /// 実サーバーのホスト (`_remoteHost`) ではなく、home 側のフルハンドルの
+  /// webfinger ドメインを使う (WEB_DOMAIN ≠ LOCAL_DOMAIN 構成で両者が異なる。
+  /// `_serverBaseForAccount` 参照)。`_remoteAccount.acct` は home 側の
+  /// フルハンドルを被せてあるのでそこから取る。
+  String get _remoteAcctDomain => _displayAccount.acct.split('@').last;
+
+  /// 相手サーバーから取得した投稿の acct にドメインを補う。そのサーバー基準の
+  /// ローカル名 (ドメイン無し) のままだと、PostTile の ID 表示や返信の
+  /// メンションで home のドメインが補われ、自分のサーバーのユーザーに見える。
+  static List<Status> _qualifyRemoteAccts(List<Status> list, String domain) =>
+      [for (final s in list) s.withAcctDomain(domain)];
+
   /// PostTile に渡す status 取得元サーバー。リモートビュー中は相手サーバー
   /// (= status.id がそのサーバー上の ID であることを PostTile に伝え、
   /// リアクション前のホーム ID 解決を有効にする)。通常時は null。
@@ -618,7 +631,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         if (!mounted) return;
         if (older.isNotEmpty) {
           setState(() {
-            _remoteStatuses.addAll(older);
+            _remoteStatuses.addAll(_qualifyRemoteAccts(older, _remoteAcctDomain));
             _remoteMaxId = older.last.id;
           });
         }
@@ -673,7 +686,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         if (!mounted) return;
         if (older.isNotEmpty) {
           setState(() {
-            _remoteMediaStatuses.addAll(older);
+            _remoteMediaStatuses
+                .addAll(_qualifyRemoteAccts(older, _remoteAcctDomain));
             _remoteMediaMaxId = older.last.id;
           });
         }
@@ -1123,6 +1137,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
     final remoteBase = _serverBaseForAccount(account);
     final username = account.username;
     final remoteHostLabel = Uri.parse(remoteBase).host;
+    final acctDomain = account.acct.split('@').last;
 
     // 進捗ダイアログ。Deck (ワイド) ではこのページが nested Navigator に
     // 載るため、`showDialog` (既定で root navigator へ push) と
@@ -1191,9 +1206,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage>
         accessToken: null,
         accountId: id,
       ));
-      final statuses = await statusesFuture;
-      final media = await mediaFuture;
-      final pinned = await pinnedFuture;
+      final statuses = _qualifyRemoteAccts(await statusesFuture, acctDomain);
+      final media = _qualifyRemoteAccts(await mediaFuture, acctDomain);
+      final pinned = _qualifyRemoteAccts(await pinnedFuture, acctDomain);
 
       closeProgress();
       if (!mounted) return;

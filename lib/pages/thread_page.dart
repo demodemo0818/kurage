@@ -251,7 +251,9 @@ class _ThreadListViewState extends ConsumerState<_ThreadListView> {
       final uri = Uri.parse('$override/api/v1/statuses/$statusId');
       final resp = await http.get(uri);
       if (resp.statusCode == 200) {
-        return Status.fromJson(jsonDecode(resp.body) as Map<String, dynamic>);
+        // acct のドメイン補完は _fetchStatusContextFromCorrectAccount と同じ理由。
+        return Status.fromJson(jsonDecode(resp.body) as Map<String, dynamic>)
+            .withAcctDomain(Uri.parse(override).host);
       }
       throw Exception(l10n.threadRemoteFetchFailed('${resp.statusCode}'));
     }
@@ -380,10 +382,17 @@ Future<StatusContext> _fetchStatusContextFromCorrectAccount(
   // 投稿元サーバ直接モード: アカウント解決をせず、認証なしで取得する
   // （fetchStatusContext の空トークン対応を利用）。
   if (overrideInstanceUrl != null) {
-    return fetchStatusContext(
+    final ctx = await fetchStatusContext(
       instanceUrl: overrideInstanceUrl,
       accessToken: '',
       statusId: statusId,
+    );
+    // 取得元サーバーのローカルユーザーは acct がドメイン無しなので、
+    // そのままだと ID 表示や返信のメンションで home のドメインが補われる。
+    final domain = Uri.parse(overrideInstanceUrl).host;
+    return StatusContext(
+      ancestors: [for (final s in ctx.ancestors) s.withAcctDomain(domain)],
+      descendants: [for (final s in ctx.descendants) s.withAcctDomain(domain)],
     );
   }
 

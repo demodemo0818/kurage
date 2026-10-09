@@ -115,6 +115,26 @@ void main() {
     });
   });
 
+  group('Account.withAcctDomain', () {
+    test('ドメイン無しの acct (取得元サーバーのローカルユーザー) に補う', () {
+      final account = Account.fromJson(_accountJson(extra: {'acct': 'alice'}));
+      expect(account.withAcctDomain('origin.example').acct,
+          'alice@origin.example');
+    });
+
+    test('既にドメイン付きの acct はそのまま (同一インスタンスを返す)', () {
+      final account =
+          Account.fromJson(_accountJson(extra: {'acct': 'alice@other.example'}));
+      expect(identical(account.withAcctDomain('origin.example'), account),
+          isTrue);
+    });
+
+    test('domain が空なら何もしない', () {
+      final account = Account.fromJson(_accountJson(extra: {'acct': 'alice'}));
+      expect(account.withAcctDomain('').acct, 'alice');
+    });
+  });
+
   group('getter', () {
     test('displayNameOrUsername は displayName 優先', () {
       final account = Account.fromJson(_accountJson());
