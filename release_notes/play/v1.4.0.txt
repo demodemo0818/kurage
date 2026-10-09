@@ -1,0 +1,10 @@
+<ja-JP>
+・タイムラインを上下に分割できるように。上で最新を追いかけながら、下で読みかけの位置から遡って読めます（タイムライン上部の「タイムラインを分割」ボタン）
+・「相手サーバーからプロフィールを読み込む」で、投稿者の ID が自分のサーバーのものになる問題を修正
+・同じ表示から投稿者をタップすると、別の人のプロフィールが開くことがある問題を修正
+</ja-JP>
+<en-US>
+• Timelines can now be split into two panes: follow the newest posts at the top while reading back from where you were at the bottom ("Split timeline" button at the top of the timeline)
+• Fixed handles showing your own server on profiles loaded from the remote server
+• Fixed tapping an author there sometimes opening someone else's profile
+</en-US>
