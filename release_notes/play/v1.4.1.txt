@@ -1,0 +1,6 @@
+<ja-JP>
+軽微な不具合を修正しました。
+</ja-JP>
+<en-US>
+Minor bug fixes.
+</en-US>
