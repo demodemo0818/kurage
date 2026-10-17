@@ -233,3 +233,12 @@ Web では PC でテキストを選択・コピーできるよう、[main.dart](
 - **対策**: [web_selection.dart](../lib/widgets/web_selection.dart) の `excludeFromWebSelection` で `SelectionContainer.disabled` に包み、選択対象から外す。`PostTile` (詳細ポップアップ内を除く)・ホーム (`MainPage` 全体)・タイムライン・通知の一覧・DM の一覧に掛けている。投稿の一覧を足す時は `PostTile` 側で外れるが、`PostTile` の外側に変わる中身 (通知のヘッダー等) を持つ一覧は一覧ごと包む。投稿本文の選択は、本文タップで開く詳細ポップアップ (Overlay 上の `SelectionArea`) で行う。
 - **同じ位置で包む / 包まないを実行時に切り替えない**。Scrollable と Text は選択レジストラの有無で子のツリー構造を変えるので、配下の State (スクロール位置・SSE 接続) が作り直される。
 - 選択機構が崩れる別の入口として、**`dispose` での例外**がある。`BuildOwner.finalizeTree` で 1 つの `dispose` が throw すると、同じフレームで unmount されるはずだった残りの Element が deactivate されたまま放置される。それらの選択対象は登録されたまま RenderObject だけが外れるので、`getTransformTo` の `owner!` で落ち続ける。ref.listen の listener も生き残り、`ref.read` が `No ProviderScope found` で落ちる (KURAGE-8C)。Riverpod 2.6 の `ConsumerState` は **`dispose` 内の `ref.read` が必ず throw する** ('Cannot use "ref" after the widget was disposed')。`MainPage.dispose` がこれを踏み、ワイド ⇔ ナローの切替 (スマホの回転) のたびに起きていた (KURAGE-88)。notifier は initState で捕まえておく。
+
+## Web: IME 変換中の Tab でフォーカスが移り、確定の Enter で投稿ボタンが押される
+
+Mac の日本語入力で、投稿画面の本文を変換中に Tab (予測候補の表示) → Enter (候補の確定) と打つと、入力途中なのに投稿されていた。
+
+- **原因**: ブラウザは変換中の Tab でも keydown (`isComposing = true`) を送る。Flutter Web エンジンは旧 RawKeyboard 経路 (`raw_keyboard.dart` の `_shouldIgnore`) ではこれを捨てるが、KeyEvent 経路 (`KeyboardConverter`) では捨てずにフレームワークへ渡す。すると `WidgetsApp` 既定の Tab → `NextFocusIntent` でフォーカスが TextField から次の widget (投稿画面では投稿ボタン) に移る。続く確定の Enter は IME が消費するが、フレームワーク側ではボタンにフォーカスがあるので Enter → `ActivateIntent` が発火してボタンが押される (Flutter 3.47.5)。
+- **対策**: [ime_composition_tab_guard.dart](../lib/widgets/ime_composition_tab_guard.dart) `ImeCompositionTabGuard` を [main.dart](../lib/main.dart) の `MaterialApp.builder` で全体に被せている (Web のみ)。フォーカス中の `EditableText` の `composing` が空でない間の Tab を `skipRemainingHandlers` で止める。未処理扱いなのでエンジンは preventDefault せず、IME には Tab が届く (予測候補は出る)。
+- **`WidgetsApp` の `Shortcuts` より内側に置くこと** (`builder` の中は内側)。`FocusManager.addEarlyKeyEventHandler` では代用できない: early handler の `skipRemainingHandlers` はフォーカスツリーの走査を止めない (Flutter 3.47.5 の実装)。`handled` を返すと preventDefault されて IME に Tab が届かなくなる。
+- テストは [ime_composition_tab_guard_test.dart](../test/widgets/ime_composition_tab_guard_test.dart) (controller に composing 範囲を入れて Tab → Enter)。実際の IME での確認は手動。

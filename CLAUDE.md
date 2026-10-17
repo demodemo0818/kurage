@@ -196,3 +196,4 @@ Firebase Cloud Messaging + 自前の Cloudflare Worker リレー経由で動作�
 - **Mastodon 4.7.2 以降は HEIC / HEIF / AVIF のアップロードが失敗する** (`supported_mime_types` には載ったまま) → 添付経路は必ず post_page の `_prepareUpload` を通して JPEG 化する (`image_transcode.dart`)
 - **Android 15+ の 3 ボタンナビは OS が nav bar に scrim を重ね、HyperOS ではダークでも白っぽくなる** (色はアプリの外観指定に従わず、リリースビルドでしか再現しない経路がある) → `MaterialApp.builder` の `AnnotatedRegion` で `systemNavigationBarContrastEnforced: false`。常に黒背景の全画面ページは内側で暗い外観に上書きする
 - **Web のルート `SelectionArea` の下に KeepAlive の一覧や頻繁に中身が変わる領域を置かない** (画面外の `PostTile` に Text が増えると `RenderBox was not laid out`、以後リロードまで例外が連鎖) → `excludeFromWebSelection` で外す。`dispose` での throw (Riverpod の `ref` は dispose で使えない) も同じ連鎖の入口になる
+- **Web では IME 変換中の Tab もフレームワークに届き、フォーカス移動になる** (Mac で変換中に Tab → 確定の Enter で投稿ボタンが押されて投稿される) → `MaterialApp.builder` の `ImeCompositionTabGuard` を外さない

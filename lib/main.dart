@@ -53,6 +53,7 @@ import 'utils/app_fonts.dart';
 import 'utils/breakpoints.dart';
 import 'utils/platform.dart';
 import 'utils/snackbar_helpers.dart';
+import 'widgets/ime_composition_tab_guard.dart';
 
 /// Widget ツリー外 (PushNotificationService の通知タップコールバック等) から
 /// Riverpod を操作するためのトップレベル ProviderContainer。
@@ -451,8 +452,14 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       // ボスキー (偽装モード) のゲートを Navigator より上に被せる。これにより
       // 偽装シェルがダイアログ/ポップアップ/SnackBar も含めて全面を覆い、裏の
       // 本体は Offstage で生存する。Web/デスクトップ以外では素通し。
+      //
+      // ImeCompositionTabGuard は Web で IME 変換中の Tab がフォーカス移動に
+      // なり、確定の Enter で投稿ボタンが押される問題の対策。WidgetsApp の
+      // Shortcuts より内側に置く必要があるのでここで包む (Web 以外では素通し)。
       builder: (context, child) {
-        final gated = BossModeGate(child: child ?? const SizedBox.shrink());
+        final gated = ImeCompositionTabGuard(
+          child: BossModeGate(child: child ?? const SizedBox.shrink()),
+        );
         if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
           return gated;
         }
