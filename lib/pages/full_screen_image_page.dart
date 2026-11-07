@@ -3,7 +3,8 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/gestures.dart' show PointerDeviceKind;
+import 'package:flutter/gestures.dart'
+    show GestureDisposition, PointerDeviceKind, VerticalDragGestureRecognizer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
@@ -106,6 +107,14 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
   late AnimationController _animController;
   late Animation<double> _anim;
   bool _isImageZoomed = false; // 現在の画像がズームされているかどうか
+
+  /// 画面に触れているタッチポインタ。2 本以上 (= ピンチ) の間は PageView の
+  /// 横スワイプを止める。PageView のドラッグ認識器は「動いた指」が 18px
+  /// 動けば勝つが、InteractiveViewer のピンチ認識器は指間距離が 18 変わる
+  /// まで勝たないため、片方の指を止めてもう片方だけ動かすピンチだと
+  /// ページ送りに化けてしまう。
+  final Set<int> _touchPointers = <int>{};
+  bool get _isMultiTouch => _touchPointers.length > 1;
 
   @override
   void initState() {
@@ -240,6 +249,12 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
     }
   }
 
+  void _onDragStart(DragStartDetails details) {
+    // 元の位置へ戻るアニメ中に掴み直したら、アニメが _dragOffset を
+    // 上書きして指から画像が離れないよう止める。
+    _animController.stop();
+  }
+
   void _onDragUpdate(DragUpdateDetails details) {
     setState(() {
       _dragOffset += details.delta.dy;
@@ -247,16 +262,78 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
   }
 
   void _onDragEnd(DragEndDetails details) {
-    const threshold = 200.0;
+    // 閉じるのは下スワイプのみ (上へ引っ張った場合は元に戻すだけ)。
+    const distanceThreshold = 100.0;
     const velocityThreshold = 500.0;
 
-    if (_dragOffset > threshold || details.primaryVelocity! > velocityThreshold) {
+    final velocity = details.primaryVelocity ?? 0.0;
+    final flungDown = velocity > velocityThreshold;
+    // 下へ引っ張ってから上へ弾いた (= 戻そうとした) ときは閉じない。
+    final flungBack = velocity < -velocityThreshold;
+
+    if (!flungBack && (flungDown || _dragOffset > distanceThreshold)) {
       Navigator.pop(context);
     } else {
       // アニメーションで元の位置に戻す
       _anim = Tween<double>(begin: _dragOffset, end: 0.0).animate(_animController);
       _animController.forward(from: 0.0);
     }
+  }
+
+  /// 縦スワイプで閉じる操作の認識器。[_SingleTouchVerticalDragRecognizer] で
+  /// ピンチ (2 本目の指) が来たら降りるので、ピンチが閉じる操作に化けない。
+  Map<Type, GestureRecognizerFactory> get _dismissGestures => {
+        _SingleTouchVerticalDragRecognizer: GestureRecognizerFactoryWithHandlers<
+            _SingleTouchVerticalDragRecognizer>(
+          () => _SingleTouchVerticalDragRecognizer(debugOwner: this),
+          (r) => r
+            ..onStart = _onDragStart
+            ..onUpdate = _onDragUpdate
+            ..onEnd = _onDragEnd,
+        ),
+      };
+
+  void _onTouchDown(PointerDownEvent event) {
+    if (event.kind != PointerDeviceKind.touch) return;
+    final wasMulti = _isMultiTouch;
+    _touchPointers.add(event.pointer);
+    if (wasMulti != _isMultiTouch) setState(() {});
+  }
+
+  void _onTouchEnd(PointerEvent event) {
+    final wasMulti = _isMultiTouch;
+    if (!_touchPointers.remove(event.pointer)) return;
+    if (wasMulti != _isMultiTouch) setState(() {});
+  }
+
+  /// ギャラリーの PageView。ズーム中とピンチ中 ([_isMultiTouch]) は横スワイプ
+  /// を止める。フルスクリーン / 窓 で共有。
+  Widget _buildPageView({
+    required BoxFit fit,
+    required bool allowDragDismiss,
+    bool expandOnZoom = false,
+  }) {
+    return Listener(
+      onPointerDown: _onTouchDown,
+      onPointerUp: _onTouchEnd,
+      onPointerCancel: _onTouchEnd,
+      child: ScrollConfiguration(
+        behavior: _GalleryScrollBehavior(),
+        child: PageView.builder(
+          controller: _pageController,
+          physics: (_isImageZoomed || _isMultiTouch)
+              ? const NeverScrollableScrollPhysics()
+              : null,
+          itemCount: widget.imageUrls.length,
+          itemBuilder: (_, i) => _buildPage(
+            i,
+            fit: fit,
+            allowDragDismiss: allowDragDismiss,
+            expandOnZoom: expandOnZoom,
+          ),
+        ),
+      ),
+    );
   }
 
   /// 指定 index へアニメ付きでページ送りする。範囲外 / 同一は no-op (ラップなし)。
@@ -325,11 +402,7 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
       }
       final video = Center(child: player);
       if (allowDragDismiss) {
-        return GestureDetector(
-          onVerticalDragUpdate: _onDragUpdate,
-          onVerticalDragEnd: _onDragEnd,
-          child: video,
-        );
+        return RawGestureDetector(gestures: _dismissGestures, child: video);
       }
       return video;
     }
@@ -338,8 +411,7 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
       imageUrl: animatedImageUrl ?? widget.imageUrls[i],
       fit: fit,
       expandOnZoom: expandOnZoom,
-      onVerticalDragUpdate: allowDragDismiss ? _onDragUpdate : null,
-      onVerticalDragEnd: allowDragDismiss ? _onDragEnd : null,
+      dismissGestures: allowDragDismiss ? _dismissGestures : const {},
       onZoomChanged: (isZoomed) {
         setState(() {
           _isImageZoomed = isZoomed;
@@ -442,18 +514,7 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
         children: [
           Transform.translate(
             offset: Offset(0, _dragOffset),
-            child: ScrollConfiguration(
-              behavior: _GalleryScrollBehavior(),
-              child: PageView.builder(
-                controller: _pageController,
-                physics: _isImageZoomed
-                    ? const NeverScrollableScrollPhysics()
-                    : null,
-                itemCount: widget.imageUrls.length,
-                itemBuilder: (_, i) =>
-                    _buildPage(i, fit: BoxFit.contain, allowDragDismiss: true),
-              ),
-            ),
+            child: _buildPageView(fit: BoxFit.contain, allowDragDismiss: true),
           ),
           _AltTextOverlay(
             description: _altTextFor(_currentIndex),
@@ -533,21 +594,10 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
           ),
           child: Stack(
             children: [
-              ScrollConfiguration(
-                behavior: _GalleryScrollBehavior(),
-                child: PageView.builder(
-                  controller: _pageController,
-                  physics: _isImageZoomed
-                      ? const NeverScrollableScrollPhysics()
-                      : null,
-                  itemCount: widget.imageUrls.length,
-                  itemBuilder: (_, i) => _buildPage(
-                    i,
-                    fit: BoxFit.scaleDown,
-                    allowDragDismiss: false,
-                    expandOnZoom: true,
-                  ),
-                ),
+              _buildPageView(
+                fit: BoxFit.scaleDown,
+                allowDragDismiss: false,
+                expandOnZoom: true,
               ),
               _AltTextOverlay(
                 description: _altTextFor(_currentIndex),
@@ -785,16 +835,16 @@ class _ZoomableImage extends StatefulWidget {
   /// リサイズ後にズレて画像が右に寄る。`false` (モバイル全画面) は従来どおり
   /// タップ位置基準のアニメズーム。
   final bool expandOnZoom;
-  final Function(DragUpdateDetails)? onVerticalDragUpdate;
-  final Function(DragEndDetails)? onVerticalDragEnd;
+
+  /// 縦スワイプで閉じる操作の認識器 (無効なら空)。ズーム中は外す。
+  final Map<Type, GestureRecognizerFactory> dismissGestures;
   final Function(bool) onZoomChanged;
 
   const _ZoomableImage({
     required this.imageUrl,
     required this.fit,
     this.expandOnZoom = false,
-    this.onVerticalDragUpdate,
-    this.onVerticalDragEnd,
+    this.dismissGestures = const {},
     required this.onZoomChanged,
   });
 
@@ -937,39 +987,42 @@ class _ZoomableImageState extends State<_ZoomableImage>
             });
           }
         }
-        return GestureDetector(
-          // ダブルタップでズームイン/アウト
-          onDoubleTapDown: (details) {
-            _lastTapPosition = details.localPosition;
-          },
-          onDoubleTap: _onDoubleTap,
-          // ズームされていない場合のみ縦スワイプで閉じる処理を有効にする
-          onVerticalDragUpdate: _isZoomed ? null : widget.onVerticalDragUpdate,
-          onVerticalDragEnd: _isZoomed ? null : widget.onVerticalDragEnd,
-          child: InteractiveViewer(
-            transformationController: _transformationController,
-            minScale: 1.0,
-            maxScale: 5.0,
-            onInteractionStart: (_) => _interacting = true,
-            onInteractionUpdate: _onInteractionUpdate,
-            onInteractionEnd: (_) => _interacting = false,
-            // 境界を有効にしてスムーズなパン操作を実現
-            boundaryMargin: const EdgeInsets.all(20.0),
-            // パンが有効になる最小スケール
-            panEnabled: true,
-            // スケールが有効になる最小スケール
-            scaleEnabled: true,
-            child: Center(
-              child: KurageNetworkImage(
-                imageUrl: widget.imageUrl,
-                fit: widget.fit,
-                placeholder: (_, _) => const Center(
-                  child: CircularProgressIndicator(color: Colors.white)
-                ),
-                errorWidget: (_, _, _) => const Icon(
-                  Icons.broken_image,
-                  size: 80,
-                  color: Colors.white
+        // ズームされていない場合のみ縦スワイプで閉じる処理を有効にする。
+        // RawGestureDetector 自体は常に置く (付け外しで木の形が変わると
+        // InteractiveViewer の State = ズーム状態が作り直されるため)。
+        return RawGestureDetector(
+          gestures: _isZoomed ? const {} : widget.dismissGestures,
+          child: GestureDetector(
+            // ダブルタップでズームイン/アウト
+            onDoubleTapDown: (details) {
+              _lastTapPosition = details.localPosition;
+            },
+            onDoubleTap: _onDoubleTap,
+            child: InteractiveViewer(
+              transformationController: _transformationController,
+              minScale: 1.0,
+              maxScale: 5.0,
+              onInteractionStart: (_) => _interacting = true,
+              onInteractionUpdate: _onInteractionUpdate,
+              onInteractionEnd: (_) => _interacting = false,
+              // 境界を有効にしてスムーズなパン操作を実現
+              boundaryMargin: const EdgeInsets.all(20.0),
+              // パンが有効になる最小スケール
+              panEnabled: true,
+              // スケールが有効になる最小スケール
+              scaleEnabled: true,
+              child: Center(
+                child: KurageNetworkImage(
+                  imageUrl: widget.imageUrl,
+                  fit: widget.fit,
+                  placeholder: (_, _) => const Center(
+                    child: CircularProgressIndicator(color: Colors.white)
+                  ),
+                  errorWidget: (_, _, _) => const Icon(
+                    Icons.broken_image,
+                    size: 80,
+                    color: Colors.white
+                  ),
                 ),
               ),
             ),
@@ -977,6 +1030,43 @@ class _ZoomableImageState extends State<_ZoomableImage>
         );
       },
     );
+  }
+}
+
+/// 縦スワイプで閉じる用の縦ドラッグ認識器。2 本目の指が触れた時点で、まだ
+/// ドラッグとして確定していなければ自分から降りる。
+///
+/// 素の [VerticalDragGestureRecognizer] は「動いた指」の移動量 18px で勝つ
+/// のに対し、InteractiveViewer のピンチ認識器は指間距離 (span) が 18 変わる
+/// まで勝たない。片方の指を止めてもう片方だけ動かすピンチだと、ピンチが
+/// 確定する前に縦ドラッグが勝って「閉じる」操作に化けてしまう。
+/// 既にドラッグ中 (閉じる操作の途中) に指が増えた場合はそのまま続ける。
+class _SingleTouchVerticalDragRecognizer extends VerticalDragGestureRecognizer {
+  _SingleTouchVerticalDragRecognizer({super.debugOwner});
+
+  final Set<int> _pointers = <int>{};
+  bool _accepted = false;
+
+  @override
+  void addAllowedPointer(PointerDownEvent event) {
+    super.addAllowedPointer(event);
+    _pointers.add(event.pointer);
+    if (_pointers.length > 1 && !_accepted) {
+      resolve(GestureDisposition.rejected);
+    }
+  }
+
+  @override
+  void acceptGesture(int pointer) {
+    _accepted = true;
+    super.acceptGesture(pointer);
+  }
+
+  @override
+  void didStopTrackingLastPointer(int pointer) {
+    _pointers.clear();
+    _accepted = false;
+    super.didStopTrackingLastPointer(pointer);
   }
 }
 
