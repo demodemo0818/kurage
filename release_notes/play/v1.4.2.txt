@@ -1,0 +1,8 @@
+<ja-JP>
+・画像ビューアでピンチ拡大しようとすると、閉じたり次の画像に切り替わったりする問題を修正
+・画像ビューアを下スワイプで閉じやすくしました
+</ja-JP>
+<en-US>
+• Fixed pinch-to-zoom in the image viewer sometimes closing it or switching to the next image
+• Swiping down to close the image viewer is now easier
+</en-US>
