@@ -1,0 +1,6 @@
+<ja-JP>
+・画像ビューアを下スワイプで閉じられなくなっていた問題を修正
+</ja-JP>
+<en-US>
+• Fixed swiping down not closing the image viewer
+</en-US>
