@@ -2,7 +2,7 @@
 
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/gestures.dart'
     show GestureDisposition, PointerDeviceKind, VerticalDragGestureRecognizer;
 import 'package:flutter/material.dart';
@@ -109,10 +109,10 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
   bool _isImageZoomed = false; // 現在の画像がズームされているかどうか
 
   /// 画面に触れているタッチポインタ。2 本以上 (= ピンチ) の間は PageView の
-  /// 横スワイプを止める。PageView のドラッグ認識器は「動いた指」が 18px
-  /// 動けば勝つが、InteractiveViewer のピンチ認識器は指間距離が 18 変わる
-  /// まで勝たないため、片方の指を止めてもう片方だけ動かすピンチだと
-  /// ページ送りに化けてしまう。
+  /// 横スワイプを止める。PageView のドラッグ認識器は「動いた指」が touch slop
+  /// (既定 18px、Android は多くが 8dp) 動けば勝つが、InteractiveViewer の
+  /// ピンチ認識器は指間距離が 18 変わるまで勝たないため、片方の指を止めて
+  /// もう片方だけ動かすピンチだとページ送りに化けてしまう。
   final Set<int> _touchPointers = <int>{};
   bool get _isMultiTouch => _touchPointers.length > 1;
 
@@ -280,18 +280,14 @@ class _FullScreenGalleryPageState extends ConsumerState<FullScreenGalleryPage>
     }
   }
 
-  /// 縦スワイプで閉じる操作の認識器。[_SingleTouchVerticalDragRecognizer] で
-  /// ピンチ (2 本目の指) が来たら降りるので、ピンチが閉じる操作に化けない。
-  Map<Type, GestureRecognizerFactory> get _dismissGestures => {
-        _SingleTouchVerticalDragRecognizer: GestureRecognizerFactoryWithHandlers<
-            _SingleTouchVerticalDragRecognizer>(
-          () => _SingleTouchVerticalDragRecognizer(debugOwner: this),
-          (r) => r
-            ..onStart = _onDragStart
-            ..onUpdate = _onDragUpdate
-            ..onEnd = _onDragEnd,
-        ),
-      };
+  /// 縦スワイプで閉じる操作の認識器 ([dismissDragGestures])。
+  Map<Type, GestureRecognizerFactory> get _dismissGestures => dismissDragGestures(
+        context,
+        onStart: _onDragStart,
+        onUpdate: _onDragUpdate,
+        onEnd: _onDragEnd,
+        debugOwner: this,
+      );
 
   void _onTouchDown(PointerDownEvent event) {
     if (event.kind != PointerDeviceKind.touch) return;
@@ -1033,13 +1029,47 @@ class _ZoomableImageState extends State<_ZoomableImage>
   }
 }
 
+/// 縦スワイプで閉じる操作の認識器。[_SingleTouchVerticalDragRecognizer] で
+/// ピンチ (2 本目の指) が来たら降りるので、ピンチが閉じる操作に化けない。
+///
+/// `gestureSettings` は必ず MediaQuery から渡す (GestureDetector が内部で
+/// やっていること。RawGestureDetector では自前で設定しないと既定の 18px に
+/// なる)。Android は端末の touch slop (多くは 8dp) が入り、InteractiveViewer
+/// のパン判定はその 2 倍 (16px) で勝つため、ここが 18px のままだと縦ドラッグ
+/// が毎回パンに負けて下スワイプで閉じられなくなる (v1.4.2 の回帰)。
+@visibleForTesting
+Map<Type, GestureRecognizerFactory> dismissDragGestures(
+  BuildContext context, {
+  required GestureDragStartCallback onStart,
+  required GestureDragUpdateCallback onUpdate,
+  required GestureDragEndCallback onEnd,
+  Object? debugOwner,
+}) {
+  final gestureSettings = MediaQuery.maybeGestureSettingsOf(context);
+  final multitouchDragStrategy =
+      ScrollConfiguration.of(context).getMultitouchDragStrategy(context);
+  return {
+    _SingleTouchVerticalDragRecognizer:
+        GestureRecognizerFactoryWithHandlers<_SingleTouchVerticalDragRecognizer>(
+      () => _SingleTouchVerticalDragRecognizer(debugOwner: debugOwner),
+      (r) => r
+        ..onStart = onStart
+        ..onUpdate = onUpdate
+        ..onEnd = onEnd
+        ..gestureSettings = gestureSettings
+        ..multitouchDragStrategy = multitouchDragStrategy,
+    ),
+  };
+}
+
 /// 縦スワイプで閉じる用の縦ドラッグ認識器。2 本目の指が触れた時点で、まだ
 /// ドラッグとして確定していなければ自分から降りる。
 ///
-/// 素の [VerticalDragGestureRecognizer] は「動いた指」の移動量 18px で勝つ
-/// のに対し、InteractiveViewer のピンチ認識器は指間距離 (span) が 18 変わる
-/// まで勝たない。片方の指を止めてもう片方だけ動かすピンチだと、ピンチが
-/// 確定する前に縦ドラッグが勝って「閉じる」操作に化けてしまう。
+/// 素の [VerticalDragGestureRecognizer] は「動いた指」の移動量 = touch slop
+/// (既定 18px。Android は端末値で多くは 8dp) で勝つのに対し、InteractiveViewer
+/// のピンチ認識器は指間距離 (span) が 18 変わるまで勝たない。片方の指を
+/// 止めてもう片方だけ動かすピンチだと、ピンチが確定する前に縦ドラッグが
+/// 勝って「閉じる」操作に化けてしまう。
 /// 既にドラッグ中 (閉じる操作の途中) に指が増えた場合はそのまま続ける。
 class _SingleTouchVerticalDragRecognizer extends VerticalDragGestureRecognizer {
   _SingleTouchVerticalDragRecognizer({super.debugOwner});

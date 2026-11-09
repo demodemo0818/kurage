@@ -242,3 +242,11 @@ Mac の日本語入力で、投稿画面の本文を変換中に Tab (予測候�
 - **対策**: [ime_composition_tab_guard.dart](../lib/widgets/ime_composition_tab_guard.dart) `ImeCompositionTabGuard` を [main.dart](../lib/main.dart) の `MaterialApp.builder` で全体に被せている (Web のみ)。フォーカス中の `EditableText` の `composing` が空でない間の Tab を `skipRemainingHandlers` で止める。未処理扱いなのでエンジンは preventDefault せず、IME には Tab が届く (予測候補は出る)。
 - **`WidgetsApp` の `Shortcuts` より内側に置くこと** (`builder` の中は内側)。`FocusManager.addEarlyKeyEventHandler` では代用できない: early handler の `skipRemainingHandlers` はフォーカスツリーの走査を止めない (Flutter 3.47.5 の実装)。`handled` を返すと preventDefault されて IME に Tab が届かなくなる。
 - テストは [ime_composition_tab_guard_test.dart](../test/widgets/ime_composition_tab_guard_test.dart) (controller に composing 範囲を入れて Tab → Enter)。実際の IME での確認は手動。
+
+## `RawGestureDetector` で自前の認識器を作るときは `gestureSettings` を MediaQuery から渡す (Android の touch slop)
+
+v1.4.2 で画像ビューアの「下スワイプで閉じる」を `GestureDetector.onVerticalDrag*` から `RawGestureDetector` + 自前の `_SingleTouchVerticalDragRecognizer` (ピンチの 2 本目の指で降りる縦ドラッグ認識器) に置き換えたところ、**Android 実機 (Xiaomi 17T Pro) で下スワイプで閉じられなくなった**。Mac / Web / iOS では再現しない。
+
+- **原因**: Android のエンジンは端末の `ViewConfiguration.getScaledTouchSlop()` (多くは 8dp) を `physicalTouchSlop` として渡し、`MediaQuery.gestureSettingsOf` から読める。`GestureDetector` / `Scrollable` (PageView) / InteractiveViewer (中身は GestureDetector) は内部でこれを各認識器の `gestureSettings` に設定する。**`RawGestureDetector` に自前のファクトリを渡すと誰も設定しないので、既定の `kTouchSlop` = 18px のまま**になる。InteractiveViewer のパン判定は touch slop の 2 倍 (= 16px) で勝つため、縦ドラッグが 18px に届く前にパンに負けて閉じる操作が始まらない。iOS / Web / デスクトップはエンジンが touch slop を渡さず全員 18px (パンは 36px) なので、手元では気付けない。
+- **対策**: [full_screen_image_page.dart](../lib/pages/full_screen_image_page.dart) の `dismissDragGestures` で、`GestureDetector` と同じく `gestureSettings = MediaQuery.maybeGestureSettingsOf(context)` と `multitouchDragStrategy = ScrollConfiguration.of(context).getMultitouchDragStrategy(context)` を設定している。`RawGestureDetector` に自前の認識器を足すときは必ず同じようにする。
+- テストは [dismiss_drag_gestures_test.dart](../test/widgets/dismiss_drag_gestures_test.dart)。`tester.view.gestureSettings = ui.GestureSettings(physicalTouchSlop: 8 * dpr)` で Android の条件を再現できる (未設定のままだと 18px になり、この回帰は検出できない)。
